@@ -10,7 +10,6 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
-    'prettier',
     'plugin:react-hooks/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
@@ -18,6 +17,7 @@ module.exports = {
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
+    project: './tsconfig.json',
     ecmaFeatures: {
       jsx: true,
       modules: true,
@@ -33,6 +33,7 @@ module.exports = {
     'header',
     'import',
     'unicorn',
+    'prettier'
   ],
   rules: {
     'linebreak-style': ['error', 'unix'],
@@ -54,7 +55,7 @@ module.exports = {
         },
       },
     ],
-    '@typescript-eslint/ordered-imports': [
+    'ordered-imports': [
       1,
       {
         'import-sources-order': 'lowercase-last',
@@ -73,7 +74,7 @@ module.exports = {
         tsx: 'never',
       },
     ],
-    //    'prettier/prettier': 'error',
+    'prettier/prettier': 'error',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
     'react/jsx-filename-extension': [

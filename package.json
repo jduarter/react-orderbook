@@ -8,7 +8,7 @@
     "start": "react-native start",
     "test": "jest",
     "lint:check": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "format:fix": "eslint . --fix",
     "lint": "yarn lint"
   },
   "dependencies": {
@@ -56,7 +56,7 @@
     "preset": "react-native"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": [
+    "src/**.{ts,tsx}": [
       "eslint --ext .tsx --ext .ts src/ --fix"
     ],
     "./src/**": [
