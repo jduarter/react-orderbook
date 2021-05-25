@@ -9,7 +9,8 @@
     "test": "jest",
     "lint:check": "eslint .",
     "format:fix": "eslint . --fix",
-    "lint": "yarn lint"
+    "test:related": "jest --bail --findRelatedTests",
+    "lint": "yarn lint:check"
   },
   "dependencies": {
     "@react-hook/debounce": "^3.0.0",
