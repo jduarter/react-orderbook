@@ -11,7 +11,9 @@ import {
   getNormalizedPrice,
   getGroupedPrice,
   getPrintPriceForNormalizedPrice,
-  immutableObjReplacingKey as immutableObjectReplacingKey, wrapWithLogName } from './utils';
+  immutableObjReplacingKey as immutableObjectReplacingKey,
+  wrapWithLogName,
+} from './utils';
 
 import type {
   OrderbookNormalizedPrice,
@@ -29,8 +31,6 @@ import type {
   WebSocketOrderbookDataArray,
   WebSocketOrderbookSizePricePair,
 } from '../../hooks/useWebSocket';
-
-
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   groupBy: 50,
@@ -66,10 +66,10 @@ export const getAffectedPricesInUpdateList = (
 export const reduceKeyPairToState = <
   T extends any[] = WebSocketOrderbookDataArray,
 >(
-    data: T,
-    initialState: OrderbookOrdersSortedObject,
-    mutatingKeyFunction: GenericMutatingFunctionType = immutableObjectReplacingKey as GenericMutatingFunctionType,
-  ): OrderbookOrdersSortedObject => {
+  data: T,
+  initialState: OrderbookOrdersSortedObject,
+  mutatingKeyFunction: GenericMutatingFunctionType = immutableObjectReplacingKey as GenericMutatingFunctionType,
+): OrderbookOrdersSortedObject => {
   console.log('reduceKeyPairToState: input:', { data, initialState });
   const res = data.reduce(
     (accumulator, [price, oSize]) =>
@@ -84,11 +84,11 @@ const immutableObjectReplacingKeyWithSum = <
   V extends number = number,
   O extends Record<string, V> = Record<string, V>,
 >(
-    object: O,
-    key: string,
-    delta: V,
-    kDebugType = '*',
-  ): O => {
+  object: O,
+  key: string,
+  delta: V,
+  kDebugType = '*',
+): O => {
   const existingValue = key in object ? object[key] : undefined;
 
   if (existingValue === undefined) {
@@ -207,11 +207,13 @@ const getStateSelection = <
   S extends Record<any, any> = Record<any, any>,
   KN extends string = string,
 >(
-    keyNames: KN[],
-    state: S,
-  ): OrderbookOrdersSortedObject => {
+  keyNames: KN[],
+  state: S,
+): OrderbookOrdersSortedObject => {
   return keyNames.reduce((accumulator, current) => {
-    return !state[current] ? { ...accumulator } : { ...accumulator, [current]: state[current] };
+    return !state[current]
+      ? { ...accumulator }
+      : { ...accumulator, [current]: state[current] };
   }, {});
 };
 
@@ -355,21 +357,21 @@ export const orderBookReducer = (
 ): OrderbookStateType => {
   //console.log('[ *!* ] Executing action: <' + action.type + '>');
   switch (action.type) {
-  case 'CALCULATE_GROUPED':
-    return reducePendingGroupUpdatesToState(state);
-    break;
+    case 'CALCULATE_GROUPED':
+      return reducePendingGroupUpdatesToState(state);
+      break;
 
-  case 'ORDERBOOK_SNAPSHOT':
-  case 'ORDERBOOK_UPDATE':
-    //  console.log('ORDERBOOK_UPDATE triggered: ', action.payload);
-    return reduceNewTasksToQueue(state, action.payload.updates);
+    case 'ORDERBOOK_SNAPSHOT':
+    case 'ORDERBOOK_UPDATE':
+      //  console.log('ORDERBOOK_UPDATE triggered: ', action.payload);
+      return reduceNewTasksToQueue(state, action.payload.updates);
 
-    break;
+      break;
 
-  case 'SET_GROUP_BY':
-    console.log('SET_GROUP_BY');
-    return state;
-    /*  return {
+    case 'SET_GROUP_BY':
+      console.log('SET_GROUP_BY');
+      return state;
+      /*  return {
         ...state,
         groupBy: action.payload.value,
         grouped: reduceUpdatesToScopedStateForGrouped(
@@ -379,9 +381,9 @@ export const orderBookReducer = (
           { bids: {}, asks: {} },
         ),
       };*/
-    break;
-  default:
-    throw new Error('orderBook: unknown reducer: ' + action.type);
+      break;
+    default:
+      throw new Error('orderBook: unknown reducer: ' + action.type);
   }
 };
 

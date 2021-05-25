@@ -7,6 +7,7 @@
  *                                                               *
  *                            (c) 2021                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 import React from 'react';
 import type { FC } from 'react';
 import {
@@ -100,7 +101,12 @@ const SpreadWidget = ({
 
   console.log({ a, b });
 
-  return <Spread high={Number.parseFloat(a[0]) / 100} low={Number.parseFloat(b[0]) / 100} />;
+  return (
+    <Spread
+      high={Number.parseFloat(a[0]) / 100}
+      low={Number.parseFloat(b[0]) / 100}
+    />
+  );
 };
 
 const OrderbookComponent: FC = () => {
