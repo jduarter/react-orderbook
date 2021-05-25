@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 type ProductIdType = 'PI_XBTUSD';
 
 type OrderbookGenericFragmentType = [number, number];
@@ -31,12 +40,12 @@ export interface WebSocketOrderbookUpdateMessage<PID extends string = 'PI_XBTUSD
   product_id: PID;
 }
 
-export type OrderbookWSMessageType = {
+export interface OrderbookWSMessageType {
   feed: FeedType;
   product_id: ProductIdType;
-  bids: Array<OrderbookBidType>;
-  asks: Array<OrderbookAskType>;
-};
+  bids: OrderbookBidType[];
+  asks: OrderbookAskType[];
+}
 
 export type OnMessageReceivedFunction<MT extends GenericMessageType> = (data: MT) => void;
 
@@ -53,7 +62,7 @@ export type UseWebSocketOptionalProps<
   S = WebSocketState,
 > = Partial<WebSocketHandlers<MT, S>>;
 
-export interface UseWebSocketProps<
+export interface UseWebSocketProperties<
   MT extends GenericMessageType = GenericMessageType,
   S = WebSocketState,
 > extends UseWebSocketOptionalProps<MT, S> {
@@ -64,11 +73,11 @@ export type GenericMessageType = Record<string, any>;
 
 export type WebSocketOrderbookSizePricePair = [RawUpdateMessageFloat, RawUpdateMessageFloat];
 
-export type WebSocketOrderbookDataArray = Array<WebSocketOrderbookSizePricePair>;
+export type WebSocketOrderbookDataArray = WebSocketOrderbookSizePricePair[];
 
 export type WebSocketConnectFunction = () => Promise<boolean>;
 
-export type OtherExtraEventCallbacks = { connect: WebSocketConnectFunction };
+export interface OtherExtraEventCallbacks { connect: WebSocketConnectFunction }
 
 type onConnectionStatusChangeFunction<S = WebSocketState> = (
   s: Partial<S>,
@@ -88,7 +97,7 @@ export type BindHandlersFunction<
   MT extends GenericMessageType = GenericMessageType,
   S = WebSocketState,
   A = RestOfArguments<MT, S>,
-> = (...args: WebSocketHandlersBinderArguments<MT, S, A>) => void;
+> = (...arguments_: WebSocketHandlersBinderArguments<MT, S, A>) => void;
 
 export interface WebSocketState extends Record<string, any> {
   connecting: boolean;

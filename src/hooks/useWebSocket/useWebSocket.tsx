@@ -1,8 +1,17 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import * as React from 'react';
 
 import type {
   GenericMessageType,
-  UseWebSocketProps,
+  UseWebSocketProps as UseWebSocketProperties,
   BindHandlersFunction,
   WebSocketHandlers,
   WebSocketState,
@@ -10,18 +19,18 @@ import type {
   WebSocketInstanceType,
 } from './types';
 
-const voidFn = ((...anyArg: any): void => undefined) as any;
+const voidFunction = ((...anyArgument: any): void => undefined) as any;
 
 const bindHandlersToClient: BindHandlersFunction = (
   client,
   { onConnectionStatusChange, onMessageReceived },
 ): void => {
-  client.onopen = () => {
+  client.addEventListener('open', () => {
     if (onConnectionStatusChange) onConnectionStatusChange({ connected: true }, client);
-  };
+  });
 
   client.onmessage = ({ data }: { data?: string }) =>
-    data != null && onMessageReceived && onMessageReceived(JSON.parse(data));
+    data != undefined && onMessageReceived && onMessageReceived(JSON.parse(data));
 
   client.onclose = () => {
     if (onConnectionStatusChange) {
@@ -29,34 +38,34 @@ const bindHandlersToClient: BindHandlersFunction = (
     }
   };
 
-  client.onerror = (err?: any) => {
-    console.log('client.onerror:', err);
+  client.addEventListener('error', (error?: any) => {
+    console.log('client.onerror:', error);
     // {"isTrusted": false, "message": "The operation couldn’t be completed. Network is down"}
 
     if (onConnectionStatusChange) {
       onConnectionStatusChange({ connected: false, connecting: false }, client);
     }
-  };
+  });
 };
 
-const groupHandlersInObj = <
+const groupHandlersInObject = <
   MT extends GenericMessageType = GenericMessageType,
   S extends WebSocketState = WebSocketState,
 >(
-  o: Record<string, any>,
-  fallback: typeof voidFn = voidFn,
-): WebSocketHandlers<MT, S> & OtherExtraEventCallbacks =>
+    o: Record<string, any>,
+    fallback: typeof voidFunction = voidFunction,
+  ): WebSocketHandlers<MT, S> & OtherExtraEventCallbacks =>
   Object.entries(o).reduce(
-    (acc, [ok, ov]) => ({ ...acc, [ok]: ov || fallback }),
+    (accumulator, [ok, ov]) => ({ ...accumulator, [ok]: ov || fallback }),
     {},
   ) as WebSocketHandlers<MT, S> & OtherExtraEventCallbacks;
 
 const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
-  props: UseWebSocketProps<MT>,
+  properties: UseWebSocketProperties<MT>,
 ): WebSocketInstanceType => {
-  const { uri, onMessageReceived = voidFn, onConnectionStatusChange = voidFn } = props;
+  const { uri, onMessageReceived = voidFunction, onConnectionStatusChange = voidFunction } = properties;
 
-  const ref = React.useRef<null | WebSocket>(null);
+  const reference = React.useRef<null | WebSocket>(null);
 
   const connect = React.useCallback(async (): Promise<boolean> => {
     onConnectionStatusChange({ connected: false, connecting: true }, null);
@@ -65,10 +74,10 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
 
     bindHandlersToClient(
       client,
-      groupHandlersInObj({ onConnectionStatusChange, onMessageReceived }),
+      groupHandlersInObject({ onConnectionStatusChange, onMessageReceived }),
     );
 
-    ref.current = client;
+    reference.current = client;
 
     return true;
   }, [onConnectionStatusChange, onMessageReceived, uri]);
@@ -78,7 +87,7 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
     connect();
     return () => {
       console.log('closing connection');
-      ref.current && ref.current.close();
+      reference.current && reference.current.close();
     };
   }, [uri, connect]);
 

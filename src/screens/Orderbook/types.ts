@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import type { WebSocketOrderbookDataArray } from '../../hooks/useWebSocket';
 
 export type OrderbookGroupedPrice = number;
@@ -9,10 +18,10 @@ export type OrderbookOrdersSortedObject = Record<
   OrderbookOrderSize
 >;
 
-export type OrderbookGenericScopeDataType<T> = {
+export interface OrderbookGenericScopeDataType<T> {
   bids: T;
   asks: T;
-};
+}
 
 export type OrderbookActionUpdate = 'u';
 export type OrderbookActionSnapshot = 's';
@@ -23,17 +32,17 @@ type OrderbookDataUpdateActions =
 export type WebSocketOrderbookUpdatesType =
   OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
 
-export type PendingGroupUpdateRecord = {
+export interface PendingGroupUpdateRecord {
   kind: OrderbookDataUpdateActions;
   updates: WebSocketOrderbookUpdatesType;
   selectedLastState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
-};
+}
 
 export interface OrderbookStateType
   extends OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> {
   groupBy: number;
   grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
-  pendingGroupUpdates: Array<PendingGroupUpdateRecord>;
+  pendingGroupUpdates: PendingGroupUpdateRecord[];
 }
 
 export type OrderbookReducerActionTypes =
@@ -42,15 +51,15 @@ export type OrderbookReducerActionTypes =
   | 'ORDERBOOK_SNAPSHOT'
   | 'SET_GROUP_BY';
 
-export type OrderbookReducerAction = {
+export interface OrderbookReducerAction {
   type: OrderbookReducerActionTypes;
   payload: any;
-};
+}
 
 export type GenericMutatingFunctionType = ((
-  obj: unknown,
+  object: unknown,
   key: string,
-  val: number,
+  value: number,
 ) => any) &
   ((a: unknown, b: string, c: number, ...d: any) => any);
 

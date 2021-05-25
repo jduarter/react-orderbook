@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import * as React from 'react';
 import type { StyleProp, TextProps } from 'react-native';
 import { useSpring, animated } from '@react-spring/native';
@@ -49,9 +58,9 @@ const AnimatedTextValue: React.FC<
       style={
         (style
           ? {
-              ...style,
-              ...styles,
-            }
+            ...style,
+            ...styles,
+          }
           : styles) as StyleProp<TextProps>
       }>
       {children}

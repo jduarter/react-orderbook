@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import NetInfo from '@react-native-community/netinfo';
 
 const DEFAULT_OPTIONS = {
@@ -23,5 +32,5 @@ export const subscribe: SubscribeFunction<typeof NetInfo> = (handler) => {
 };
 
 export const useNetInfo: typeof NetInfo['useNetInfo'] = (
-  opts = DEFAULT_OPTIONS,
-) => NetInfo.useNetInfo(opts);
+  options = DEFAULT_OPTIONS,
+) => NetInfo.useNetInfo(options);

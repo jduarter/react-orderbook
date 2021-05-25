@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import commaNumber from 'comma-number';
 
 import type {
@@ -16,7 +25,7 @@ type SortByOperationTypes = -1 | 1;
 type GroupByOptionType = number;
 
 const AVAILABLE_FACTORS = [
-  0.1, 0.25, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000,
+  0.1, 0.25, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000,
 ];
 
 // .toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -41,7 +50,7 @@ export const getPrintPriceForNormalizedPrice = (
   input: OrderbookNormalizedPrice,
   decimals = 2,
 ) => {
-  const r = formatNumber(parseFloat(input) / Math.pow(10, decimals), decimals);
+  const r = formatNumber(Number.parseFloat(input) / Math.pow(10, decimals), decimals);
   //console.log('getPrintPriceForNormalizedPrice: ', { input, r });
   return r;
 };
@@ -62,14 +71,14 @@ export const getNormalizedPrice = (
 
 export const wrapWithLogName =
   (
-    mutatingKeyFn: GenericMutatingFunctionType,
+    mutatingKeyFunction: GenericMutatingFunctionType,
     dbgInfo: string,
   ): GenericMutatingFunctionType =>
-  (a: unknown, b: any, c: number) =>
-    mutatingKeyFn(a, b, c, dbgInfo);
+    (a: unknown, b: any, c: number) =>
+      mutatingKeyFunction(a, b, c, dbgInfo);
 
-const immutableObjWithoutKey = <O extends Record<string, any>>(
-  obj: O,
+const immutableObjectWithoutKey = <O extends Record<string, any>>(
+  object: O,
   key: string,
   dbgInfo = '*',
 ): O => {
@@ -78,13 +87,13 @@ const immutableObjWithoutKey = <O extends Record<string, any>>(
     'immutableObjWithoutKey: delete key! <' + key + '> ( ' + dbgInfo + ')',
   );
 
-  const objCopy: O = { ...obj };
-  delete objCopy[key];
-  return objCopy;
+  const objectCopy: O = { ...object };
+  delete objectCopy[key];
+  return objectCopy;
 };
 
 export const immutableObjWithoutKeyIfExists = <O extends Record<string, any>>(
-  obj: O,
+  object: O,
   key: string,
   dbgInfo = '*',
 ): O => {
@@ -95,51 +104,47 @@ export const immutableObjWithoutKeyIfExists = <O extends Record<string, any>>(
       '> ( ' +
       dbgInfo +
       ')',
-    obj,
+    object,
   );
-  return key in obj === false
-    ? { ...obj }
-    : immutableObjWithoutKey(obj, key, dbgInfo);
+  return key in object === false
+    ? { ...object }
+    : immutableObjectWithoutKey(object, key, dbgInfo);
 };
 
 export const immutableObjReplacingKey = <
   V,
   O extends Record<string, V> = Record<string, V>,
 >(
-  obj: O,
-  key: string,
-  val: V,
-): O => {
-  console.log('immutableObjReplacingKey: add <' + key + '> with val: ', val);
-  if (!val) {
-    return immutableObjWithoutKeyIfExists<O>(
-      obj,
-      key,
-      'immutableObjReplacingKey',
-    );
-  } else {
-    return { ...obj, [key]: val };
-  }
+    object: O,
+    key: string,
+    value: V,
+  ): O => {
+  console.log('immutableObjReplacingKey: add <' + key + '> with val: ', value);
+  return !value ? immutableObjWithoutKeyIfExists<O>(
+    object,
+    key,
+    'immutableObjReplacingKey',
+  ) : { ...object, [key]: value };
 };
 
 export const immutableGetReversedArr = <T extends unknown = any>(
-  arr: Array<T>,
-): Array<T> => {
-  const copy = [...arr];
+  array: T[],
+): T[] => {
+  const copy = [...array];
   copy.reverse();
   return copy;
 };
 
 export const orderAndLimit = (
-  obj: OrderbookOrdersSortedObject,
+  object: OrderbookOrdersSortedObject,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
 ): WebSocketOrderbookDataArray => {
-  const arr = Object.entries(obj)
+  const array = Object.entries(object)
     .slice(0, limit)
     .map(([key, size]): WebSocketOrderbookSizePricePair => [Number(key), size]);
 
-  return orderBy === 'desc' ? immutableGetReversedArr(arr) : arr;
+  return orderBy === 'desc' ? immutableGetReversedArr(array) : array;
 };
 
 export const getGroupByFactor = (
@@ -147,16 +152,13 @@ export const getGroupByFactor = (
   op: SortByOperationTypes,
 ) => {
   if (op === 1) {
-    const idx = AVAILABLE_FACTORS.indexOf(groupBy);
-    if (idx >= 0 && idx - 1 <= AVAILABLE_FACTORS.length) {
-      return AVAILABLE_FACTORS[idx + 1] / AVAILABLE_FACTORS[idx];
+    const index = AVAILABLE_FACTORS.indexOf(groupBy);
+    if (index >= 0 && index - 1 <= AVAILABLE_FACTORS.length) {
+      return AVAILABLE_FACTORS[index + 1] / AVAILABLE_FACTORS[index];
     }
     return 0;
-  } else {
-    if (groupBy % 2 === 0) {
-      return 2;
-    } else {
-      return 2.5;
-    }
+  }
+  else {
+    return groupBy % 2 === 0 ? 2 : 2.5;
   }
 };

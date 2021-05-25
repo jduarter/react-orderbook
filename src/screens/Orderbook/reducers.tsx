@@ -1,8 +1,17 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import {
   getNormalizedPrice,
   getGroupedPrice,
   getPrintPriceForNormalizedPrice,
-} from './utils';
+  immutableObjReplacingKey as immutableObjectReplacingKey, wrapWithLogName } from './utils';
 
 import type {
   OrderbookNormalizedPrice,
@@ -21,7 +30,7 @@ import type {
   WebSocketOrderbookSizePricePair,
 } from '../../hooks/useWebSocket';
 
-import { immutableObjReplacingKey, wrapWithLogName } from './utils';
+
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   groupBy: 50,
@@ -31,8 +40,8 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   pendingGroupUpdates: [],
 };
 
-export const uniq = <T extends unknown = any>(arr: Array<T>): Array<T> => [
-  ...new Set(arr),
+export const uniq = <T extends unknown = any>(array: T[]): T[] => [
+  ...new Set(array),
 ];
 
 export const getNormalizedGroupedPrice = (
@@ -43,56 +52,56 @@ export const getNormalizedGroupedPrice = (
   getNormalizedPrice(getGroupedPrice(price, groupBy), decimals);
 
 export const customFormatNumberToFloat = (price: string): number =>
-  parseInt(price) / 100;
+  Number.parseInt(price) / 100;
 
 export const getAffectedPricesInUpdateList = (
-  arr: Array<WebSocketOrderbookSizePricePair>,
-): Array<OrderbookNormalizedPrice> =>
+  array: WebSocketOrderbookSizePricePair[],
+): OrderbookNormalizedPrice[] =>
   uniq<OrderbookNormalizedPrice>(
-    arr.map(([price]: WebSocketOrderbookSizePricePair) =>
+    array.map(([price]: WebSocketOrderbookSizePricePair) =>
       getNormalizedPrice(price),
     ),
   );
 
 export const reduceKeyPairToState = <
-  T extends Array<any> = WebSocketOrderbookDataArray,
+  T extends any[] = WebSocketOrderbookDataArray,
 >(
-  data: T,
-  initialState: OrderbookOrdersSortedObject,
-  mutatingKeyFn: GenericMutatingFunctionType = immutableObjReplacingKey as GenericMutatingFunctionType,
-): OrderbookOrdersSortedObject => {
-  console.log('reduceKeyPairToState: input: ', { data, initialState });
+    data: T,
+    initialState: OrderbookOrdersSortedObject,
+    mutatingKeyFunction: GenericMutatingFunctionType = immutableObjectReplacingKey as GenericMutatingFunctionType,
+  ): OrderbookOrdersSortedObject => {
+  console.log('reduceKeyPairToState: input:', { data, initialState });
   const res = data.reduce(
-    (acc, [price, oSize]) =>
-      mutatingKeyFn(acc, getNormalizedPrice(price), oSize),
+    (accumulator, [price, oSize]) =>
+      mutatingKeyFunction(accumulator, getNormalizedPrice(price), oSize),
     initialState,
   );
-  console.log('reduceKeyPairToState: output: ', res);
+  console.log('reduceKeyPairToState: output:', res);
   return res;
 };
 
-const immutableObjReplacingKeyWithSum = <
+const immutableObjectReplacingKeyWithSum = <
   V extends number = number,
   O extends Record<string, V> = Record<string, V>,
 >(
-  obj: O,
-  key: string,
-  delta: V,
-  kDebugType = '*',
-): O => {
-  const existingValue = key in obj ? obj[key] : undefined;
+    object: O,
+    key: string,
+    delta: V,
+    kDebugType = '*',
+  ): O => {
+  const existingValue = key in object ? object[key] : undefined;
 
   if (existingValue === undefined) {
-    return { ...obj };
+    return { ...object };
   }
 
-  const newVal = existingValue + delta;
+  const newValue = existingValue + delta;
 
   if (delta === 0) {
-    return { ...obj }; //immutableObjWithoutKeyIfExists<O>(obj, key);
+    return { ...object }; //immutableObjWithoutKeyIfExists<O>(obj, key);
   }
 
-  if (!newVal) {
+  if (!newValue) {
     console.log(
       'immutableObjReplacingKeyWithSum(' +
         kDebugType +
@@ -102,8 +111,8 @@ const immutableObjReplacingKeyWithSum = <
       {
         delta,
         existingValue,
-        newVal,
-        obj,
+        newVal: newValue,
+        obj: object,
       },
     );
     //  return immutableObjWithoutKeyIfExists<O>(obj, key, 'immutableObjReplacingKeyWithSum/0/' + key);
@@ -123,17 +132,17 @@ const immutableObjReplacingKeyWithSum = <
     //   obj,
   );
 */
-  return { ...obj, [key]: newVal };
+  return { ...object, [key]: newValue };
 };
 //{"data": [[37900, 132127], [37900, 0]], "initialState": {}}
 
-const mutateForGrouping = <T extends Array<any> = WebSocketOrderbookDataArray>(
+const mutateForGrouping = <T extends any[] = WebSocketOrderbookDataArray>(
   updates: T,
   groupBy: number,
   lastExactRootState: OrderbookOrdersSortedObject,
   initialReducerState = [],
 ): T => {
-  const r1 = updates.reduce((acc, [price, val], drIdx) => {
+  const r1 = updates.reduce((accumulator, [price, value], drIndex) => {
     const normalizedExactPrice = getNormalizedPrice(price);
     const usePrice = getNormalizedGroupedPrice(price, groupBy);
     const oldSizeForExact =
@@ -141,10 +150,10 @@ const mutateForGrouping = <T extends Array<any> = WebSocketOrderbookDataArray>(
         ? lastExactRootState[normalizedExactPrice]
         : 0;
 
-    const diff = oldSizeForExact - val;
-    const oldSize = usePrice in acc ? acc[usePrice] : 0;
+    const diff = oldSizeForExact - value;
+    const oldSize = usePrice in accumulator ? accumulator[usePrice] : 0;
 
-    const newVal = oldSize - diff;
+    const newValue = oldSize - diff;
 
     /*
     if (newVal == 0) {
@@ -152,7 +161,7 @@ const mutateForGrouping = <T extends Array<any> = WebSocketOrderbookDataArray>(
     }
     */
 
-    return [...acc, [getGroupedPrice(price, groupBy), newVal]];
+    return [...accumulator, [getGroupedPrice(price, groupBy), newValue]];
   }, initialReducerState);
 
   //console.log({ r1 });
@@ -198,11 +207,11 @@ const getStateSelection = <
   S extends Record<any, any> = Record<any, any>,
   KN extends string = string,
 >(
-  keyNames: Array<KN>,
-  state: S,
-): OrderbookOrdersSortedObject => {
-  return keyNames.reduce((acc, curr) => {
-    return !state[curr] ? { ...acc } : { ...acc, [curr]: state[curr] };
+    keyNames: KN[],
+    state: S,
+  ): OrderbookOrdersSortedObject => {
+  return keyNames.reduce((accumulator, current) => {
+    return !state[current] ? { ...accumulator } : { ...accumulator, [current]: state[current] };
   }, {});
 };
 
@@ -225,17 +234,17 @@ const getSelectedKeysForUpdates = (
 const reduceUpdatesToScopedState = (
   updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-  mutatingKeyFn: GenericMutatingFunctionType = immutableObjReplacingKey as GenericMutatingFunctionType,
+  mutatingKeyFunction: GenericMutatingFunctionType = immutableObjectReplacingKey as GenericMutatingFunctionType,
 ): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => ({
   bids: reduceKeyPairToState(
     updates.bids,
     initialState.bids,
-    wrapWithLogName(mutatingKeyFn, 'g.bids'),
+    wrapWithLogName(mutatingKeyFunction, 'g.bids'),
   ),
   asks: reduceKeyPairToState(
     updates.asks,
     initialState.asks,
-    wrapWithLogName(mutatingKeyFn, 'g.asks'),
+    wrapWithLogName(mutatingKeyFunction, 'g.asks'),
   ),
 });
 
@@ -251,20 +260,20 @@ const reduceUpdatesToScopedStateForGrouped = (
     lastExactRootState /*, initialState*/,
   );
 
-  console.log('mutatedData: ', mutatedData);
+  console.log('mutatedData:', mutatedData);
 
   /*  console.log('[G] ', {
     initialState,
     mutatedData: JSON.stringify(mutatedData),
   });
 */
-  const ret = reduceUpdatesToScopedState(
+  const returnValue = reduceUpdatesToScopedState(
     mutatedData,
     initialState, // { asks: {}, bids: {} },
-    immutableObjReplacingKeyWithSum as GenericMutatingFunctionType,
+    immutableObjectReplacingKeyWithSum as GenericMutatingFunctionType,
   );
-  console.log('`-> ret is: ', ret);
-  return ret;
+  console.log('`-> ret is:', returnValue);
+  return returnValue;
 };
 /*
 const combineLastStates = <T extends OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>>(
@@ -285,9 +294,9 @@ const reducePendingGroupUpdatesToState = (
 */
   const res = state.pendingGroupUpdates.reduce(
     (
-      acc: Partial<OrderbookStateType>,
+      accumulator: Partial<OrderbookStateType>,
       { updates, selectedLastState }: PendingGroupUpdateRecord,
-      uIdx: number,
+      uIndex: number,
     ) => {
       // console.log('nsp reducer, acc is: ', acc);
       // const lastAcc = acc.length > 0 ? acc[acc.length - 1] : null;
@@ -308,20 +317,20 @@ const reducePendingGroupUpdatesToState = (
 */
       const grouped = reduceUpdatesToScopedStateForGrouped(
         updates,
-        acc.grouped || { ...INITIAL_ORDERBOOK_STATE.grouped },
+        accumulator.grouped || { ...INITIAL_ORDERBOOK_STATE.grouped },
         state.groupBy,
         selectedLastState,
       );
       //  console.log('   [CALCULATE_GROUPED:' + uIdx.toString() + ']  finishes: ', grouped);
 
-      return { ...acc, bids, asks, grouped };
+      return { ...accumulator, bids, asks, grouped };
     },
     {
       ...state,
       pendingGroupUpdates: [],
     },
   ) as OrderbookStateType;
-  console.log('STATE IS: ', res);
+  console.log('STATE IS:', res);
   return res;
 };
 
@@ -346,21 +355,21 @@ export const orderBookReducer = (
 ): OrderbookStateType => {
   //console.log('[ *!* ] Executing action: <' + action.type + '>');
   switch (action.type) {
-    case 'CALCULATE_GROUPED':
-      return reducePendingGroupUpdatesToState(state);
-      break;
+  case 'CALCULATE_GROUPED':
+    return reducePendingGroupUpdatesToState(state);
+    break;
 
-    case 'ORDERBOOK_SNAPSHOT':
-    case 'ORDERBOOK_UPDATE':
-      //  console.log('ORDERBOOK_UPDATE triggered: ', action.payload);
-      return reduceNewTasksToQueue(state, action.payload.updates);
+  case 'ORDERBOOK_SNAPSHOT':
+  case 'ORDERBOOK_UPDATE':
+    //  console.log('ORDERBOOK_UPDATE triggered: ', action.payload);
+    return reduceNewTasksToQueue(state, action.payload.updates);
 
-      break;
+    break;
 
-    case 'SET_GROUP_BY':
-      console.log('SET_GROUP_BY');
-      return state;
-      /*  return {
+  case 'SET_GROUP_BY':
+    console.log('SET_GROUP_BY');
+    return state;
+    /*  return {
         ...state,
         groupBy: action.payload.value,
         grouped: reduceUpdatesToScopedStateForGrouped(
@@ -370,20 +379,20 @@ export const orderBookReducer = (
           { bids: {}, asks: {} },
         ),
       };*/
-      break;
-    default:
-      throw new Error('orderBook: unknown reducer: ' + action.type);
+    break;
+  default:
+    throw new Error('orderBook: unknown reducer: ' + action.type);
   }
 };
 
-const ob2arr = (
+const ob2array = (
   input: OrderbookOrdersSortedObject,
   initialState = [],
 ): WebSocketOrderbookDataArray =>
   Object.entries(input).reduce(
-    (acc: WebSocketOrderbookDataArray, [currK, currV]) => [
-      ...acc,
-      [customFormatNumberToFloat(currK), currV],
+    (accumulator: WebSocketOrderbookDataArray, [currentK, currentV]) => [
+      ...accumulator,
+      [customFormatNumberToFloat(currentK), currentV],
     ],
     initialState,
   );

@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import * as React from 'react';
 import { View } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
@@ -31,28 +40,28 @@ const DEFAULT_TRANSITION_OPTIONS = ({ backgroundColor = '#fff', textColor = '#00
 });
 
 type NormalizedRecord = [number, number];
-type NormalizedData = Array<NormalizedRecord>;
+type NormalizedData = NormalizedRecord[];
 
-const getTotalForRow = (rows: NormalizedData, idx: number, orderBy: 'asc' | 'desc'): number =>
+const getTotalForRow = (rows: NormalizedData, index: number, orderBy: 'asc' | 'desc'): number =>
   rows.reduce(
-    (acc: number, curr, ridx: number) =>
-      acc + ((orderBy === 'asc' ? ridx >= idx : idx >= ridx) ? curr[1] : 0),
+    (accumulator: number, current, ridx: number) =>
+      accumulator + ((orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0),
     0,
   );
 
 type ProcessedNormalizedRecord = [...NormalizedRecord, string, number];
-type ProcessedNormalizedData = Array<ProcessedNormalizedRecord>;
+type ProcessedNormalizedData = ProcessedNormalizedRecord[];
 
 const processNormalizedData = (
   normalizedData: NormalizedData,
   keyPrefix: string,
   totalOrderBy: 'asc' | 'desc',
 ): ProcessedNormalizedData =>
-  normalizedData.map<ProcessedNormalizedRecord>((e, idx) => {
+  normalizedData.map<ProcessedNormalizedRecord>((e, index) => {
     const k = keyPrefix + '_' + e[0];
-    const t = getTotalForRow(normalizedData, idx, totalOrderBy);
-    const ret: ProcessedNormalizedRecord = [e[0], e[1], k, t];
-    return ret;
+    const t = getTotalForRow(normalizedData, index, totalOrderBy);
+    const returnValue: ProcessedNormalizedRecord = [e[0], e[1], k, t];
+    return returnValue;
   });
 
 const getSignatureForData = (data: ProcessedNormalizedData): string =>
@@ -92,11 +101,11 @@ const OrderbookSection: React.FC<{
     }
   }, [normalizedData, keyPrefix, dataState, setDataState, totalOrderBy]);
 
-  const tFn = useThrottleCallback(() => updateDataState(), 1000);
+  const tFunction = useThrottleCallback(() => updateDataState(), 1000);
 
   React.useEffect(() => {
-    tFn();
-  }, [tFn, normalizedData]);
+    tFunction();
+  }, [tFunction, normalizedData]);
 
   const transitions = useTransition(
     dataState.state,

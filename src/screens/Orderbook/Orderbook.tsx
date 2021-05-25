@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import React from 'react';
 import type { FC } from 'react';
 import {
@@ -34,7 +43,7 @@ const GroupButton: React.FC<{
 
 const calculateSpread = (high: number, low: number) => {
   if (!low || !high) {
-    return 0.0;
+    return 0;
   }
 
   return -1 * (high / low - 1) * 100;
@@ -50,11 +59,11 @@ const Spread = ({ high, low }: { high: number; low: number }) => {
     setSpread(s);
   }, [high, low, setSpread]);
 
-  const fn = useDebounceCallback(updateSpread, 200);
+  const function_ = useDebounceCallback(updateSpread, 200);
 
   React.useEffect(() => {
-    fn();
-  }, [high, low, fn]);
+    function_();
+  }, [high, low, function_]);
 
   return (
     <Text style={{ padding: 10, marginHorizontal: 20, color: '#555' }}>
@@ -91,7 +100,7 @@ const SpreadWidget = ({
 
   console.log({ a, b });
 
-  return <Spread high={parseFloat(a[0]) / 100} low={parseFloat(b[0]) / 100} />;
+  return <Spread high={Number.parseFloat(a[0]) / 100} low={Number.parseFloat(b[0]) / 100} />;
 };
 
 const OrderbookComponent: FC = () => {

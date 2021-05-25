@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                               *
+ *                    | react-native-orderbook |                 *
+ *                                                               *
+ *  License |  MIT General Public License                        *
+ *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
+ *                                                               *
+ *                            (c) 2021                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import * as React from 'react';
 
 import type {
@@ -21,11 +30,11 @@ import type {
 const WEBSOCKET_URI = 'wss://www.cryptofacilities.com/ws/v1';
 
 // @todo: better abstraction ws-orderbook (onX events for abstraction)
-interface UserOrderbookConnectionProps {
+interface UserOrderbookConnectionProperties {
   orderBookDispatch: React.Dispatch<OrderbookReducerAction>;
 }
 
-export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConnectionProps) => {
+export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConnectionProperties) => {
   const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
 
   const [connectionStatus, setConnectionStatus] = React.useState({
@@ -42,10 +51,12 @@ export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConne
       if (isInternetReachable) {
         setConnectionStatus((st) => ({ ...st, color: 'green', connectedToInternet: true }));
         console.log('internet is now reachable');
-      } else {
+      }
+      else {
         setConnectionStatus((st) => ({ ...st, color: 'yellow', connectedToInternet: false }));
       }
-    } else {
+    }
+    else {
       setConnectionStatus((st) => ({ ...st, color: 'red', connectedToInternet: false }));
     }
   }, [isConnected, isInternetReachable]);
@@ -54,22 +65,26 @@ export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConne
   const onMessageReceived = React.useCallback((decoded) => {
     if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
       console.log({ decoded });
-    } else {
+    }
+    else {
       if (!decoded?.event) {
         if (decoded?.feed === 'book_ui_1') {
           orderBookDispatch({
             type: 'ORDERBOOK_UPDATE',
-            payload: { updates: decoded as Array<WebSocketOrderbookUpdateMessage<any>> },
+            payload: { updates: decoded as WebSocketOrderbookUpdateMessage<any>[] },
           });
-        } else if (decoded?.feed === 'book_ui_1_snapshot') {
+        }
+        else if (decoded?.feed === 'book_ui_1_snapshot') {
           orderBookDispatch({
             type: 'ORDERBOOK_SNAPSHOT',
-            payload: { updates: decoded as Array<WebSocketOrderbookSnapshotMessage<any>> },
+            payload: { updates: decoded as WebSocketOrderbookSnapshotMessage<any>[] },
           });
-        } else {
+        }
+        else {
           console.log('(2)', { decoded });
         }
-      } else {
+      }
+      else {
         console.log('(2)', { decoded });
       }
     }
@@ -89,7 +104,8 @@ export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConne
         ...st,
         websocket: { ...st.websocket, connected: true, connecting: false },
       }));
-    } else if (status.connected === false) {
+    }
+    else if (status.connected === false) {
       setConnectionStatus((st) => ({
         ...st,
         websocket: { ...st.websocket, connected: false, connecting: false },
@@ -99,7 +115,8 @@ export const useOrderbookConnection = ({ orderBookDispatch }: UserOrderbookConne
         if (status.connectedToInternet === true) {
           console.log('should retry reconnect NOW');
           connect();
-        } else {
+        }
+        else {
           console.log('should retry reconnect after internet comes');
         }
       }, 5000);
@@ -125,7 +142,7 @@ export const useOrderbookReducer = () =>
 
 type OnProcessCycle = () => void;
 
-interface UseOrderbookProcessingProps {
+interface UseOrderbookProcessingProperties {
   onProcessCycle: OnProcessCycle;
   orderBook: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
 }
@@ -133,7 +150,7 @@ interface UseOrderbookProcessingProps {
 export const useOrderbookProcessing = ({
   onProcessCycle,
   orderBook /* @todo */,
-}: UseOrderbookProcessingProps) => {
+}: UseOrderbookProcessingProperties) => {
   const calculateGrouped = useDebounceCallback(onProcessCycle, 125);
 
   React.useEffect(() => {
