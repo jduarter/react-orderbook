@@ -20,7 +20,7 @@
     "outDir": "build"
   },
 
-  "include": ["src", "types/**", "app.d.ts", "tests/**/*"],
+  "include": ["src", "types/**.d.ts", "app.d.ts", "tests/**/*"],
   "exclude": [
     "node_modules",
     "babel.config.js",
