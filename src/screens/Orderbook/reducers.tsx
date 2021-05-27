@@ -135,14 +135,12 @@ export const mutateForGrouping = (
                 ? lastKnownExactValues[normalizedExactPrice]
                 : undefined;
 
-            // if it's a new exact element, we should assume diff = v
-
             const exactDiff = !oldExactPriceSizeIsKnown
                 ? v
                 : -1 * ((oldSizeForExact || 0) - v);
 
             const oldGroupSize = acc[usePrice] || 0;
-            //  const oldGroupPriceSizeIsKnown = oldGroupSize !== undefined;
+
             console.log('');
             console.log(
                 '[***] Starts function: process: ',
@@ -159,80 +157,32 @@ export const mutateForGrouping = (
                 if (exactDiff !== 0) {
                     const sumB = oldGroupSize + exactDiff;
 
-                    if (sumB < 0) {
-                        if (v !== 0) {
-                            console.log(
-                                '----> USAR VALOR EN LUGAR DE sumB',
-
-                                {
-                                    sumB,
-                                    v,
-                                    oldGroupSize,
-                                    exactDiff,
-                                    oldSizeForExact,
-                                },
-                            );
-                            return {
-                                acc: { ...acc /*, [usePrice]: v*/ },
-                                lastKnownExactValues: {
-                                    ...lastKnownExactValues,
-                                    [normalizedExactPrice]: v,
-                                },
-                            };
-                        } else {
-                            return {
-                                acc: { ...acc },
-                                lastKnownExactValues: {
-                                    ...lastKnownExactValues,
-                                    [normalizedExactPrice]: v,
-                                },
-                            };
-                        }
+                    if (sumB >= 0) {
+                        return {
+                            acc: { ...acc, [usePrice]: sumB },
+                            lastKnownExactValues: {
+                                ...lastKnownExactValues,
+                                [normalizedExactPrice]: v,
+                            },
+                        };
                     }
-
-                    return {
-                        acc: { ...acc, [usePrice]: sumB },
-                        lastKnownExactValues: {
-                            ...lastKnownExactValues,
-                            [normalizedExactPrice]: v,
-                        },
-                    };
-                } else {
-                    return {
-                        acc: { ...acc },
-                        lastKnownExactValues: {
-                            ...lastKnownExactValues,
-                            [normalizedExactPrice]: v,
-                        },
-                    };
                 }
             }
-            console.log('probably last group size is not known: ', {
-                usePrice,
-                acc,
-                v,
-                oldGroupSize,
-                oldSizeForExact,
-            });
             return {
-                acc: { ...acc /*, [usePrice]: v*/ },
+                acc: { ...acc },
                 lastKnownExactValues: {
                     ...lastKnownExactValues,
                     [normalizedExactPrice]: v,
                 },
             };
-            //  return { ...acc, [usePrice]: v };
         },
         { acc: initialAcc, lastKnownExactValues: inputLastKnownExactValues },
     );
     const r2 = ob2arr(r1.acc);
-    // podriamos simplemente devolver el acumulador y asi ahorrar en tiempo y ser mas eficientes,
-    // incluso sin tener que requerir los 2 pasos que engloba la acccion de group-calculate
-    // pero entonces perderiamos la posibilidad de poder hacer este proceso de forma individual y controlada
-    // (lo que me hace preguntar, realmente necesitamos controlarlo?)
-    console.log('RESULT OF NEW EXACT VALUES: ', r1.lastKnownExactValues); // r2);
 
-    console.log('EXACT VALUES ORIG WAS: : ', inputLastKnownExactValues); // r2);
+    console.log('RESULT OF NEW EXACT VALUES: ', r1.lastKnownExactValues);
+
+    console.log('EXACT VALUES ORIG WAS: : ', inputLastKnownExactValues);
 
     console.log('RESULT: ', r2);
     console.log(); //{  r2 });
@@ -248,9 +198,9 @@ const mutateScopeForGrouping = (
     newMainState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
     groupedMutatedData: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
 } => {
-    console.log('    mutateScopeForGrouping: initialState=', initialState);
+    /*  console.log('    mutateScopeForGrouping: initialState=', initialState);
     console.log();
-
+*/
     const [bids, mainBids] = mutateForGrouping(
         updates.bids,
         groupBy,
@@ -451,17 +401,22 @@ export const orderBookReducer = (
 
         case 'SET_GROUP_BY':
             console.log('SET_GROUP_BY');
-            return { ...state };
-            /*  return {
-        ...state,
-        groupBy: action.payload.value,
-        grouped: reduceUpdatesToScopedStateForGrouped(
-          { bids: Object.entries(state.bids), asks: Object.entries(state.asks) },
-          { ...INITIAL_ORDERBOOK_STATE.grouped },
-          action.payload.value,
-          { bids: {}, asks: {} },
-        ),
-      };*/
+            const { newMainState, grouped } =
+                reduceUpdatesToScopedStateForGrouped(
+                    {
+                        bids: Object.entries(state.bids),
+                        asks: Object.entries(state.asks),
+                    },
+                    { ...INITIAL_ORDERBOOK_STATE.grouped },
+                    action.payload.value,
+                    { bids: {}, asks: {} },
+                );
+            return {
+                ...state,
+                ...newMainState,
+                groupBy: action.payload.value,
+                grouped,
+            };
             break;
         default:
             throw new Error('orderBook: unknown reducer: ' + action.type);
