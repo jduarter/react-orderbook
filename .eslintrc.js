@@ -73,6 +73,7 @@ module.exports = {
                 },
             },
         ],
+        'unicorn/no-lonely-if': 'off',
         'linebreak-style': ['error', 'unix'],
         quotes: 'off',
         semi: 'off',
