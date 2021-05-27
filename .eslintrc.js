@@ -84,7 +84,7 @@ module.exports = {
         indent: 'off',
         '@typescript-eslint/indent': 'off',
 
-        'header/header': [1, 'eslintrc.header.js'],
+        'header/header': [0, 'eslintrc.header.js'],
         '@typescript-eslint/lines-between-class-members': 1,
 
         'prettier/prettier': 'error',
