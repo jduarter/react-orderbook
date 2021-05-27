@@ -2,8 +2,6 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
 
-//import { useThrottleCallback } from '@react-hook/throttle';
-
 import { default as OrderbookRow } from './OrderbookRow';
 
 const DEFAULT_TRANSITION_OPTIONS = ({
@@ -13,7 +11,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
     keys: (item: any) => item[2],
     from: {
         backgroundColor: textColor,
-        // position: 'absolute',
+
         left: 400,
         position: 'absolute',
         opacity: 0.5,

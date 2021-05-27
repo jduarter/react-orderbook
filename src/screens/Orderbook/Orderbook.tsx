@@ -97,7 +97,7 @@ const OrderbookComponent: FC = () => {
         useOrderbookController({
             disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
             subscribeToProductIds: ['PI_XBTUSD'],
-            initialGroupBy: 50,
+            initialGroupBy: 100,
         });
 
     const getGroupByButton = useCallback(

@@ -1,7 +1,8 @@
+/* eslint security/detect-object-injection:0 */
+
 import {
     getNormalizedPrice,
     getGroupedPrice,
-    immutableObjWithoutKeyIfExists,
     immutableObjReplacingKey,
 } from './utils';
 
@@ -59,14 +60,13 @@ export const reduceKeyPairToState = <
     data: T,
     initialState: OrderbookOrdersSortedObject,
 ): OrderbookOrdersSortedObject => {
-    /*console.log();
     console.log(
         '    reduceKeyPairToState: input: initialState=',
         initialState,
         'updates: ',
         data,
     );
-    */
+
     const res = data.reduce(
         (acc, [price, oSize]) =>
             immutableObjReplacingKey(acc, getNormalizedPrice(price), oSize),
@@ -96,17 +96,14 @@ const getEstimatedMinimumSize = (
         0,
     );
 
-export const mutateForGrouping = <
-    T extends any[] = WebSocketOrderbookDataArray,
->(
-    updates: T,
+export const mutateForGrouping = (
+    updates: WebSocketOrderbookDataArray,
     groupBy: number,
-    oldExactRootState: OrderbookOrdersSortedObject,
-    newExactRootState: OrderbookOrdersSortedObject,
+    inputLastKnownExactValues: OrderbookOrdersSortedObject,
     initialState: OrderbookOrdersSortedObject,
-): T => {
+): [WebSocketOrderbookDataArray, OrderbookOrdersSortedObject] => {
     if (updates.length === 0) {
-        return ob2arr(initialState) as T;
+        return [ob2arr(initialState), inputLastKnownExactValues];
     }
     console.log();
     console.log();
@@ -114,199 +111,167 @@ export const mutateForGrouping = <
         '***** mutateForGrouping STARTS',
         'updates:',
         JSON.stringify(updates),
-        'last exact NEW root state=',
-        newExactRootState,
-        'last exact OLD root state=',
-        oldExactRootState,
+
+        'last exact known values=',
+        inputLastKnownExactValues,
         'initial state=',
         initialState,
     );
 
     const initialAcc = initialState; //array2ob(initialReducerState);
 
-    const r1 = updates.reduce((acc, [price, v], uridx) => {
-        const normalizedExactPrice = getNormalizedPrice(price);
-        const groupedPrice = getGroupedPrice(price, groupBy);
-        const usePrice = getNormalizedPrice(groupedPrice); // getNormalizedGroupedPrice(price, groupBy);
+    const r1 = updates.reduce(
+        (accR, [price, v]) => {
+            const { acc, lastKnownExactValues } = accR;
 
-        const minimum = getEstimatedMinimumSize(
-            newExactRootState,
-            groupedPrice,
-            groupBy,
-        );
+            const normalizedExactPrice = getNormalizedPrice(price);
+            const groupedPrice = getGroupedPrice(price, groupBy);
+            const usePrice = getNormalizedPrice(groupedPrice); // getNormalizedGroupedPrice(price, groupBy);
 
-        const oldExactPriceSizeIsKnown =
-            normalizedExactPrice in oldExactRootState;
+            const oldExactPriceSizeIsKnown =
+                normalizedExactPrice in lastKnownExactValues;
 
-        const oldSizeForExact = oldExactPriceSizeIsKnown
-            ? oldExactRootState[normalizedExactPrice]
-            : undefined;
+            const oldSizeForExact = oldExactPriceSizeIsKnown
+                ? lastKnownExactValues[normalizedExactPrice]
+                : undefined;
 
-        const isNewExactElement =
-            normalizedExactPrice in oldExactRootState === false;
+            // if it's a new exact element, we should assume diff = v
 
-        // if it's a new exact element, we should assume diff = v
+            const exactDiff = !oldExactPriceSizeIsKnown
+                ? v
+                : -1 * ((oldSizeForExact || 0) - v);
 
-        const exactDiff = isNewExactElement
-            ? v
-            : -1 * ((oldSizeForExact || 0) - v); // - v;
+            const oldGroupSize = acc[usePrice] || 0;
+            //  const oldGroupPriceSizeIsKnown = oldGroupSize !== undefined;
+            console.log('');
+            console.log(
+                '[***] Starts function: process: ',
+                {
+                    in: { price, v },
+                },
+                {
+                    exact: { old: oldSizeForExact, diff: exactDiff },
+                },
+                { group: { old: oldGroupSize } },
+            );
 
-        const oldGroupSize =
-            ((usePrice in acc === false || acc[usePrice] < minimum) &&
-            uridx === 0 &&
-            minimum > 0
-                ? minimum
-                : acc[usePrice]) || 0;
+            if (oldGroupSize > 0) {
+                if (exactDiff !== 0) {
+                    const sumB = oldGroupSize + exactDiff;
 
-        const oldGroupPriceSizeIsKnown = oldGroupSize !== undefined;
+                    if (sumB < 0) {
+                        if (v !== 0) {
+                            console.log(
+                                '----> USAR VALOR EN LUGAR DE sumB',
 
-        console.log(
-            '[*] Starts function: process: ',
-            [price, v],
-            {
-                p1: oldExactRootState[normalizedExactPrice],
-                p2: oldGroupSize,
-            },
-            {
-                minimum,
-                isNewExactElement,
-                exactDiff,
-                oldSizeForExact,
-                oldExactPriceSizeIsKnown,
-                usePrice,
-                normalizedExactPrice,
-                acc,
-                oldGroupSize,
-            },
-        );
-
-        if (oldGroupPriceSizeIsKnown) {
-            console.log({
-                minimum,
-
-                exactDiff,
-                ppppP: oldGroupSize,
-                ssss: oldGroupSize + exactDiff,
-            });
-
-            if (exactDiff !== 0) {
-                const sumB = oldGroupSize + exactDiff;
-
-                if (sumB <= 0) {
-                    /* if (sumB !== 0 && v !== 0 && v > minimum) {
-                        return { ...acc, [usePrice]: v };
-                    }*/
-
-                    if (exactDiff != 0 && sumB != 0 && sumB !== exactDiff) {
-                        console.log('!! -> sumX', {
-                            minimum,
-                            sumB,
-                            exactDiff,
-                            ppppP: oldGroupSize,
-                            ssss: oldGroupSize + exactDiff,
-                        });
-
-                        return {
-                            ...acc,
-                            [usePrice]: oldGroupSize + exactDiff,
-                        };
+                                {
+                                    sumB,
+                                    v,
+                                    oldGroupSize,
+                                    exactDiff,
+                                    oldSizeForExact,
+                                },
+                            );
+                            return {
+                                acc: { ...acc /*, [usePrice]: v*/ },
+                                lastKnownExactValues: {
+                                    ...lastKnownExactValues,
+                                    [normalizedExactPrice]: v,
+                                },
+                            };
+                        } else {
+                            return {
+                                acc: { ...acc },
+                                lastKnownExactValues: {
+                                    ...lastKnownExactValues,
+                                    [normalizedExactPrice]: v,
+                                },
+                            };
+                        }
                     }
 
-                    if (minimum + sumB > 0) {
-                        console.log('!! -> sumZ', { minimum, sumB, exactDiff });
-
-                        return { ...acc, [usePrice]: minimum + sumB };
-                    }
-
-                    console.log('!! -> sumB', sumB, oldGroupSize, exactDiff, {
-                        oldSizeForExact,
-                    });
-                    return immutableObjWithoutKeyIfExists(acc, usePrice);
+                    return {
+                        acc: { ...acc, [usePrice]: sumB },
+                        lastKnownExactValues: {
+                            ...lastKnownExactValues,
+                            [normalizedExactPrice]: v,
+                        },
+                    };
+                } else {
+                    return {
+                        acc: { ...acc },
+                        lastKnownExactValues: {
+                            ...lastKnownExactValues,
+                            [normalizedExactPrice]: v,
+                        },
+                    };
                 }
-
-                console.log(
-                    '  -> set <' +
-                        usePrice +
-                        '/' +
-                        normalizedExactPrice +
-                        '> to: ',
-                    {
-                        sumB,
-                    },
-                    ' from: ' + oldGroupSize,
-                );
-                return { ...acc, [usePrice]: sumB };
-            } else {
-                return { ...acc };
             }
-        }
-    }, initialAcc);
-    const r2 = ob2arr(r1);
+            console.log('probably last group size is not known: ', {
+                usePrice,
+                acc,
+                v,
+                oldGroupSize,
+                oldSizeForExact,
+            });
+            return {
+                acc: { ...acc /*, [usePrice]: v*/ },
+                lastKnownExactValues: {
+                    ...lastKnownExactValues,
+                    [normalizedExactPrice]: v,
+                },
+            };
+            //  return { ...acc, [usePrice]: v };
+        },
+        { acc: initialAcc, lastKnownExactValues: inputLastKnownExactValues },
+    );
+    const r2 = ob2arr(r1.acc);
     // podriamos simplemente devolver el acumulador y asi ahorrar en tiempo y ser mas eficientes,
     // incluso sin tener que requerir los 2 pasos que engloba la acccion de group-calculate
     // pero entonces perderiamos la posibilidad de poder hacer este proceso de forma individual y controlada
     // (lo que me hace preguntar, realmente necesitamos controlarlo?)
+    console.log('RESULT OF NEW EXACT VALUES: ', r1.lastKnownExactValues); // r2);
+
+    console.log('EXACT VALUES ORIG WAS: : ', inputLastKnownExactValues); // r2);
+
     console.log('RESULT: ', r2);
     console.log(); //{  r2 });
-    return r2 as T;
+    return [r2, r1.lastKnownExactValues];
 };
 
 const mutateScopeForGrouping = (
     updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
     groupBy: number,
     oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-    newExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
     initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-): OrderbookGenericScopeDataType<WebSocketOrderbookDataArray> => {
+): {
+    newMainState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
+    groupedMutatedData: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
+} => {
     console.log('    mutateScopeForGrouping: initialState=', initialState);
     console.log();
 
-    return {
-        bids: mutateForGrouping(
-            updates.bids,
-            groupBy,
-            oldExactRootState.bids,
-            newExactRootState.bids,
-            initialState.bids,
-        ),
-        asks: mutateForGrouping(
-            updates.asks,
-            groupBy,
-            oldExactRootState.asks,
-            newExactRootState.asks,
-            initialState.asks,
-        ),
-    };
-};
-
-const getStateSelection = <
-    S extends Record<any, any> = Record<any, any>,
-    KN extends string = string,
->(
-    keyNames: KN[],
-    state: S,
-): OrderbookOrdersSortedObject =>
-    keyNames.reduce(
-        (acc, current) =>
-            !state[current]
-                ? { ...acc }
-                : { ...acc, [current]: state[current] },
-        {},
+    const [bids, mainBids] = mutateForGrouping(
+        updates.bids,
+        groupBy,
+        oldExactRootState.bids,
+        initialState.bids,
+    );
+    const [asks, mainAsks] = mutateForGrouping(
+        updates.asks,
+        groupBy,
+        oldExactRootState.asks,
+        initialState.asks,
     );
 
-const getSelectedKeysForUpdates = (
-    updates: WebSocketOrderbookUpdatesType,
-    state: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => ({
-    bids: getStateSelection<
-        OrderbookOrdersSortedObject,
-        OrderbookNormalizedPrice
-    >(getAffectedPricesInUpdateList(updates.bids), state.bids),
-    asks: getStateSelection<
-        OrderbookOrdersSortedObject,
-        OrderbookNormalizedPrice
-    >(getAffectedPricesInUpdateList(updates.asks), state.asks),
-});
+    return {
+        newMainState: { bids: mainBids, asks: mainAsks },
+        groupedMutatedData: {
+            bids,
+            asks,
+        },
+    };
+};
 
 const reduceUpdatesToScopedState = (
     updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
@@ -321,50 +286,95 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
     groupBy: number,
     oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-    newExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
 ) => {
     console.log();
     console.log('<> reduceUpdatesToScopedStateForGrouped STARTS');
-    const mutatedData = mutateScopeForGrouping(
+    /**
+     * convertir datos en delta "sustitutivo"
+     */
+    const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
         updates,
         groupBy,
         oldExactRootState,
-        newExactRootState,
         initialState,
     );
 
     console.log('    [G] ', {
         initialState,
-        mutatedData: JSON.stringify(mutatedData),
+        mutatedData: JSON.stringify(groupedMutatedData),
     });
 
     const returnValue = reduceUpdatesToScopedState(
-        mutatedData,
+        groupedMutatedData,
         initialState,
-        //   immutableObjReplacingKeyWithSum as GenericMutatingFunctionType,
     );
-    console.log();
-    console.log('++ ret is:', returnValue);
-    console.log();
-    return returnValue;
+
+    return {
+        newMainState,
+        grouped: returnValue,
+    };
 };
 
-const _c = (
-    a: OrderbookOrdersSortedObject,
-    b: OrderbookOrdersSortedObject,
-): OrderbookOrdersSortedObject =>
-    Object.keys(b).reduce(
-        (acc, bKey) => ({ ...acc, [bKey]: (acc[bKey] || 0) + b[bKey] }),
-        a,
+const applyMinimumThresholdsToGroups = (
+    groups: OrderbookOrdersSortedObject,
+    groupBy: number,
+    updates: WebSocketOrderbookDataArray,
+) => {
+    if (updates.length === 0) {
+        console.log('applyMinimumThresholdsToGroups: updates.length = 0');
+        return groups;
+    }
+
+    const groupMins = updates.reduce(
+        (
+            acc,
+            [
+                exactPriceInFloat,
+                absoluteSizeInUpdate,
+            ]: WebSocketOrderbookSizePricePair,
+        ) => {
+            const groupedPrice = getGroupedPrice(exactPriceInFloat, groupBy);
+
+            const normalizedGroupPrice = getNormalizedPrice(groupedPrice);
+
+            return {
+                ...acc,
+                [normalizedGroupPrice]: absoluteSizeInUpdate,
+            };
+        },
+        groups,
     );
 
-const combineLastStates = (
-    a: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-    b: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => ({
-    bids: _c(a.bids, b.bids),
-    asks: _c(a.asks, b.asks),
-});
+    const r1 = Object.entries(groupMins).reduce(
+        (acc, [normalizedGroupedPrice, calcSumSizeForUpdates]) => {
+            const groupedPrice =
+                parseFloat(normalizedGroupedPrice) / Math.pow(10, 2);
+            const minimumSizeForGroup = getEstimatedMinimumSize(
+                groups,
+                groupedPrice,
+                groupBy,
+            );
+            const newGroupSize =
+                minimumSizeForGroup > calcSumSizeForUpdates
+                    ? minimumSizeForGroup
+                    : calcSumSizeForUpdates;
+
+            if (newGroupSize === 0) {
+                return { ...acc };
+            }
+
+            return {
+                ...acc,
+                [normalizedGroupedPrice]: newGroupSize,
+            };
+        },
+        {},
+    );
+
+    console.log('applyMinimumThresholdsToGroups R1 is: ', r1);
+
+    return r1;
+};
 
 const reducePendingGroupUpdatesToState = (
     state: OrderbookStateType,
@@ -373,33 +383,26 @@ const reducePendingGroupUpdatesToState = (
 
     const res = pendingGroupUpdates.reduce(
         (acc: OrderbookStateType, { updates }: PendingGroupUpdateRecord) => {
-            const oldStateSelection = getSelectedKeysForUpdates(updates, acc);
+            const groupedWithMinimumThresholdsApplied = {
+                bids: applyMinimumThresholdsToGroups(
+                    acc.grouped.bids,
+                    state.groupBy,
+                    updates.bids,
+                ),
+                asks: applyMinimumThresholdsToGroups(
+                    acc.grouped.asks,
+                    state.groupBy,
+                    updates.asks,
+                ),
+            };
 
-            const newScopeState = reduceUpdatesToScopedState(
-                updates,
-                oldStateSelection,
-            );
-
-            const newStateSelection = getSelectedKeysForUpdates(
-                updates,
-                newScopeState,
-            );
-
-            const grouped = reduceUpdatesToScopedStateForGrouped(
-                updates,
-                acc.grouped,
-                state.groupBy,
-                oldStateSelection,
-                newStateSelection,
-            );
-
-            const newMainState = combineLastStates(
-                { bids: acc.bids, asks: acc.asks },
-                {
-                    bids: newScopeState.bids,
-                    asks: newScopeState.asks,
-                },
-            );
+            const { grouped, newMainState } =
+                reduceUpdatesToScopedStateForGrouped(
+                    updates,
+                    groupedWithMinimumThresholdsApplied,
+                    state.groupBy,
+                    acc,
+                );
 
             return { ...acc, ...newMainState, grouped };
         },
@@ -419,7 +422,6 @@ const reduceNewTasksToQueue = (
         {
             kind: 'u' as OrderbookActionUpdate,
             updates: { ...updates },
-            // selectedLastState: getSelectedKeysForUpdates(updates, state),
         },
     ],
 });
