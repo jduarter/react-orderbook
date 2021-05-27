@@ -1,80 +1,101 @@
 {
-  "name": "orderbookJorge2021may24",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start",
-    "test": "jest",
-    "lint:check": "eslint .",
-    "format:fix": "eslint . --fix",
-    "test:related": "jest --bail --findRelatedTests",
-    "lint": "yarn lint:check",
-    "postinstall": "husky install",
-    "prepublishOnly": "pinst --disable",
-    "postpublish": "pinst --enable"
-  },
-  "dependencies": {
-    "@react-hook/debounce": "^3.0.0",
-    "@react-hook/throttle": "^2.2.0",
-    "@react-native-community/netinfo": "^6.0.0",
-    "@react-spring/native": "^9.1.2",
-    "comma-number": "^2.1.0",
-    "react": "17.0.1",
-    "react-native": "0.64.1",
-    "throttle-hooks": "^1.0.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.14.3",
-    "@babel/preset-env": "^7.1.6",
-    "@babel/runtime": "^7.14.0",
-    "@react-native-community/eslint-config": "^2.0.0",
-    "@types/jest": "^26.0.23",
-    "@types/react": "^17.0.6",
-    "@types/react-native": "^0.64.6",
-    "@types/react-test-renderer": "^17.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.25.0",
-    "@typescript-eslint/parser": "^4.25.0",
-    "babel-jest": "^26.6.3",
-    "eslint": "^7.27.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-header": "^3.1.1",
-    "eslint-plugin-import": "^2.23.3",
-    "eslint-plugin-react": "^7.23.2",
-    "eslint-plugin-react-hooks": "^4.2.0",
-    "eslint-plugin-react-native": "^3.11.0",
-    "eslint-plugin-unicorn": "^32.0.1",
-    "husky": "^6.0.0",
-    "jest": "^26.6.3",
-    "lint-staged": "^11.0.0",
-    "metro-react-native-babel-preset": "^0.66.0",
-    "pinst": "^2.1.6",
-    "prettier": "^2.3.0",
-    "prettier-eslint": "^12.0.0",
-    "react-native-typescript-transformer": "^1.2.13",
-    "react-test-renderer": "17.0.1",
-    "ts-jest": "^26.5.6",
-    "typescript": "^4.2.4"
-  },
-  "jest": {
-    "preset": "react-native"
-  },
-  "lint-staged": {
-    "src/**.{ts,tsx}": [
-      "eslint --ext .tsx --ext .ts src/ --fix"
-    ],
-    "./src/**": [
-      "prettier --write ."
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
+    "name": "orderbookJorge2021may24",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "android": "react-native run-android",
+        "ios": "react-native run-ios",
+        "commit": "npx cz",
+        "start": "react-native start",
+        "test": "jest",
+        "lint:check": "eslint .",
+        "format:fix": "eslint . --fix",
+        "cache:clearfull": "watchman watch-del-all && rm -rf $TMPDIR/*react* && rm -rf $TMPDIR/*metro* && rm -rf $TMPDIR/*haste*",
+        "test:related": "jest --bail --findRelatedTests",
+        "lint": "yarn lint:check",
+        "prepare": "npx is-ci || npx husky install",
+        "typescript": "tsc --noEmit --composite false",
+        "sec:hash": "sh genhash.sh",
+        "sec:audit": "npm audit fix --only=prod",
+        "sec:semgrep-audit": "/bin/sh semgrep-sec-audit.sh",
+        "sec:detect-secrets:update": "npx detect-secrets scan --baseline .secrets.baseline",
+        "sec:detect-secrets": "npx detect-secrets detect --baseline .secrets.baseline --exclude-files node_modules/ --exclude-files package-lock.json --exclude-files ./policy.json --exclude-secrets detect-secrets $(git ls-files)",
+        "sec:doctor": "npm doctor",
+        "sec:outdated": "npm outdated",
+        "sec:lockfile": "npx lockfile-lint --path package-lock.json --type npm --validate-https --allowed-hosts registry.npmjs.org",
+        "release:changelog": "npx conventional-changelog -p eslint -i CHANGELOG.md -s && git add CHANGELOG.md",
+        "release:version": "npx conventional-recommended-bump",
+        "release:bump": "npm version `npx conventional-recommended-bump`",
+        "release:all": "npm run release:changelog && npm run release:version && npx release:bump"
+    },
+    "dependencies": {
+        "@react-hook/debounce": "^3.0.0",
+        "@react-hook/throttle": "^2.2.0",
+        "@react-native-community/netinfo": "^6.0.0",
+        "@react-spring/native": "^9.1.2",
+        "comma-number": "^2.1.0",
+        "react": "17.0.1",
+        "react-native": "0.64.1",
+        "throttle-hooks": "^1.0.1"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.14.3",
+        "@babel/plugin-proposal-decorators": "^7.14.2",
+        "@babel/plugin-proposal-export-namespace-from": "^7.14.2",
+        "@babel/runtime": "^7.14.0",
+        "@bradleymeck/node-policy": "^0.1.0",
+        "@commitlint/cli": "^12.1.4",
+        "@commitlint/config-conventional": "^12.1.4",
+        "@react-native-community/eslint-config": "^2.0.0",
+        "@types/jest": "^26.0.23",
+        "@types/react": "^17.0.6",
+        "@types/react-native": "^0.64.6",
+        "@types/react-test-renderer": "^17.0.1",
+        "@typescript-eslint/eslint-plugin": "^4.25.0",
+        "@typescript-eslint/parser": "^4.25.0",
+        "babel-eslint": "^10.1.0",
+        "babel-jest": "^26.6.3",
+        "babel-plugin-inline-import": "^3.0.0",
+        "babel-plugin-module-resolver": "^4.1.0",
+        "commitizen": "^4.2.4",
+        "conventional-changelog": "^3.1.24",
+        "conventional-changelog-eslint": "^3.0.9",
+        "conventional-recommended-bump": "^6.1.0",
+        "cz-conventional-changelog": "^3.3.0",
+        "detect-secrets": "^1.0.6",
+        "eslint": "^7.27.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-header": "^3.1.1",
+        "eslint-plugin-import": "^2.23.3",
+        "eslint-plugin-json": "^3.0.0",
+        "eslint-plugin-react": "^7.23.2",
+        "eslint-plugin-react-hooks": "^4.2.0",
+        "eslint-plugin-react-native": "^3.11.0",
+        "eslint-plugin-security": "^1.4.0",
+        "eslint-plugin-unicorn": "^32.0.1",
+        "husky": "^6.0.0",
+        "is-ci": "^3.0.0",
+        "jest": "^26.6.3",
+        "lint-staged": "^11.0.0",
+        "lockfile-lint": "^4.6.2",
+        "metro-react-native-babel-preset": "^0.66.0",
+        "prettier": "^2.3.0",
+        "prettier-eslint": "^12.0.0",
+        "react-native-typescript-transformer": "^1.2.13",
+        "react-test-renderer": "17.0.1",
+        "ts-jest": "^26.5.6",
+        "typescript": "^4.2.4"
+    },
+    "jest": {
+        "preset": "react-native"
+    },
+    "optionalDependencies": {
+        "bufferutil": "^4.0.3",
+        "utf-8-validate": "^5.0.5"
+    },
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
     }
-  },
-  "optionalDependencies": {
-    "bufferutil": "^4.0.3",
-    "utf-8-validate": "^5.0.5"
-  }
 }
