@@ -1,10 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *                    | react-native-orderbook |                 *
- *                                                               *
- *  License |  MIT General Public License                        *
- *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
- *                                                               *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 import * as React from 'react';
 
 import type {
@@ -37,12 +30,43 @@ interface UserOrderbookConnectionProperties {
     orderBookDispatch: React.Dispatch<OrderbookReducerAction>;
 }
 
-export const useOrderbookController = (): UserOrderbookConnectionProperties & {
+export const useOrderbookController = ({
+    disableTwoWayProcessing = true,
+    subscribeToProductIds,
+    initialGroupBy = 100,
+}: {
+    disableTwoWayProcessing: boolean;
+    subscribeToProductIds: string[];
+    initialGroupBy: number;
+}): UserOrderbookConnectionProperties & {
     orderBook: OrderbookStateType;
     connectionStatus: ConnectionStatusState;
 } => {
-    const [orderBook, orderBookDispatch] = useOrderbookReducer();
-    const { connectionStatus } = useOrderbookConnection({ orderBookDispatch });
+    const lazyInitialState: OrderbookStateType = React.useMemo(
+        () => ({
+            ...INITIAL_ORDERBOOK_STATE,
+            groupBy: initialGroupBy,
+            options: {
+                ...INITIAL_ORDERBOOK_STATE.options,
+                disableTwoWayProcessing,
+            },
+        }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [],
+    );
+
+    const [orderBook, orderBookDispatch] =
+        useOrderbookReducer(lazyInitialState);
+    const { connectionStatus } = useOrderbookConnection({
+        orderBookDispatch,
+        subscribeToProductIds,
+    });
+    /*useOrderbookProcessing({
+        onProcessCycle: React.useCallback(() => {
+            orderBookDispatch({ type: 'CALCULATE_GROUPED', payload: null });
+        }, []),
+    });
+    */
     return React.useMemo(
         () => ({ orderBook, orderBookDispatch, connectionStatus }),
         [connectionStatus, orderBook],
@@ -60,7 +84,6 @@ const useSafeEffect = (
     effect: UseSafeEffectEffect,
     deps?: React.DependencyList,
 ) => {
-    console.log('useSafeEffect renders');
     const ref = React.useRef<boolean>(false);
     React.useEffect(() => {
         ref.current = true;
@@ -68,17 +91,17 @@ const useSafeEffect = (
             ref.current = false;
         };
     }, []);
+
     const isMounted = React.useCallback(() => ref.current, []);
-    React.useEffect(() => {
-        if (ref.current === true) {
-            const rtn = effect(isMounted);
-            return rtn;
-        }
+    React.useEffect(
+        () => (ref.current === true ? effect(isMounted) : undefined),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [...(deps ? deps : []), effect]);
+        [...(deps ? deps : []), effect],
+    );
 
     return React.useMemo<{ isMounted: IsMountedFunctionType }>(
         () => ({ isMounted }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [],
     );
 };
@@ -88,7 +111,7 @@ const useTimeoutCallback = (
     callback: (...args: any[]) => void,
 ) => {
     console.log('useTimeoutCallback renders');
-    const ref = React.useRef<number | undefined>();
+    const ref = React.useRef<NodeJS.Timeout | undefined>();
 
     const runClosure = React.useCallback(() => {
         console.log('[reconnectTimer] RUN');
@@ -105,8 +128,9 @@ const useTimeoutCallback = (
             return;
         }
 
-        ref.current = setTimeout(runClosure, callback);
-    }, [callback, runClosure]);
+        // eslint-disable-next-line no-restricted-globals
+        ref.current = setTimeout(runClosure, timeoutMs);
+    }, [callback, timeoutMs, runClosure]);
 
     const finish = React.useCallback(() => {
         console.log('[reconnectTimer] finish');
@@ -114,6 +138,7 @@ const useTimeoutCallback = (
             return;
         }
 
+        // eslint-disable-next-line no-restricted-globals
         clearTimeout(ref.current);
         ref.current = undefined;
     }, []);
@@ -129,7 +154,8 @@ const useTimeoutCallback = (
 
 export const useOrderbookConnection = ({
     orderBookDispatch,
-}: UserOrderbookConnectionProperties): {
+    subscribeToProductIds,
+}: UserOrderbookConnectionProperties & { subscribeToProductIds: string[] }): {
     connectionStatus: ConnectionStatusState;
 } => {
     const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
@@ -173,6 +199,7 @@ export const useOrderbookConnection = ({
                 console.log('(2)', { decoded });
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const reconnectTimer = useTimeoutCallback(
@@ -199,7 +226,7 @@ export const useOrderbookConnection = ({
                     JSON.stringify({
                         event: 'subscribe',
                         feed: 'book_ui_1',
-                        product_ids: ['PI_XBTUSD'],
+                        product_ids: subscribeToProductIds,
                     }),
                 );
                 setConnectionStatus((st) => ({
@@ -211,7 +238,10 @@ export const useOrderbookConnection = ({
                     },
                 }));
                 return;
-            } else if (status.connected === false) {
+            } else if (
+                status.connected === false &&
+                status.connecting !== true
+            ) {
                 setConnectionStatus((st) => ({
                     ...st,
                     websocket: {
@@ -233,7 +263,7 @@ export const useOrderbookConnection = ({
         [reconnectTimer],
     );
 
-    const { connect } = useWebSocket<OrderbookWSMessageType>({
+    useWebSocket<OrderbookWSMessageType>({
         uri: WEBSOCKET_URI,
         onMessageReceived,
         onConnectionStatusChange,
@@ -244,10 +274,6 @@ export const useOrderbookConnection = ({
             if (!isMounted()) {
                 return;
             }
-            console.log('INSIDE USE SAFE EFFECT !!', {
-                isConnected,
-                isInternetReachable,
-            });
 
             if (isConnected) {
                 if (isInternetReachable) {
@@ -272,7 +298,7 @@ export const useOrderbookConnection = ({
                 }));
             }
         },
-        [isConnected, isInternetReachable, connect],
+        [isConnected, isInternetReachable],
     );
 
     useSafeEffect(mainEffect, []);
@@ -282,30 +308,32 @@ export const useOrderbookConnection = ({
     return { connectionStatus };
 };
 
-export const useOrderbookReducer = () =>
-    React.useReducer<typeof orderBookReducer>(
-        orderBookReducer,
-        INITIAL_ORDERBOOK_STATE,
-    );
-/*
+type OrderbookReducerInitialState = React.SetStateAction<OrderbookStateType>;
+type OrderbookReducer = typeof orderBookReducer;
+
+export const useOrderbookReducer = (
+    initialState: OrderbookReducerInitialState = INITIAL_ORDERBOOK_STATE,
+): [OrderbookStateType, React.DispatchWithoutAction] =>
+    React.useReducer<OrderbookReducer>(orderBookReducer, initialState);
+
 type OnProcessCycle = () => void;
 
 interface UseOrderbookProcessingProperties {
     onProcessCycle: OnProcessCycle;
-    orderBook: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
 }
 
 export const useOrderbookProcessing = ({
     onProcessCycle,
-    orderBook,
 }: UseOrderbookProcessingProperties) => {
     //  const calculateGrouped = useDebounceCallback(onProcessCycle, 125);
 
     React.useEffect(() => {
+        // eslint-disable-next-line no-restricted-globals
         const intval = setInterval(() => {
             onProcessCycle();
-        }, 500); // calculateGrouped();
+        }, 1000);
         return () => {
+            // eslint-disable-next-line no-restricted-globals
             if (intval) clearInterval(intval);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -313,4 +341,3 @@ export const useOrderbookProcessing = ({
 
     return {};
 };
-*/

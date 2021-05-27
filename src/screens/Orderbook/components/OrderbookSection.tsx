@@ -2,7 +2,7 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
 
-import { useThrottleCallback } from '@react-hook/throttle';
+//import { useThrottleCallback } from '@react-hook/throttle';
 
 import { default as OrderbookRow } from './OrderbookRow';
 
@@ -110,52 +110,11 @@ const OrderbookSection: React.FC<{
     totalOrderBy,
     textColor = '#c2c2c2',
 }) => {
-    const st = React.useCallback(() => {
-        const d = processNormalizedData(
-            normalizedData,
-            keyPrefix,
-            totalOrderBy,
-        );
-        return { state: d, signature: d ? getSignatureForData(d) : undefined };
-    }, [keyPrefix, normalizedData, totalOrderBy]);
-
-    const [dataState, setDataState] = React.useState<{
-        state: ProcessedNormalizedData;
-        signature: string | undefined;
-    }>(st());
-
-    /* console.log(
-    'OrderbookSection: ',
-    normalizedData.map((x) => x[0] / 100),
-    //  dataState,
-  ); */
-
-    const updateDataState = React.useCallback(() => {
-        const data = processNormalizedData(
-            normalizedData,
-            keyPrefix,
-            totalOrderBy,
-        );
-        const dataSignature = getSignatureForData(data);
-        if (dataSignature !== dataState.signature) {
-            setDataState((st) => ({
-                ...st,
-                state: data,
-                signature: dataSignature,
-            }));
-        }
-    }, [normalizedData, keyPrefix, dataState, setDataState, totalOrderBy]);
-
-    const tFunction = useThrottleCallback(() => updateDataState(), 1000);
-
-    React.useEffect(() => {
-        tFunction();
-    }, [tFunction, normalizedData]);
-
+    const data = processNormalizedData(normalizedData, keyPrefix, totalOrderBy);
     const transitions = ENABLE_ANIMATIONS
         ? // eslint-disable-next-line react-hooks/rules-of-hooks
           useTransition(
-              dataState.state,
+              data,
               DEFAULT_TRANSITION_OPTIONS({ backgroundColor, textColor }),
           )
         : noop;
@@ -175,7 +134,7 @@ const OrderbookSection: React.FC<{
             <View style={{ backgroundColor }}>
                 {ENABLE_ANIMATIONS
                     ? (transitions(TC) as React.ReactNode)
-                    : dataState.state.map((item) => (
+                    : data.map((item) => (
                           <ChildComp
                               key={item[2]}
                               item={item}
@@ -184,7 +143,7 @@ const OrderbookSection: React.FC<{
                       ))}
             </View>
         ),
-        [textColor, backgroundColor, transitions, TC, dataState.state],
+        [textColor, backgroundColor, transitions, TC, data],
     );
 };
 

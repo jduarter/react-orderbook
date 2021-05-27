@@ -1,11 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *                    | react-native-orderbook |                 *
- *                                                               *
- *  License |  MIT General Public License                        *
- *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
- *                                                               *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 import {
     getNormalizedPrice,
     getGroupedPrice,
@@ -17,7 +9,6 @@ import type {
     OrderbookNormalizedPrice,
     OrderbookOrdersSortedObject,
     OrderbookGenericScopeDataType,
-    GenericMutatingFunctionType,
     OrderbookStateType,
     PendingGroupUpdateRecord,
     OrderbookActionUpdate,
@@ -36,9 +27,8 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
     asks: {},
     grouped: { bids: {}, asks: {} },
     pendingGroupUpdates: [],
+    options: { disableTwoWayProcessing: true },
 };
-
-const ENABLE_TWO_WAY_REDUCER_ACTIONS = true;
 
 export const uniq = <T extends unknown = any>(array: T[]): T[] => [
     ...new Set(array),
@@ -68,7 +58,6 @@ export const reduceKeyPairToState = <
 >(
     data: T,
     initialState: OrderbookOrdersSortedObject,
-    mutatingKeyFunction: GenericMutatingFunctionType = immutableObjReplacingKey as GenericMutatingFunctionType,
 ): OrderbookOrdersSortedObject => {
     /*console.log();
     console.log(
@@ -80,7 +69,7 @@ export const reduceKeyPairToState = <
     */
     const res = data.reduce(
         (acc, [price, oSize]) =>
-            mutatingKeyFunction(acc, getNormalizedPrice(price), oSize),
+            immutableObjReplacingKey(acc, getNormalizedPrice(price), oSize),
         initialState,
     );
     console.log('    reduceKeyPairToState: output:', res);
@@ -128,7 +117,7 @@ export const mutateForGrouping = <
         'last exact NEW root state=',
         newExactRootState,
         'last exact OLD root state=',
-        newExactRootState,
+        oldExactRootState,
         'initial state=',
         initialState,
     );
@@ -161,17 +150,6 @@ export const mutateForGrouping = <
         const exactDiff = isNewExactElement
             ? v
             : -1 * ((oldSizeForExact || 0) - v); // - v;
-        /*
-        const ed1 =
-            oldExactRootState[normalizedExactPrice] -
-            newExactRootState[normalizedExactPrice];
-        const eda = -1 * ((oldSizeForExact || 0) - v);
-        const ed2 = oldExactPriceSizeIsKnown ? eda : ed1;
-        */
-        /*
-        const exactDiff = isNaN(ed1) ? (isNewExactElement ? v : ed2) : ed1; // isNewExactElement ? v : ed2;
-*/
-        /***/
 
         const oldGroupSize =
             ((usePrice in acc === false || acc[usePrice] < minimum) &&
@@ -180,7 +158,7 @@ export const mutateForGrouping = <
                 ? minimum
                 : acc[usePrice]) || 0;
 
-        const oldGroupPriceSizeIsKnown = oldGroupSize !== undefined; // usePrice in acc;
+        const oldGroupPriceSizeIsKnown = oldGroupSize !== undefined;
 
         console.log(
             '[*] Starts function: process: ',
@@ -262,60 +240,6 @@ export const mutateForGrouping = <
                 return { ...acc };
             }
         }
-
-        console.log(
-            '-> for ' + (isNewExactElement ? 'NEW' : '(old)') + ' key: ',
-            price,
-            ' -> ' + v + ' (eDiff: ' + exactDiff + ') [FALLBACK!!!] DEBUG: ',
-            {
-                oldSizeEXACT: oldSizeForExact || '(undef)',
-
-                s1:
-                    normalizedExactPrice in oldExactRootState
-                        ? oldExactRootState[normalizedExactPrice]
-                        : 'n/a',
-                s2:
-                    normalizedExactPrice in newExactRootState
-                        ? newExactRootState[normalizedExactPrice]
-                        : 'n/a',
-            },
-        );
-
-        const oldGroupPriceSize = oldGroupPriceSizeIsKnown
-            ? oldGroupSize
-            : undefined;
-
-        const newValue = oldGroupPriceSizeIsKnown
-            ? oldGroupPriceSize + exactDiff
-            : v;
-
-        return { ...acc, [usePrice]: newValue /*+ (acc[usePrice] || 0) */ };
-        /*
-        const condDiff = exactDiff || 0; // (oldGroupPriceSize < v ? v : 0);
-
-        const groupDiff = oldGroupPriceSizeIsKnown ? condDiff : v;
-
-        const newValue = oldGroupPriceSizeIsKnown
-            ? acc[usePrice] + groupDiff
-            : groupDiff;
-
-        console.log('for key: ', price, ' -> ' + v + ' DEBUG: ', {
-            oldSizeEXACT: oldSizeForExact || '(undef)',
-            exactDiff,
-            oldSizeGROUP: oldGroupPriceSize || '(undef)',
-            newValue,
-            condDiff,
-            groupDiff,
-        });
-*/
-        /*
-    if (newVal == 0) {
-      return acc;
-    }
-    */
-        //  const nn = [getGroupedPrice(price, groupBy), newValue];
-        //  if (v > 0) console.log('NN  : ', nn);
-        // return [...acc, nn];
     }, initialAcc);
     const r2 = ob2arr(r1);
     // podriamos simplemente devolver el acumulador y asi ahorrar en tiempo y ser mas eficientes,
@@ -387,18 +311,9 @@ const getSelectedKeysForUpdates = (
 const reduceUpdatesToScopedState = (
     updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
     initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-    mutatingKeyFunction: GenericMutatingFunctionType = immutableObjReplacingKey as GenericMutatingFunctionType,
 ): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => ({
-    bids: reduceKeyPairToState(
-        updates.bids,
-        initialState.bids,
-        mutatingKeyFunction,
-    ),
-    asks: reduceKeyPairToState(
-        updates.asks,
-        initialState.asks,
-        mutatingKeyFunction,
-    ),
+    bids: reduceKeyPairToState(updates.bids, initialState.bids),
+    asks: reduceKeyPairToState(updates.asks, initialState.asks),
 });
 
 const reduceUpdatesToScopedStateForGrouped = (
@@ -513,18 +428,18 @@ export const orderBookReducer = (
     state: OrderbookStateType,
     action: OrderbookReducerAction,
 ): OrderbookStateType => {
-    console.log('[ *!* ] Executing action: <' + action.type + '>');
+    console.log('[ *!* ] Executing action: <' + action.type + '>', state);
     switch (action.type) {
         case 'CALCULATE_GROUPED':
-            return ENABLE_TWO_WAY_REDUCER_ACTIONS
+            return state.options.disableTwoWayProcessing === false
                 ? reducePendingGroupUpdatesToState(state)
-                : state;
+                : { ...state };
 
             break;
 
         case 'ORDERBOOK_SNAPSHOT':
         case 'ORDERBOOK_UPDATE':
-            return ENABLE_TWO_WAY_REDUCER_ACTIONS
+            return state.options.disableTwoWayProcessing === false
                 ? reduceNewTasksToQueue(state, action.payload.updates)
                 : reducePendingGroupUpdatesToState(
                       reduceNewTasksToQueue(state, action.payload.updates),
@@ -534,7 +449,7 @@ export const orderBookReducer = (
 
         case 'SET_GROUP_BY':
             console.log('SET_GROUP_BY');
-            return state;
+            return { ...state };
             /*  return {
         ...state,
         groupBy: action.payload.value,
@@ -563,8 +478,7 @@ const ob2arr = (
         initialState,
     );
 
-// @ts-ignore
-const array2ob = (
+export const array2ob = (
     input: WebSocketOrderbookDataArray,
     initialState = {},
 ): OrderbookOrdersSortedObject =>

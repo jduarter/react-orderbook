@@ -34,6 +34,9 @@ export interface OrderbookStateType
     groupBy: number;
     grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
     pendingGroupUpdates: PendingGroupUpdateRecord[];
+    options: {
+        disableTwoWayProcessing: boolean;
+    };
 }
 
 export type OrderbookReducerActionTypes =

@@ -16,6 +16,8 @@ import type { OrderbookOrdersSortedObject } from './types';
 import { orderAndLimit, getGroupByFactor } from './utils';
 import { useOrderbookController } from './hooks';
 
+const ENABLE_TWO_WAY_REDUCER_ACTIONS = false;
+
 const GroupButton: FC<{
     title: string;
     onPress: () => void;
@@ -91,11 +93,12 @@ const SpreadWidget: FC<{
 };
 
 const OrderbookComponent: FC = () => {
-    console.log('OrderbookComponent renders!');
     const { orderBook, orderBookDispatch, connectionStatus } =
-        useOrderbookController();
-
-    console.log('Orderbookcomponent: state is: ', orderBook);
+        useOrderbookController({
+            disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
+            subscribeToProductIds: ['PI_XBTUSD'],
+            initialGroupBy: 50,
+        });
 
     const getGroupByButton = useCallback(
         (v: -1 | 1) => () =>
@@ -131,6 +134,10 @@ const OrderbookComponent: FC = () => {
         ),
         [getGroupByButton],
     );
+
+    if (!orderBook || !orderBook.grouped) {
+        return <Text>Loading</Text>;
+    }
 
     const asksData = orderAndLimit(
         orderBook.groupBy === 1 ? orderBook.asks : orderBook.grouped.asks,
