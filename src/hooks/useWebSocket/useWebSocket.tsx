@@ -74,26 +74,21 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
 
     const reference = React.useRef<WebSocket>();
 
-    const connect = React.useCallback(() => {
-        console.log('regenerating connect from useWebSocket');
-        return async (): Promise<boolean> => {
-            console.log('CONNECT!!!!!!');
-            onConnectionStatusChange({ connected: false, connecting: true });
+    const connect = React.useCallback(async (): Promise<boolean> => {
+        console.log('CONNECT!!!!!!');
+        onConnectionStatusChange({ connected: false, connecting: true });
 
-            const client = new WebSocket(uri) as WebSocketInstanceType;
+        reference.current = new WebSocket(uri) as WebSocketInstanceType;
 
-            bindHandlersToClient(
-                client,
-                groupHandlersInObject({
-                    onConnectionStatusChange,
-                    onMessageReceived,
-                }),
-            );
+        bindHandlersToClient(
+            reference.current,
+            groupHandlersInObject({
+                onConnectionStatusChange,
+                onMessageReceived,
+            }),
+        );
 
-            reference.current = client;
-
-            return true;
-        };
+        return true;
     }, [onConnectionStatusChange, onMessageReceived, uri]);
 
     React.useEffect(() => {
@@ -103,6 +98,10 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
             console.log('closing connection');
             if (reference.current) {
                 reference.current.close();
+                reference.current.onopen = null;
+                reference.current.onerror = null;
+                reference.current.onmessage = null;
+                reference.current.onclose = null;
                 reference.current = undefined;
             }
         };
