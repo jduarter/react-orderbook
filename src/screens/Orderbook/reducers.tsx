@@ -376,6 +376,27 @@ const reduceNewTasksToQueue = (
     ],
 });
 
+const reduceStateToNewGroupBySetting = (
+    state,
+    groupBy: number,
+): OrderbookStateType => {
+    const { newMainState, grouped } = reduceUpdatesToScopedStateForGrouped(
+        {
+            bids: Object.entries(state.bids),
+            asks: Object.entries(state.asks),
+        },
+        { ...INITIAL_ORDERBOOK_STATE.grouped },
+        groupBy,
+        { bids: {}, asks: {} },
+    );
+    return {
+        ...state,
+        ...newMainState,
+        groupBy,
+        grouped,
+    };
+};
+
 export const orderBookReducer = (
     state: OrderbookStateType,
     action: OrderbookReducerAction,
@@ -400,23 +421,8 @@ export const orderBookReducer = (
             break;
 
         case 'SET_GROUP_BY':
-            console.log('SET_GROUP_BY');
-            const { newMainState, grouped } =
-                reduceUpdatesToScopedStateForGrouped(
-                    {
-                        bids: Object.entries(state.bids),
-                        asks: Object.entries(state.asks),
-                    },
-                    { ...INITIAL_ORDERBOOK_STATE.grouped },
-                    action.payload.value,
-                    { bids: {}, asks: {} },
-                );
-            return {
-                ...state,
-                ...newMainState,
-                groupBy: action.payload.value,
-                grouped,
-            };
+            return reduceStateToNewGroupBySetting(state, action.payload.value);
+
             break;
         default:
             throw new Error('orderBook: unknown reducer: ' + action.type);
