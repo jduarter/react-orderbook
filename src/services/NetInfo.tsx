@@ -1,11 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *                    | react-native-orderbook |                 *
- *                                                               *
- *  License |  MIT General Public License                        *
- *  Author  |  Jorge Duarte Rodríguez <info@malagadev.com>       *
- *                                                               *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 import NetInfo from '@react-native-community/netinfo';
 
 const DEFAULT_OPTIONS = {
