@@ -1,26 +1,26 @@
 import React from 'react';
 import type { FC } from 'react';
-import { SafeAreaView, ScrollView, StatusBar, View } from 'react-native';
+import { SafeAreaView, StatusBar, View } from 'react-native';
+import Orientation from 'react-native-orientation-locker';
 
 import { Orderbook } from './screens/Orderbook';
 
+const backgroundStyle = {
+  backgroundColor: '#000',
+};
+
 const App: FC = () => {
-  const backgroundStyle = {
-    backgroundColor: '#fff',
-  };
+  React.useEffect(() => {
+    Orientation.lockToPortrait();
+  }, []);
 
   return (
     <SafeAreaView style={[backgroundStyle, { flex: 1 }]}>
-      <StatusBar barStyle={'light-content'} />
+      <StatusBar barStyle={'dark-content'} hidden={true} />
 
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ flexGrow: 1 }}
-        style={[backgroundStyle, { flex: 1 }]}>
-        <View style={{ flex: 1 }}>
-          <Orderbook />
-        </View>
-      </ScrollView>
+      <View style={[backgroundStyle, { flex: 1 }]}>
+        <Orderbook productId={'PI_XBTUSD'} />
+      </View>
     </SafeAreaView>
   );
 };
