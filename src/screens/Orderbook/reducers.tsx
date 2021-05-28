@@ -9,7 +9,6 @@ import {
   ob2arr,
   getAffectedPricesInUpdateList,
   getEstimatedMinimumSize,
-  immutableObjectWithoutKey,
 } from './utils';
 
 import type {
@@ -190,28 +189,19 @@ const reduceUpdatesToScopedState = (
 });
 
 const getUpdatedActivityTimes = (
-  data,
-  initialGroupKeysUpdated,
-  initialState,
-  tt = 'asks',
+  data: WebSocketOrderbookSizePricePair[],
+  initialGroupKeysUpdated: OrderbookOrdersSortedObject,
+  initialState: OrderbookOrdersSortedObject,
 ) =>
   getAffectedPricesInUpdateList(data).reduce((acc, normalizedPrice) => {
+    // eslint-disable-next-line unicorn/prefer-array-find
     const last = data.filter(
       (d) => d[0] === parseFloat(normalizedPrice) / Math.pow(10, 2),
     )[0][1];
 
-    if (last !== initialState[normalizedPrice]) {
-      /*console.log(
-        'getUpdatedActivityTimes: ',
-        last,
-        initialState[normalizedPrice],
-        normalizedPrice,
-        initialGroupKeysUpdated,
-      );*/
-      return { ...acc, [normalizedPrice]: Date.now() };
-    } else {
-      return acc;
-    }
+    return last !== initialState[normalizedPrice]
+      ? { ...acc, [normalizedPrice]: Date.now() }
+      : acc;
   }, initialGroupKeysUpdated);
 
 const reduceUpdatesToScopedStateForGrouped = (
@@ -219,7 +209,9 @@ const reduceUpdatesToScopedStateForGrouped = (
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-  initialGroupKeysUpdated: Record<string, number>,
+  initialGroupKeysUpdated: OrderbookGenericScopeDataType<
+    Record<string, number>
+  >,
 ) => {
   const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
     updates,
@@ -238,13 +230,11 @@ const reduceUpdatesToScopedStateForGrouped = (
       groupedMutatedData.asks,
       initialGroupKeysUpdated.asks,
       initialState.asks,
-      'asks',
     ),
     bids: getUpdatedActivityTimes(
       groupedMutatedData.bids,
       initialGroupKeysUpdated.bids,
       initialState.bids,
-      'bids',
     ),
   };
 
