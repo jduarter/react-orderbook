@@ -9,19 +9,23 @@
 ## Configuration
 
 - [ ] Add a new .env file in the root of the project with the following data:
-      ADB_IP=(your LAN IP address)
-      REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address)
-      WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
+
+    ADB_IP=(your LAN IP address)
+    REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address)
+    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
 
 - [ ] Start the metro packager
-      npx react-native start
+
+    npx react-native start
+    
 - [ ] Execute docker to generate the container
-      docker build -t expo-android .
-      docker run -e ADB_IP=192.168.112.101 \
-       -e REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.1 \
-       -p 19000:19000 \
-       -p 19001:19001 \
-       expo-android
+
+    docker build -t expo-android .
+    docker run -e ADB_IP=192.168.112.101 \
+    -e REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.1 \
+    -p 19000:19000 \
+    -p 19001:19001 \
+    expo-android
 
 ## Approach analysis description and time spent.
 
