@@ -1,12 +1,29 @@
 # React Native Orderbook
 
 ## Install instructions.
--  [ ] npm install # Please do not use yarn (package-lock.json)
--  [ ] npx pod-install
--  [ ] npm test
+
+- [ ] npm install # Please do not use yarn (package-lock.json)
+- [ ] npx pod-install
+- [ ] npm test
+
+## Configuration
+
+- [ ] Add a new .env file in the root of the project with the following data:
+      ADB_IP=(your LAN IP address)
+      REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address)
+      WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
+
+- [ ] Start the metro packager
+      npx react-native start
+- [ ] Execute docker to generate the container
+      docker build -t expo-android .
+      docker run -e ADB_IP=192.168.112.101 \
+       -e REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.1 \
+       -p 19000:19000 \
+       -p 19001:19001 \
+       expo-android
 
 ## Approach analysis description and time spent.
-
 
 ### 1. Project bootstrapping.
 
@@ -14,29 +31,26 @@ I've added common development-assist packages like: `prettier` and `eslint` and 
 
 I was setting up the most optimal project directory structure for the project:
 
-
-| **Directory** | **Description** |
-| -- | --- |
-| scripts/ | Helper scripts |
-| src/ | Source files of the project |
-
+| **Directory** | **Description**             |
+| ------------- | --------------------------- |
+| scripts/      | Helper scripts              |
+| src/          | Source files of the project |
 
 Additionally, I've added some package.json scripts for ease of development and execution:
 
+| **Command**     | **Description**                              |
+| --------------- | -------------------------------------------- |
+| npm install     | Install needed dependencies.                 |
+| npx pod-install | Install iOS pods.                            |
+| npm test        | Runs the test suite.                         |
+| npm clean       | Cleans the build and node_modules directory. |
 
-| **Command** | **Description** |
-| --- | --- |
-| npm install | Install needed dependencies. |
-| npm ios:pods | Install iOS pods. |
-| npm test | Runs the test suite. |
-| npm clean | Cleans the build and node\_modules directory. |
-    
 ## Possible improvements:
 
-* Safe compilation of regexps used by json-2.js sanitizer (src/json-sanitizer.js) to prevent regexp-security issues.
-* Test: malformed JSON.
-* Test: unsafe JSONs.
-* Test: the reading date will always have the time set to 00:00:00.000
+- Safe compilation of regexps used by json-2.js sanitizer (src/json-sanitizer.js) to prevent regexp-security issues.
+- Test: malformed JSON.
+- Test: unsafe JSONs.
+- Test: the reading date will always have the time set to 00:00:00.000
 
 ## License.
 
