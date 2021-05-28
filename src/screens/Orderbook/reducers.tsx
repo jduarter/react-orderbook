@@ -369,11 +369,13 @@ const reducePendingGroupUpdatesToState = (
     grouped: {
       ...res.grouped,
       bids: Object.entries(res.grouped.bids).reduce((acc, [currK, currV]) => {
+        // eslint-disable-next-line unicorn/prefer-includes
         return expiredBids.indexOf(currK) >= 0
           ? acc
           : { ...acc, [currK]: currV };
       }, {}),
       asks: Object.entries(res.grouped.asks).reduce((acc, [currK, currV]) => {
+        // eslint-disable-next-line unicorn/prefer-includes
         return expiredAsks.indexOf(currK) >= 0
           ? acc
           : { ...acc, [currK]: currV };
@@ -388,6 +390,7 @@ const reducePendingGroupUpdatesToState = (
     groupKeysUpdated: {
       bids: Object.entries(res.groupKeysUpdated.bids)
         .filter((gb) => {
+          // eslint-disable-next-line unicorn/prefer-includes
           return expiredBids.indexOf(gb[0]) === -1;
         })
         .reduce((ac, [ck, cv]) => {
@@ -395,6 +398,7 @@ const reducePendingGroupUpdatesToState = (
         }, {}),
       asks: Object.entries(res.groupKeysUpdated.asks)
         .filter((gb) => {
+          // eslint-disable-next-line unicorn/prefer-includes
           return expiredAsks.indexOf(gb[0]) === -1;
         })
         .reduce((ac, [ck, cv]) => {
@@ -428,8 +432,8 @@ const reduceStateToNewGroupBySetting = (
 ): OrderbookStateType => {
   const { newMainState, grouped } = reduceUpdatesToScopedStateForGrouped(
     {
-      bids: Object.entries(state.bids),
-      asks: Object.entries(state.asks),
+      bids: ob2arr(state.bids),
+      asks: ob2arr(state.asks),
     },
     { ...INITIAL_ORDERBOOK_STATE.grouped },
     groupBy,
