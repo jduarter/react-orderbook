@@ -370,25 +370,11 @@ const reducePendingGroupUpdatesToState = (
   );
 
   const expiredBids = Object.entries(state.groupKeysUpdated.bids)
-    .map(([p, t]) => {
-      if (t && Date.now() - t > 5000) {
-        console.log('-> EXPIRE: BID ', p);
-        return p;
-      } else {
-        return;
-      }
-    })
+    .map(([p, t]) => (t && Date.now() - t > 5000 ? p : undefined))
     .filter((x) => x);
 
   const expiredAsks = Object.entries(state.groupKeysUpdated.asks)
-    .map(([p, t]) => {
-      if (t && Date.now() - t > 5000) {
-        console.log('-> EXPIRE: ASK ', p);
-        return p;
-      } else {
-        return;
-      }
-    })
+    .map(([p, t]) => (t && Date.now() - t > 5000 ? p : undefined))
     .filter((x) => x);
 
   const nres = {
