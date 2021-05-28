@@ -19,7 +19,7 @@
         "sec:audit": "npm audit fix --only=prod",
         "sec:semgrep-audit": "/bin/sh scripts/semgrep-sec-audit.sh",
         "sec:detect-secrets:update": "npx detect-secrets scan --baseline .secrets.baseline",
-        "sec:detect-secrets": "npx detect-secrets detect --baseline .secrets.baseline --exclude-files node_modules/ --exclude-files package-lock.json --exclude-files ./policy.json --exclude-secrets detect-secrets $(git ls-files)",
+        "sec:detect-secrets": "sh scripts/detect-secrets.sh",
         "sec:doctor": "npm doctor",
         "sec:outdated": "npm outdated",
         "sec:lockfile": "npx lockfile-lint --path package-lock.json --type npm --validate-https --allowed-hosts registry.npmjs.org",
