@@ -75,14 +75,14 @@ module.exports = {
     ],
     'unicorn/no-lonely-if': 'off',
     'linebreak-style': ['error', 'unix'],
-    "quotes": 'off',
-    "semi": 'off',
+    quotes: 'off',
+    semi: 'off',
     'react/prop-types': 0,
     'no-unused-vars': 'off',
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/no-implicit-any-catch': ['error'],
     'react-native/no-inline-styles': 0,
-    "indent": 'off',
+    indent: 'off',
     '@typescript-eslint/indent': 'off',
 
     'header/header': [0, 'eslintrc.header.js'],
@@ -205,7 +205,7 @@ module.exports = {
     '@typescript-eslint/unified-signatures': 'error',
 
     'constructor-super': 'error',
-    "curly": ['error', 'multi-line'],
+    curly: ['error', 'multi-line'],
     'dot-notation': 'error',
     eqeqeq: 'error',
     'new-parens': 'error',
@@ -245,7 +245,7 @@ module.exports = {
   },
   ignorePatterns: ['node_modules/**', '**__tests/**'],
   settings: {
-    "react": {
+    react: {
       version: '17',
     },
     'import/parsers': {
