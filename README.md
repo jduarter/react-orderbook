@@ -1,63 +1,49 @@
-# :space_invader: React Native Template TypeScript
+# React Native Orderbook
 
-<p>
-  <a href="https://travis-ci.org/react-native-community/react-native-template-typescript">
-    <img alt="Build Status" src="https://img.shields.io/travis/react-native-community/react-native-template-typescript.svg" target="_blank" />
-  </a>
-  <a href="https://github.com/react-native-community/react-native-template-typescript#readme">
-    <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" target="_blank" />
-  </a>
-  <a href="https://github.com/react-native-community/react-native-template-typescript/graphs/commit-activity">
-    <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" target="_blank" />
-  </a>
-  <a href="https://github.com/react-native-community/react-native-template-typescript/blob/master/LICENSE">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" target="_blank" />
-  </a>
-</p>
+## Install instructions.
+-  [ ] npm install # Please do not use yarn (package-lock.json)
+-  [ ] npx pod-install
+-  [ ] npm test
 
-> Clean and minimalist React Native template for a quick start with TypeScript.
+## Approach analysis description and time spent.
 
-## :star: Features
 
-- Elegant usage directly within the [React Native CLI](https://github.com/react-native-community/cli)
-- Consistent with the default React Native template
-- Minimal additional dependencies
+### 1. Project bootstrapping.
 
-## :arrow_forward: Usage
+I've added common development-assist packages like: `prettier` and `eslint` and their respective configuration files.
 
-```sh
-npx react-native init MyApp --template react-native-template-typescript
-```
+I was setting up the most optimal project directory structure for the project:
 
-### Usage with older versions of React Native
 
-#### e.g. `react-native@0.63.x`
+| **Directory** | **Description** |
+| -- | --- |
+| scripts/ | Helper scripts |
+| src/ | Source files of the project |
 
-```sh
-npx react-native init MyApp --template react-native-template-typescript@6.5.*
-```
 
-See the below table to find out which version of the template to use.
+Additionally, I've added some package.json scripts for ease of development and execution:
 
-#### React Native <=> Template Version
 
-| React Native  	| Template  	|
-|---	            |---	        |
-| 0.64  	        | 6.6.*       |
-| 0.63  	        | 6.5.*       |
-| 0.62  	        | 6.4.*       |
-| 0.61  	        | 6.3.*       |
-| 0.60  	        | 6.2.*       |
+| **Command** | **Description** |
+| --- | --- |
+| npm install | Install needed dependencies. |
+| npm ios:pods | Install iOS pods. |
+| npm test | Runs the test suite. |
+| npm clean | Cleans the build and node\_modules directory. |
+    
+## Possible improvements:
 
-### Note on the legacy CLI
-There seems to be quite some confusion about the legacy CLI. This template only works with the new CLI. Make sure you have uninstalled the legacy `react-native-cli` first (`npm uninstall -g react-native-cli`), for the below command to work. If you wish to not use `npx`, you can also install the new CLI globally (`npm i -g @react-native-community/cli` or `yarn global add @react-native-community/cli`).
+* Safe compilation of regexps used by json-2.js sanitizer (src/json-sanitizer.js) to prevent regexp-security issues.
+* Test: malformed JSON.
+* Test: unsafe JSONs.
+* Test: the reading date will always have the time set to 00:00:00.000
 
-Further information can be found here: https://github.com/react-native-community/cli#about
+## License.
 
-## :computer: Contributing
+This project is licensed with MIT.
 
-Contributions are very welcome. Please check out the [contributing document](CONTRIBUTING.md).
+Copyright 2021 (c) Jorge Duarte Rodríguez <info@malagadev.com>
 
-## :bookmark: License
-
-This project is [MIT](LICENSE) licensed.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
