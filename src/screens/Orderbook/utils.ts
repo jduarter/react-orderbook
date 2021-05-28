@@ -5,6 +5,8 @@ import type {
   OrderbookGroupedPrice,
   OrderbookNormalizedPrice,
   OrderbookOrdersSortedObject,
+  OrderbookDispatch,
+  OrderbookGenericScopeDataType,
 } from './types';
 
 import type {
@@ -151,3 +153,109 @@ export const getGroupByFactor = (
     return groupBy % 2 === 0 ? 2 : 2.5;
   }
 };
+
+export const getGroupByButtonPressEventHandler =
+  (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) => () =>
+    getGroupByFactor(groupBy, v) &&
+    orderBookDispatch({
+      type: 'SET_GROUP_BY',
+      payload: {
+        value:
+          v === -1
+            ? groupBy / getGroupByFactor(groupBy, v)
+            : groupBy * getGroupByFactor(groupBy, v),
+      },
+    });
+
+export const calculateSpread = (high: number, low: number) => {
+  if (!low || !high) {
+    return 0;
+  }
+
+  return -1 * (high / low - 1) * 100;
+};
+
+export const wipeZeroRecords = (
+  input: OrderbookOrdersSortedObject,
+): OrderbookOrdersSortedObject =>
+  Object.entries(input).reduce(
+    (acc, [currKey, currVal]) =>
+      currVal !== 0 ? { ...acc, [currKey]: currVal } : acc,
+    {},
+  );
+
+export const reduceScopeWithFn = <
+  T extends OrderbookOrdersSortedObject = OrderbookOrdersSortedObject,
+>(
+  input: OrderbookGenericScopeDataType<T>,
+  transformer: (
+    input: OrderbookOrdersSortedObject,
+  ) => OrderbookOrdersSortedObject,
+): OrderbookGenericScopeDataType<T> =>
+  ({
+    bids: transformer(input.bids),
+    asks: transformer(input.asks),
+  } as OrderbookGenericScopeDataType<T>);
+
+export const ob2arr = (
+  input: OrderbookOrdersSortedObject,
+  initialState = [],
+): WebSocketOrderbookDataArray =>
+  Object.entries(input).reduce(
+    (acc: WebSocketOrderbookDataArray, [currentK, currentV]) => [
+      ...acc,
+      [customFormatNumberToFloat(currentK), currentV],
+    ],
+    initialState,
+  );
+
+export const array2ob = (
+  input: WebSocketOrderbookDataArray,
+  initialState = {},
+): OrderbookOrdersSortedObject =>
+  input.reduce((acc, [price, val]) => {
+    return { ...acc, [getNormalizedPrice(price)]: val };
+  }, initialState);
+
+export const uniq = <T extends unknown = any>(array: T[]): T[] => [
+  ...new Set(array),
+];
+
+export const getNormalizedGroupedPrice = (
+  price: number,
+  groupBy: number,
+  decimals = 2,
+): OrderbookNormalizedPrice =>
+  getNormalizedPrice(getGroupedPrice(price, groupBy), decimals);
+
+export const customFormatNumberToFloat = (price: string): number =>
+  Number.parseInt(price) / 100;
+
+export const getAffectedPricesInUpdateList = (
+  array: WebSocketOrderbookSizePricePair[],
+): OrderbookNormalizedPrice[] =>
+  uniq<OrderbookNormalizedPrice>(
+    array.map(([price]: WebSocketOrderbookSizePricePair) =>
+      getNormalizedPrice(price),
+    ),
+  );
+
+export const exactPriceIsWithinGroupPrice = (
+  exact: number,
+  groupPrice: number,
+  groupBy: number,
+) => exact >= groupPrice && exact < groupPrice + groupBy;
+
+export const getEstimatedMinimumSize = (
+  sortedObj: OrderbookOrdersSortedObject,
+  groupPrice: number,
+  groupBy: number,
+): number =>
+  ob2arr(sortedObj).reduce(
+    (acc, [currPrice, currSize]) =>
+      acc +
+      (exactPriceIsWithinGroupPrice(currPrice, groupPrice, groupBy)
+        ? currSize
+        : 0),
+    0,
+  );

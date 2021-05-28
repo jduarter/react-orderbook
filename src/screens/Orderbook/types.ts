@@ -37,18 +37,23 @@ export interface OrderbookStateType
   options: {
     disableTwoWayProcessing: boolean;
   };
+  isLoading: boolean;
 }
 
 export type OrderbookReducerActionTypes =
   | 'CALCULATE_GROUPED'
   | 'ORDERBOOK_UPDATE'
   | 'ORDERBOOK_SNAPSHOT'
-  | 'SET_GROUP_BY';
+  | 'SET_GROUP_BY'
+  | 'SET_LOADING'
+  | 'UPDATE_GROUPED';
 
 export interface OrderbookReducerAction {
   type: OrderbookReducerActionTypes;
   payload: any;
 }
+
+export type OrderbookDispatch = React.Dispatch<OrderbookReducerAction>;
 
 export type GenericMutatingFunctionType = ((
   object: unknown,
@@ -65,4 +70,14 @@ export type OrderbookReducerCalculateGroupedPartialState = Pick<
 export interface OrderbookProps {
   initialGroupBy?: number;
   productId: string;
+  webSocketUri: string;
 }
+
+export type OrderbookReducerInitialState =
+  | React.SetStateAction<OrderbookStateType>
+  | OrderbookStateType;
+
+export type OrderbookReducer = (
+  state: OrderbookStateType,
+  action: OrderbookReducerAction,
+) => OrderbookStateType;

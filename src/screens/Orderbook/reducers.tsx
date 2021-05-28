@@ -4,10 +4,13 @@ import {
   getNormalizedPrice,
   getGroupedPrice,
   immutableObjReplacingKey,
+  reduceScopeWithFn,
+  wipeZeroRecords,
+  ob2arr,
+  getEstimatedMinimumSize,
 } from './utils';
 
 import type {
-  OrderbookNormalizedPrice,
   OrderbookOrdersSortedObject,
   OrderbookGenericScopeDataType,
   OrderbookStateType,
@@ -29,30 +32,8 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   grouped: { bids: {}, asks: {} },
   pendingGroupUpdates: [],
   options: { disableTwoWayProcessing: false },
+  isLoading: true,
 };
-
-export const uniq = <T extends unknown = any>(array: T[]): T[] => [
-  ...new Set(array),
-];
-
-export const getNormalizedGroupedPrice = (
-  price: number,
-  groupBy: number,
-  decimals = 2,
-): OrderbookNormalizedPrice =>
-  getNormalizedPrice(getGroupedPrice(price, groupBy), decimals);
-
-export const customFormatNumberToFloat = (price: string): number =>
-  Number.parseInt(price) / 100;
-
-export const getAffectedPricesInUpdateList = (
-  array: WebSocketOrderbookSizePricePair[],
-): OrderbookNormalizedPrice[] =>
-  uniq<OrderbookNormalizedPrice>(
-    array.map(([price]: WebSocketOrderbookSizePricePair) =>
-      getNormalizedPrice(price),
-    ),
-  );
 
 export const reduceKeyPairToState = <
   T extends any[] = WebSocketOrderbookDataArray,
@@ -75,26 +56,6 @@ export const reduceKeyPairToState = <
   // console.log('    reduceKeyPairToState: output:', res);
   return res;
 };
-
-const exactPriceIsWithinGroupPrice = (
-  exact: number,
-  groupPrice: number,
-  groupBy: number,
-) => exact >= groupPrice && exact < groupPrice + groupBy;
-
-const getEstimatedMinimumSize = (
-  sortedObj: OrderbookOrdersSortedObject,
-  groupPrice: number,
-  groupBy: number,
-): number =>
-  ob2arr(sortedObj).reduce(
-    (acc, [currPrice, currSize]) =>
-      acc +
-      (exactPriceIsWithinGroupPrice(currPrice, groupPrice, groupBy)
-        ? currSize
-        : 0),
-    0,
-  );
 
 export const mutateForGrouping = (
   updates: WebSocketOrderbookDataArray,
@@ -319,35 +280,15 @@ const applyMinimumThresholdsToGroups = (
   return r1;
 };
 
-const wipeZeroRecords = (
-  input: OrderbookOrdersSortedObject,
-): OrderbookOrdersSortedObject =>
-  Object.entries(input).reduce(
-    (acc, [currKey, currVal]) =>
-      currVal !== 0 ? { ...acc, [currKey]: currVal } : acc,
-    {},
-  );
-
-const reduceScopeWithFn = <
-  T extends OrderbookOrdersSortedObject = OrderbookOrdersSortedObject,
->(
-  input: OrderbookGenericScopeDataType<T>,
-  transformer: (
-    input: OrderbookOrdersSortedObject,
-  ) => OrderbookOrdersSortedObject,
-): OrderbookGenericScopeDataType<T> =>
-  ({
-    bids: transformer(input.bids),
-    asks: transformer(input.asks),
-  } as OrderbookGenericScopeDataType<T>);
-
 const reducePendingGroupUpdatesToState = (
+  pendingGroupUpdates: PendingGroupUpdateRecord[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
-  const { pendingGroupUpdates, ...stateWithoutPendingGroupUpdates } = state;
-
   const res = pendingGroupUpdates.reduce(
-    (acc: OrderbookStateType, { updates }: PendingGroupUpdateRecord) => {
+    (
+      acc: OrderbookStateType,
+      { updates }: { updates: PendingGroupUpdateRecord },
+    ) => {
       const groupedWithMinimumThresholdsApplied = {
         bids: applyMinimumThresholdsToGroups(
           acc.grouped.bids,
@@ -374,7 +315,7 @@ const reducePendingGroupUpdatesToState = (
         grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
       };
     },
-    { ...stateWithoutPendingGroupUpdates, pendingGroupUpdates: [] },
+    { ...state },
   );
 
   return res;
@@ -412,6 +353,7 @@ const reduceStateToNewGroupBySetting = (
     ...newMainState,
     groupBy,
     grouped,
+    isLoading: true,
   };
 };
 
@@ -421,11 +363,27 @@ export const orderBookReducer = (
 ): OrderbookStateType => {
   // console.log('[ *!* ] Executing action: <' + action.type + '>', state);
   switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload.value };
+      break;
+
     case 'CALCULATE_GROUPED':
       return state.options.disableTwoWayProcessing === false
-        ? reducePendingGroupUpdatesToState(state)
+        ? {
+            ...reducePendingGroupUpdatesToState_NEW(
+              state.pendingGroupUpdates,
+              state,
+            ),
+            isLoading: false,
+          }
         : { ...state };
+      break;
 
+    case 'UPDATE_GROUPED':
+      return {
+        ...reducePendingGroupUpdatesToState_NEW(action.payload.updates, state),
+        isLoading: false,
+      };
       break;
 
     case 'ORDERBOOK_SNAPSHOT':
@@ -440,29 +398,8 @@ export const orderBookReducer = (
 
     case 'SET_GROUP_BY':
       return reduceStateToNewGroupBySetting(state, action.payload.value);
-
       break;
     default:
       throw new Error('orderBook: unknown reducer: ' + action.type);
   }
 };
-
-const ob2arr = (
-  input: OrderbookOrdersSortedObject,
-  initialState = [],
-): WebSocketOrderbookDataArray =>
-  Object.entries(input).reduce(
-    (acc: WebSocketOrderbookDataArray, [currentK, currentV]) => [
-      ...acc,
-      [customFormatNumberToFloat(currentK), currentV],
-    ],
-    initialState,
-  );
-
-export const array2ob = (
-  input: WebSocketOrderbookDataArray,
-  initialState = {},
-): OrderbookOrdersSortedObject =>
-  input.reduce((acc, [price, val]) => {
-    return { ...acc, [getNormalizedPrice(price)]: val };
-  }, initialState);

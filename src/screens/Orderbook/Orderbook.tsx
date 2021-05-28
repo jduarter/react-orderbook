@@ -6,22 +6,14 @@ import { useDebounceCallback } from '@react-hook/debounce';
 
 import { default as OrderbookSection } from './components/OrderbookSection';
 
-import GroupButton from './atoms/GroupButton';
-import ErrorScreen from '@components/ErrorScreen';
+import GroupByButtonGroup from './atoms/GroupByButtonGroup';
+import { ErrorScreen, ERROR_TYPES } from '@components/ErrorScreen';
 import LoadingOverlay from '@components/LoadingOverlay';
 import type { OrderbookOrdersSortedObject, OrderbookProps } from './types';
-import { getGroupByFactor } from './utils';
+import { calculateSpread } from './utils';
 import { useOrderbookController } from './hooks';
 
 const ENABLE_TWO_WAY_REDUCER_ACTIONS = true;
-
-const calculateSpread = (high: number, low: number) => {
-  if (!low || !high) {
-    return 0;
-  }
-
-  return -1 * (high / low - 1) * 100;
-};
 
 const Spread: FC<{ high: number; low: number }> = ({ high, low }) => {
   //console.log('Spread: ', { high, low });
@@ -75,44 +67,10 @@ const SpreadWidget: FC<{
   return <Spread high={parseFloat(a[0]) / 100} low={parseFloat(b[0]) / 100} />;
 };
 
-const getGroupByButtonPressEventHandler =
-  (v: -1 | 1, groupBy: number, orderBookDispatch: React.Dispatch<any>) => () =>
-    getGroupByFactor(groupBy, v) &&
-    orderBookDispatch({
-      type: 'SET_GROUP_BY',
-      payload: {
-        value:
-          v === -1
-            ? groupBy / getGroupByFactor(groupBy, v)
-            : groupBy * getGroupByFactor(groupBy, v),
-      },
-    });
-
-const GroupByButtons: React.FC<{
-  groupBy: number;
-  orderBookDispatch: React.DispatchWithoutAction;
-}> = ({ groupBy, orderBookDispatch }) => (
-  <View style={styles.groupByButtonsWrap}>
-    <GroupButton
-      title={'-'}
-      style={styles.flex1}
-      onPress={getGroupByButtonPressEventHandler(
-        -1,
-        groupBy,
-        orderBookDispatch,
-      )}
-    />
-    <GroupButton
-      title={'+'}
-      style={styles.flex1}
-      onPress={getGroupByButtonPressEventHandler(1, groupBy, orderBookDispatch)}
-    />
-  </View>
-);
-
 const OrderbookComponent: FC<OrderbookProps> = ({
   initialGroupBy = 100,
   productId = 'PI_XBTUSD',
+  webSocketUri = 'wss://www.cryptofacilities.com/ws/v1',
 }) => {
   const {
     asksData,
@@ -125,6 +83,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
     disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
     subscribeToProductIds: [productId],
     initialGroupBy,
+    webSocketUri,
   });
 
   const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
@@ -155,7 +114,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
             <SpreadWidget bids={orderBook.bids} asks={orderBook.asks} />
           )*/}
           <Text style={styles.groupText}>Group: {groupBy}</Text>
-          <GroupByButtons
+          <GroupByButtonGroup
             groupBy={groupBy}
             orderBookDispatch={orderBookDispatch}
           />
@@ -193,7 +152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
   },
-  groupByButtonsWrap: { padding: 4, flex: 1, flexDirection: 'row' },
+
   groupText: { flex: 1, flexShrink: 0, color: '#fff' },
   firstColWrap: {
     height: '45%',

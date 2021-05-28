@@ -4,16 +4,21 @@ import type {
   OrderbookWSMessageType,
   WebSocketOrderbookSnapshotMessage,
   WebSocketOrderbookUpdateMessage,
+  WebSocketOrderbookDataArray,
 } from '../../hooks/useWebSocket';
 
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 
-// import { useDebounceCallback } from '@react-hook/debounce';
-
 import * as NetInfo from '../../services/NetInfo';
 
-import type { OrderbookStateType, OrderbookReducerAction } from './types';
+import type {
+  OrderbookDispatch,
+  OrderbookStateType,
+  OrderbookReducerInitialState,
+  OrderbookReducer,
+  PendingGroupUpdateRecord,
+} from './types';
 
 import { orderAndLimit } from './utils';
 
@@ -26,22 +31,25 @@ interface ConnectionStatusState {
   };
 }
 
-const WEBSOCKET_URI = 'wss://www.cryptofacilities.com/ws/v1';
-
 // @todo: better abstraction ws-orderbook (onX events for abstraction)
 interface UserOrderbookConnectionProperties {
-  orderBookDispatch: React.Dispatch<OrderbookReducerAction>;
+  orderBookDispatch: OrderbookDispatch;
+  webSocketUri: string;
+  subscribeToProductIds: string[];
 }
 
 export const useOrderbookController = ({
   disableTwoWayProcessing = true,
   subscribeToProductIds,
   initialGroupBy = 100,
+  webSocketUri,
 }: {
   disableTwoWayProcessing: boolean;
   subscribeToProductIds: string[];
   initialGroupBy: number;
-}): UserOrderbookConnectionProperties & {
+  webSocketUri: string;
+}): {
+  orderBookDispatch: OrderbookDispatch;
   bidsData: WebSocketOrderbookDataArray;
   asksData: WebSocketOrderbookDataArray;
   connectionStatus: ConnectionStatusState;
@@ -63,6 +71,7 @@ export const useOrderbookController = ({
 
   const [orderBook, orderBookDispatch] = useOrderbookReducer(lazyInitialState);
   const { connectionStatus } = useOrderbookConnection({
+    webSocketUri,
     orderBookDispatch,
     subscribeToProductIds,
   });
@@ -70,22 +79,22 @@ export const useOrderbookController = ({
   const asksData = orderAndLimit(orderBook.grouped.asks, 8, 'desc');
   const bidsData = orderAndLimit(orderBook.grouped.bids, 8, 'desc');
 
-  const isLoading =
-    !orderBook ||
-    !orderBook.grouped ||
-    asksData.length === 0 ||
-    bidsData.length === 0;
-
   return React.useMemo(
     () => ({
       asksData,
       bidsData,
       groupBy: orderBook.groupBy,
-      isLoading,
+      isLoading: orderBook.isLoading,
       orderBookDispatch,
       connectionStatus,
     }),
-    [connectionStatus, asksData, orderBook.groupBy, isLoading, bidsData],
+    [
+      connectionStatus,
+      asksData,
+      orderBook.groupBy,
+      orderBook.isLoading,
+      bidsData,
+    ],
   );
 };
 
@@ -96,57 +105,66 @@ type UseSafeEffectEffect = (
   m: IsMountedFunctionType,
 ) => void | UseSafeEffectDestructor;
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const voidFn = (): void => {};
+
 const useSafeEffect = (
   effect: UseSafeEffectEffect,
   deps?: React.DependencyList,
 ) => {
-  const ref = React.useRef<boolean>(false);
+  const ref = React.useRef<{
+    mounted: boolean;
+    effectFn: null | UseSafeEffectEffect;
+  }>({ mounted: false, effectFn: null });
   React.useEffect(() => {
-    ref.current = true;
+    console.log('useSafeEffect main effect - BOOTING UP ');
+    ref.current.mounted = true;
     return () => {
-      ref.current = false;
+      console.log('useSafeEffect main effect - UNMOTING!');
+      ref.current.effectFn = voidFn;
+      ref.current.mounted = false;
     };
   }, []);
 
-  const isMounted = React.useCallback(() => ref.current, []);
+  React.useEffect(() => {
+    ref.current.effectFn = effect;
+  }, [effect]);
+
+  const getLastEffectVersion = React.useCallback(() => {
+    console.log('getLastEffectVersion');
+    return ref.current.effectFn || voidFn;
+  }, []);
+
+  const isMounted = React.useCallback(() => ref.current.mounted, []);
+
   React.useEffect(
-    () => (ref.current === true ? effect(isMounted) : undefined),
+    () =>
+      ref.current.mounted === true
+        ? getLastEffectVersion()(isMounted)
+        : undefined,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [...(deps ? deps : []), effect],
+    [...(deps || []), getLastEffectVersion, isMounted],
   );
 
   return React.useMemo<{ isMounted: IsMountedFunctionType }>(
     () => ({ isMounted }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [isMounted],
   );
 };
 
-const useTimeoutCallback = (
-  timeoutMs: number,
+type UseGenericTimerCallbackKind =
+  // eslint-disable-next-line no-restricted-globals
+  | [typeof setTimeout, typeof setInterval]
+  // eslint-disable-next-line no-restricted-globals
+  | [typeof clearTimeout, typeof clearInterval];
+
+const useGenericTimerCallback = <T = NodeJS.Timeout>(
+  [setF, clearF]: UseGenericTimerCallbackKind,
+  ms: number,
   callback: (...args: any[]) => void,
 ) => {
   //  console.log('useTimeoutCallback renders');
-  const ref = React.useRef<NodeJS.Timeout | undefined>();
-
-  const runClosure = React.useCallback(() => {
-    console.log('[reconnectTimer] RUN');
-    callback();
-    ref.current = undefined;
-  }, [callback]);
-
-  const start = React.useCallback(() => {
-    console.log('[reconnectTimer] start');
-    if (ref.current !== null) {
-      console.warn(
-        'useTimeoutCallback: trying to start when there is already a timer',
-      );
-      return;
-    }
-
-    // eslint-disable-next-line no-restricted-globals
-    ref.current = setTimeout(runClosure, timeoutMs);
-  }, [timeoutMs, runClosure]);
+  const ref = React.useRef<T | undefined>();
 
   const finish = React.useCallback(() => {
     console.log('[reconnectTimer] finish');
@@ -154,26 +172,76 @@ const useTimeoutCallback = (
       return;
     }
 
-    // eslint-disable-next-line no-restricted-globals
-    clearTimeout(ref.current);
+    clearF(ref.current);
     ref.current = undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const runClosure = React.useCallback(() => {
+    console.log('[reconnectTimer] RUN');
+    callback(finish);
+    ref.current = undefined;
+  }, [callback, finish]);
+
+  const start = React.useCallback(() => {
+    console.log('[reconnectTimer] start');
+    if (ref.current !== null) {
+      console.warn(
+        'useGenericTimerCallback: trying to start when there is already a timer',
+      );
+      return;
+    }
+
+    ref.current = setF(runClosure, ms);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ms, runClosure]);
 
   React.useEffect(() => {
     return () => {
       finish();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return React.useMemo(() => ({ start, finish }), [start, finish]);
 };
 
+const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
+  useGenericTimerCallback<NodeJS.Timeout>(
+    // eslint-disable-next-line no-restricted-globals
+    [setTimeout, clearTimeout],
+    ms,
+    callback,
+  );
+
+const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
+  // eslint-disable-next-line no-restricted-globals
+  useGenericTimerCallback<number>([setInterval, clearInterval], ms, callback);
+
+type MainStateRefType = {
+  pendingUpdates: Array<{ updates: Array<PendingGroupUpdateRecord> }>;
+};
+
+const useOrderbookMainStateRef = () => {
+  const ref = React.useRef<MainStateRefType>({ pendingUpdates: [] });
+  const dispatchUpdate = React.useCallback(({ payload: { updates } }) => {
+    // console.log('-> push to queue');
+    ref.current.pendingUpdates.push({ updates });
+  }, []);
+  const getSingleUpdate = function* () {
+    yield ref.current.pendingUpdates.shift();
+  };
+  return { dispatchUpdate, getSingleUpdate };
+};
+
 export const useOrderbookConnection = ({
   orderBookDispatch,
   subscribeToProductIds,
-}: UserOrderbookConnectionProperties & { subscribeToProductIds: string[] }): {
+  webSocketUri,
+}: UserOrderbookConnectionProperties): {
   connectionStatus: ConnectionStatusState;
 } => {
+  const { dispatchUpdate, getSingleUpdate } = useOrderbookMainStateRef();
   const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
 
   const [connectionStatus, setConnectionStatus] =
@@ -188,44 +256,53 @@ export const useOrderbookConnection = ({
 
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
-      orderBookDispatch({
-        type: 'CALCULATE_GROUPED',
-        payload: null,
-      });
-    }, []),
+      for (const update of getSingleUpdate()) {
+        if (!update) {
+          continue;
+        }
+
+        orderBookDispatch({
+          type: 'UPDATE_GROUPED',
+          payload: { updates: [update] },
+        });
+      }
+    }, [getSingleUpdate]),
   });
 
-  //reduceByGroupNumber
   const onMessageReceived = React.useCallback((decoded) => {
     if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
-      console.log({ decoded });
+      console.log('Orderbook: Websocket info: ', { decoded });
     } else {
       if (!decoded?.event) {
         if (decoded?.feed === 'book_ui_1') {
-          orderBookDispatch({
+          dispatchUpdate({
             type: 'ORDERBOOK_UPDATE',
             payload: {
               updates: decoded as WebSocketOrderbookUpdateMessage<any>[],
             },
           });
         } else if (decoded?.feed === 'book_ui_1_snapshot') {
-          orderBookDispatch({
+          dispatchUpdate({
             type: 'ORDERBOOK_SNAPSHOT',
             payload: {
               updates: decoded as WebSocketOrderbookSnapshotMessage<any>[],
             },
           });
         } else {
-          console.log('(2)', { decoded });
+          console.warn('Orderbook: Unknown message received from WebSocket: ', {
+            decoded,
+          });
         }
       } else {
-        console.log('(2)', { decoded });
+        console.warn('Orderbook: Unknown message received from WebSocket: ', {
+          decoded,
+        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const reconnectTimer = useTimeoutCallback(
+  const reconnectTimer = useIntervalCallback(
     5000,
     React.useCallback(
       (connect: () => void, connectedToInternet: boolean): void => {
@@ -291,7 +368,7 @@ export const useOrderbookConnection = ({
   );
 
   const { connect } = useWebSocket<OrderbookWSMessageType>({
-    uri: WEBSOCKET_URI,
+    uri: webSocketUri,
     onMessageReceived,
     onConnectionStatusChange,
     onConnect,
@@ -302,7 +379,7 @@ export const useOrderbookConnection = ({
       return;
     }
 
-    console.log('[ws] opening connection');
+    console.log('[ws] opening connection from mainEffect');
     connect();
   }, []);
 
@@ -333,37 +410,29 @@ export const useOrderbookConnection = ({
     }
   }, [isConnected, isInternetReachable]);
 
-  console.log('useOrderbookConnection renders: ', connectionStatus);
-
   return { connectionStatus };
 };
 
-type OrderbookReducerInitialState = React.SetStateAction<OrderbookStateType>;
-type OrderbookReducer = typeof orderBookReducer;
-
 export const useOrderbookReducer = (
   initialState: OrderbookReducerInitialState = INITIAL_ORDERBOOK_STATE,
-): [OrderbookStateType, React.DispatchWithoutAction] =>
+): [OrderbookStateType, OrderbookDispatch] =>
   React.useReducer<OrderbookReducer>(orderBookReducer, initialState);
 
 type OnProcessCycle = () => void;
 
 interface UseOrderbookProcessingProperties {
   onProcessCycle: OnProcessCycle;
+  ms?: number;
 }
 
 export const useOrderbookProcessing = ({
   onProcessCycle,
-}: UseOrderbookProcessingProperties) => {
-  //  const calculateGrouped = useDebounceCallback(onProcessCycle, 125);
-
+  ms = 50,
+}: UseOrderbookProcessingProperties): void => {
   useSafeEffect((isMounted) => {
+    console.log('useOrderbookProcessing safe effect called');
     // eslint-disable-next-line no-restricted-globals
-    const intval = setInterval(() => {
-      if (isMounted()) {
-        onProcessCycle();
-      }
-    }, 400);
+    const intval = setInterval(() => isMounted() && onProcessCycle(), ms);
     return () => {
       // eslint-disable-next-line no-restricted-globals
       if (intval) clearInterval(intval);
@@ -371,5 +440,5 @@ export const useOrderbookProcessing = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return {};
+  return;
 };
