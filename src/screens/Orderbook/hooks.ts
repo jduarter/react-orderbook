@@ -76,8 +76,8 @@ export const useOrderbookController = ({
     subscribeToProductIds,
   });
 
-  const asksData = orderAndLimit(orderBook.grouped.asks, 8, 'desc');
-  const bidsData = orderAndLimit(orderBook.grouped.bids, 8, 'asc');
+  const asksData = orderAndLimit(orderBook.grouped.asks, 12, 'desc');
+  const bidsData = orderAndLimit(orderBook.grouped.bids, 12, 'asc');
   /*
   console.log(
     'ASKS (' + Object.keys(orderBook.grouped.asks).length + '): ',

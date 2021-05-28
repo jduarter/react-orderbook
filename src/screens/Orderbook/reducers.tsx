@@ -362,6 +362,8 @@ const reducePendingGroupUpdatesToState = (
     .map(([p, t]) => (t && Date.now() - t > 10000 ? p : undefined))
     .filter((x) => x);
 
+  console.log({ expiredAsks, expiredBids });
+
   const nres = {
     ...res,
     grouped: {
@@ -380,8 +382,6 @@ const reducePendingGroupUpdatesToState = (
       }, {}),
     },
   };
-
-  //console.log('nres.groupKeysUpdated: ', nres.groupKeysUpdated);
 
   const nres2 = {
     ...nres,
@@ -405,25 +405,9 @@ const reducePendingGroupUpdatesToState = (
     },
   };
 
-  //console.log('nres2.groupKeysUpdated: ', nres2.groupKeysUpdated);
-
   return nres2;
 };
-/*
-const reduceNewTasksToQueue = (
-  state: OrderbookStateType,
-  updates: WebSocketOrderbookUpdatesType,
-): OrderbookStateType => ({
-  ...state,
-  pendingGroupUpdates: [
-    ...state.pendingGroupUpdates,
-    {
-      kind: 'u' as OrderbookActionUpdate,
-      updates: { ...updates },
-    },
-  ],
-});
-*/
+
 const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
   groupBy: number,
@@ -456,30 +440,14 @@ export const orderBookReducer = (
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload.value };
       break;
-    /*
-    case 'CALCULATE_GROUPED':
-      return state.options.disableTwoWayProcessing === false
-        ? reducePendingGroupUpdatesToState(state.pendingGroupUpdates, state)
-        : { ...state };
-      break;
-*/
+
     case 'UPDATE_GROUPED':
       return {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
       break;
-    /*
-    case 'ORDERBOOK_SNAPSHOT':
-    case 'ORDERBOOK_UPDATE':
-      return state.options.disableTwoWayProcessing === false
-        ? reduceNewTasksToQueue(state, action.payload.updates)
-        : reducePendingGroupUpdatesToState(
-            reduceNewTasksToQueue(state, action.payload.updates),
-          );
 
-      break;
-*/
     case 'SET_GROUP_BY':
       return reduceStateToNewGroupBySetting(state, action.payload.value);
       break;
