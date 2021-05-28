@@ -1,7 +1,5 @@
 /* eslint security/detect-object-injection:0 */
 
-import React from 'react';
-
 import {
   getNormalizedPrice,
   getGroupedPrice,
@@ -263,7 +261,10 @@ const applyMinimumThresholdsToGroups = (
   return r1;
 };
 
-const ensureRowConsistency = (state, res) => {
+const ensureRowConsistency = (
+  state: OrderbookStateType,
+  res: OrderbookStateType,
+): OrderbookStateType => {
   const sells = Object.entries(state.grouped.bids).slice(
     Object.entries(state.grouped.bids).length - 1,
   )[0];

@@ -20,7 +20,7 @@ import type {
   PendingGroupUpdateRecord,
 } from './types';
 
-import { orderAndLimit, immutableGetReversedArr } from './utils';
+import { orderAndLimit } from './utils';
 
 interface ConnectionStatusState {
   color: string;
@@ -167,6 +167,7 @@ type UseGenericTimerCallbackKind =
 const useGenericTimerCallback = <T = NodeJS.Timeout>(
   [setF, clearF]: UseGenericTimerCallbackKind,
   ms: number,
+  cleanupAtFirstExecution: boolean,
   callback: (...args: any[]) => void,
 ) => {
   const ref = React.useRef<T | undefined>();
@@ -177,6 +178,8 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
       return;
     }
 
+    console.log('[reconnectTimer] finish');
+
     clearF(ref.current);
     ref.current = undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -184,8 +187,10 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
 
   const runClosure = React.useCallback(() => {
     callback(finish);
-    ref.current = undefined;
-  }, [callback, finish]);
+    if (cleanupAtFirstExecution) {
+      ref.current = undefined;
+    }
+  }, [cleanupAtFirstExecution, callback, finish]);
 
   const start = React.useCallback(() => {
     if (ref.current !== undefined) {
@@ -220,11 +225,17 @@ const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
     [setTimeout, clearTimeout],
     ms,
     callback,
+    true,
   );
 
 const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
   // eslint-disable-next-line no-restricted-globals
-  useGenericTimerCallback<number>([setInterval, clearInterval], ms, callback);
+  useGenericTimerCallback<number>(
+    [setInterval, clearInterval],
+    ms,
+    callback,
+    false,
+  );
 
 type MainStateRefType = {
   pendingUpdates: Array<{ updates: Array<PendingGroupUpdateRecord> }>;
