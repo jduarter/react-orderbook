@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 
 import type { UseGeneratorQueueReturn } from './types';
 
@@ -11,10 +11,15 @@ const useGeneratorQueue = <T>(
       ref.current.push(item);
     }
   }, []);
-  const consumeQ = function* () {
+
+  const consumeQ = useCallback(function* () {
     yield ref.current.shift();
-  };
-  return { dispatchFromQ, consumeQ };
+  }, []);
+
+  return useMemo(
+    () => ({ dispatchFromQ, consumeQ }),
+    [dispatchFromQ, consumeQ],
+  );
 };
 
 export default useGeneratorQueue;
