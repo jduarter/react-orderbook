@@ -72,40 +72,13 @@ const OrderbookComponent: FC<OrderbookProps> = ({
   productId = 'PI_XBTUSD',
   webSocketUri = 'wss://www.cryptofacilities.com/ws/v1',
 }) => {
-  const [rdbg, setRdbg] = React.useState<string[]>([]);
+  /*const [rdbg, setRdbg] = React.useState<string[]>([]);
   const addRdbg = React.useCallback((t) => {
     console.log('-> ', t);
     setRdbg((x) => [...x, t]);
   }, []);
-  const {
-    asksData,
-    bidsData,
-    isLoading,
-    orderBookDispatch,
-    groupBy,
-    connectionStatus,
-  } = useOrderbookController({
-    disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
-    subscribeToProductIds: [productId],
-    initialGroupBy,
-    webSocketUri,
-    addRdbg,
-  });
 
-  const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
-
-  return (
-    <View style={styles.flex1}>
-      {!isLoading && connectionStatus.websocket.connected === false && (
-        <React.Fragment>
-          <ErrorScreen
-            errorType={
-              connectionStatus.connectedToInternet === false
-                ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
-                : ERROR_TYPES.SERVICE_IS_UNAVAILABLE
-            }
-          />
-          <ScrollView
+   <ScrollView
             style={{
               position: 'absolute',
               width: '100%',
@@ -120,7 +93,33 @@ const OrderbookComponent: FC<OrderbookProps> = ({
               </Text>
             ))}
           </ScrollView>
-        </React.Fragment>
+  */
+  const {
+    asksData,
+    bidsData,
+    isLoading,
+    orderBookDispatch,
+    groupBy,
+    connectionStatus,
+  } = useOrderbookController({
+    disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
+    subscribeToProductIds: [productId],
+    initialGroupBy,
+    webSocketUri,
+  });
+
+  const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
+
+  return (
+    <View style={styles.flex1}>
+      {!isLoading && connectionStatus.websocket.connected === false && (
+        <ErrorScreen
+          errorType={
+            connectionStatus.connectedToInternet === false
+              ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
+              : ERROR_TYPES.SERVICE_IS_UNAVAILABLE
+          }
+        />
       )}
 
       <View style={styles.orderBookSubWrapper}>

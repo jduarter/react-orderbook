@@ -59,22 +59,12 @@ export const wrapWithLogName =
   (a: unknown, b: any, c: number) =>
     mutatingKeyFunction(a, b, c, dbgInfo);
 
-const immutableObjectWithoutKey = <O extends Record<string, any>>(
+export const immutableObjectWithoutKey = <O extends Record<string, any>>(
   obj: O,
   key: string,
 ): O => {
-  // if (dbgInfo && dbgInfo !== 'immutableObjReplacingKey')
-
-  /*  console.log(
-        'immutableObjWithoutKey: delete key! <' + key + '> ( ' + dbgInfo + ')',
-    );
-*/
   const objCopy: O = { ...obj };
   delete objCopy[key];
-
-  if (key in objCopy) {
-    console.log('ERRRORRR: DELETE WAS NOT WORKING!!!!!!');
-  }
 
   return objCopy;
 };
@@ -82,11 +72,7 @@ const immutableObjectWithoutKey = <O extends Record<string, any>>(
 export const immutableObjWithoutKeyIfExists = <O extends Record<string, any>>(
   obj: O,
   key: string,
-): O => {
-  // if (dbgInfo && dbgInfo !== 'immutableObjReplacingKey')
-
-  return key in obj === false ? obj : immutableObjectWithoutKey(obj, key);
-};
+): O => (key in obj === false ? obj : immutableObjectWithoutKey(obj, key));
 
 export const immutableObjReplacingKey = <
   V,

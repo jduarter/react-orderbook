@@ -38,7 +38,10 @@ export interface OrderbookStateType
     disableTwoWayProcessing: boolean;
   };
   isLoading: boolean;
-  groupKeysUpdated: Record<string, number>;
+  groupKeysUpdated: {
+    bids: Record<string, number>;
+    asks: Record<string, number>;
+  };
 }
 
 export type OrderbookReducerActionTypes =

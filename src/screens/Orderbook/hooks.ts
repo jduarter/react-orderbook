@@ -43,7 +43,6 @@ export const useOrderbookController = ({
   subscribeToProductIds,
   initialGroupBy = 100,
   webSocketUri,
-  addRdbg,
 }: {
   disableTwoWayProcessing: boolean;
   subscribeToProductIds: string[];
@@ -75,7 +74,6 @@ export const useOrderbookController = ({
     webSocketUri,
     orderBookDispatch,
     subscribeToProductIds,
-    addRdbg,
   });
 
   const asksData = orderAndLimit(orderBook.grouped.asks, 8, 'desc');
@@ -170,7 +168,6 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
   [setF, clearF]: UseGenericTimerCallbackKind,
   ms: number,
   callback: (...args: any[]) => void,
-  addRdbg,
 ) => {
   const ref = React.useRef<T | undefined>();
 
@@ -186,20 +183,17 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
   }, []);
 
   const runClosure = React.useCallback(() => {
-    addRdbg('[reconnectTimer] RUN');
     callback(finish);
     ref.current = undefined;
   }, [callback, finish]);
 
   const start = React.useCallback(() => {
-    addRdbg('[reconnectTimer] start');
     if (ref.current !== undefined) {
       console.warn(
         'useGenericTimerCallback: trying to start when there is already a timer',
       );
       return;
     }
-    addRdbg('[reconnectTimer] call!');
 
     ref.current = setF(runClosure, ms);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,18 +222,9 @@ const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
     callback,
   );
 
-const useIntervalCallback = (
-  ms: number,
-  callback: (...args: any[]) => void,
-  addRdbg,
-) =>
+const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
   // eslint-disable-next-line no-restricted-globals
-  useGenericTimerCallback<number>(
-    [setInterval, clearInterval],
-    ms,
-    callback,
-    addRdbg,
-  );
+  useGenericTimerCallback<number>([setInterval, clearInterval], ms, callback);
 
 type MainStateRefType = {
   pendingUpdates: Array<{ updates: Array<PendingGroupUpdateRecord> }>;
@@ -261,8 +246,7 @@ export const useOrderbookConnection = ({
   orderBookDispatch,
   subscribeToProductIds,
   webSocketUri,
-  addRdbg,
-}: UserOrderbookConnectionProperties & { addRdbg: any }): {
+}: UserOrderbookConnectionProperties): {
   connectionStatus: ConnectionStatusState;
 } => {
   const { dispatchUpdate, getSingleUpdate } = useOrderbookMainStateRef();
@@ -329,26 +313,17 @@ export const useOrderbookConnection = ({
   const reconnectTimer = useIntervalCallback(
     5000,
     React.useCallback((): void => {
-      addRdbg('[reconnectTimer]');
-
       if (connectionStatus.websocket.connecting === false) {
-        addRdbg('should retry reconnect NOW');
         orderBookDispatch({ type: 'SET_LOADING', payload: { value: true } });
         connect();
-      } else {
-        addRdbg(
-          'should retry reconnect later: ' +
-            JSON.stringify(connectionStatus.websocket),
-        );
       }
     }, [connectionStatus.websocket, connect]),
-    addRdbg,
   );
 
   const onConnectionStatusChange = React.useCallback(
     (status): void => {
-      console.log('onConnectionStatusChange:', status, addRdbg);
-      addRdbg('SC: ' + JSON.stringify(status));
+      console.log('onConnectionStatusChange:', status);
+
       if (
         status.connected === true &&
         connectionStatus.websocket.connected === true
@@ -373,12 +348,9 @@ export const useOrderbookConnection = ({
         }));
 
         if (!reconnectTimer.isStarted()) {
-          addRdbg('call reconnectTimer!');
+          console.log('call reconnectTimer!');
           reconnectTimer.start();
-        } else {
-          addRdbg('IT WAS ALREADY STARTED! reconnectTimer!');
         }
-
         return;
       }
 
@@ -387,13 +359,13 @@ export const useOrderbookConnection = ({
         websocket: { ...st.websocket, ...status },
       }));
     },
-    [connectionStatus.websocket.connected, addRdbg, reconnectTimer],
+    [connectionStatus.websocket.connected, reconnectTimer],
   );
 
   const onConnect = React.useCallback(
     ({ send }): void => {
       console.log('*** onConnect triggered correctly');
-      addRdbg('*** onConnect triggered correctly');
+
       if (reconnectTimer.isStarted()) {
         reconnectTimer.finish();
       }
@@ -420,17 +392,10 @@ export const useOrderbookConnection = ({
       return;
     }
 
-    const unsub = NetInfo.subscribe((x) => {
-      addRdbg('SUB: ' + JSON.stringify(x));
-      console.log('---> SUB: ', x);
-    });
-
     console.log('[ws] opening connection from mainEffect');
     connect();
 
-    return () => {
-      unsub();
-    };
+    return () => {};
   }, []);
 
   useSafeEffect(mainEffect, []);

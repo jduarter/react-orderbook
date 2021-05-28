@@ -9,6 +9,7 @@ import {
   ob2arr,
   getAffectedPricesInUpdateList,
   getEstimatedMinimumSize,
+  immutableObjectWithoutKey,
 } from './utils';
 
 import type {
@@ -188,12 +189,25 @@ const reduceUpdatesToScopedState = (
   asks: reduceKeyPairToState(updates.asks, initialState.asks),
 });
 
-const getUpdatedActivityTimes = (data, initialGroupKeysUpdated, initialState) =>
+const getUpdatedActivityTimes = (
+  data,
+  initialGroupKeysUpdated,
+  initialState,
+  tt = 'asks',
+) =>
   getAffectedPricesInUpdateList(data).reduce((acc, normalizedPrice) => {
     const last = data.filter(
       (d) => d[0] === parseFloat(normalizedPrice) / Math.pow(10, 2),
     )[0][1];
+
     if (last !== initialState[normalizedPrice]) {
+      /*console.log(
+        'getUpdatedActivityTimes: ',
+        last,
+        initialState[normalizedPrice],
+        normalizedPrice,
+        initialGroupKeysUpdated,
+      );*/
       return { ...acc, [normalizedPrice]: Date.now() };
     } else {
       return acc;
@@ -224,15 +238,17 @@ const reduceUpdatesToScopedStateForGrouped = (
       groupedMutatedData.asks,
       initialGroupKeysUpdated.asks,
       initialState.asks,
+      'asks',
     ),
     bids: getUpdatedActivityTimes(
       groupedMutatedData.bids,
       initialGroupKeysUpdated.bids,
       initialState.bids,
+      'bids',
     ),
   };
 
-  // console.log(groupKeysUpdated);
+  // console.log('GKU:', groupKeysUpdated);
 
   return {
     newMainState,
@@ -306,6 +322,7 @@ const reducePendingGroupUpdatesToState = (
   state: OrderbookStateType,
 ): OrderbookStateType => {
   const initialGroupKeysUpdated = {};
+
   const res = pendingGroupUpdates.reduce(
     (
       acc: OrderbookStateType,
@@ -330,7 +347,16 @@ const reducePendingGroupUpdatesToState = (
           groupedWithMinimumThresholdsApplied,
           state.groupBy,
           acc,
-          { ...initialGroupKeysUpdated, ...acc.groupKeysUpdated },
+          {
+            asks: {
+              ...initialGroupKeysUpdated.asks,
+              ...acc.groupKeysUpdated.asks,
+            },
+            bids: {
+              ...initialGroupKeysUpdated.bids,
+              ...acc.groupKeysUpdated.bids,
+            },
+          },
         );
 
       return {
@@ -345,11 +371,8 @@ const reducePendingGroupUpdatesToState = (
 
   const expiredBids = Object.entries(state.groupKeysUpdated.bids)
     .map(([p, t]) => {
-      if (Date.now() - t > 10000) {
-        /* console.log('-----> ', p, ' IS EXPIRED', {
-          a: t + 3000,
-          b: Date.now(),
-        });*/
+      if (t && Date.now() - t > 5000) {
+        console.log('-> EXPIRE: BID ', p);
         return p;
       } else {
         return;
@@ -359,11 +382,8 @@ const reducePendingGroupUpdatesToState = (
 
   const expiredAsks = Object.entries(state.groupKeysUpdated.asks)
     .map(([p, t]) => {
-      if (Date.now() - t > 10000) {
-        /* console.log('-----> ', p, ' IS EXPIRED', {
-          a: t + 3000,
-          b: Date.now(),
-        });*/
+      if (t && Date.now() - t > 5000) {
+        console.log('-> EXPIRE: ASK ', p);
         return p;
       } else {
         return;
@@ -392,7 +412,31 @@ const reducePendingGroupUpdatesToState = (
     },
   };
 
-  return nres;
+  //console.log('nres.groupKeysUpdated: ', nres.groupKeysUpdated);
+
+  const nres2 = {
+    ...nres,
+    groupKeysUpdated: {
+      bids: Object.entries(res.groupKeysUpdated.bids)
+        .filter((gb) => {
+          return expiredBids.indexOf(gb[0]) === -1;
+        })
+        .reduce((ac, [ck, cv]) => {
+          return { ...ac, [ck]: cv };
+        }, {}),
+      asks: Object.entries(res.groupKeysUpdated.asks)
+        .filter((gb) => {
+          return expiredAsks.indexOf(gb[0]) === -1;
+        })
+        .reduce((ac, [ck, cv]) => {
+          return { ...ac, [ck]: cv };
+        }, {}),
+    },
+  };
+
+  //console.log('nres2.groupKeysUpdated: ', nres2.groupKeysUpdated);
+
+  return nres2;
 };
 
 const reduceNewTasksToQueue = (
@@ -441,20 +485,20 @@ export const orderBookReducer = (
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload.value };
       break;
-
+    /*
     case 'CALCULATE_GROUPED':
       return state.options.disableTwoWayProcessing === false
         ? reducePendingGroupUpdatesToState(state.pendingGroupUpdates, state)
         : { ...state };
       break;
-
+*/
     case 'UPDATE_GROUPED':
       return {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
       break;
-
+    /*
     case 'ORDERBOOK_SNAPSHOT':
     case 'ORDERBOOK_UPDATE':
       return state.options.disableTwoWayProcessing === false
@@ -464,7 +508,7 @@ export const orderBookReducer = (
           );
 
       break;
-
+*/
     case 'SET_GROUP_BY':
       return reduceStateToNewGroupBySetting(state, action.payload.value);
       break;
