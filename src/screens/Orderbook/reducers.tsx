@@ -311,13 +311,10 @@ const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: PendingGroupUpdateRecord[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
-  const initialGroupKeysUpdated = {};
+  const initialGroupKeysUpdated = { asks: {}, bids: {} };
 
   const res = pendingGroupUpdates.reduce(
-    (
-      acc: OrderbookStateType,
-      { updates }: { updates: PendingGroupUpdateRecord },
-    ) => {
+    (acc: OrderbookStateType, { updates }) => {
       const groupedWithMinimumThresholdsApplied = {
         bids: applyMinimumThresholdsToGroups(
           acc.grouped.bids,
@@ -356,7 +353,7 @@ const reducePendingGroupUpdatesToState = (
         groupKeysUpdated,
       };
     },
-    { ...state },
+    state,
   );
 
   const expiredBids = Object.entries(state.groupKeysUpdated.bids)
@@ -372,18 +369,14 @@ const reducePendingGroupUpdatesToState = (
     grouped: {
       ...res.grouped,
       bids: Object.entries(res.grouped.bids).reduce((acc, [currK, currV]) => {
-        if (expiredBids.indexOf(currK) >= 0) {
-          return { ...acc };
-        } else {
-          return { ...acc, [currK]: currV };
-        }
+        return expiredBids.indexOf(currK) >= 0
+          ? acc
+          : { ...acc, [currK]: currV };
       }, {}),
       asks: Object.entries(res.grouped.asks).reduce((acc, [currK, currV]) => {
-        if (expiredAsks.indexOf(currK) >= 0) {
-          return { ...acc };
-        } else {
-          return { ...acc, [currK]: currV };
-        }
+        return expiredAsks.indexOf(currK) >= 0
+          ? acc
+          : { ...acc, [currK]: currV };
       }, {}),
     },
   };
