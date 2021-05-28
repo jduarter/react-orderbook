@@ -366,8 +366,11 @@ const reducePendingGroupUpdatesToState = (
     .map(([p, t]) =>
       t &&
       Date.now() - t > 3000 &&
+      sells &&
+      sells[0] &&
       parseFloat(p) / Math.pow(10, 2) >
-        parseFloat(sells[0]) / Math.pow(10, 2) - state.groupBy * 3
+        parseFloat(sells[0]) / Math.pow(10, 2) -
+          state.groupBy * (Math.max(state.grouped.bids.length, 12) / 4)
         ? p
         : undefined,
     )
@@ -377,8 +380,11 @@ const reducePendingGroupUpdatesToState = (
     .map(([p, t]) =>
       t &&
       Date.now() - t > 3000 &&
+      buys &&
+      buys[0] &&
       parseFloat(p) / Math.pow(10, 2) <
-        parseFloat(buys[0]) / Math.pow(10, 2) + state.groupBy * 3
+        parseFloat(buys[0]) / Math.pow(10, 2) +
+          state.groupBy * (Math.max(state.grouped.asks.length, 12) / 4)
         ? p
         : undefined,
     )
