@@ -27,7 +27,8 @@
      -e REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address) \
      -p 19000:19000 \
      -p 19001:19001 \
-     orderbook1rn```
+     orderbook1rn
+     ```
 
 ### 1. Project bootstrapping.
 
