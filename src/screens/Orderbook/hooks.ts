@@ -5,6 +5,7 @@ import type {
   WebSocketOrderbookSnapshotMessage,
   WebSocketOrderbookUpdateMessage,
 } from '../../hooks/useWebSocket';
+
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 
@@ -13,6 +14,8 @@ import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 import * as NetInfo from '../../services/NetInfo';
 
 import type { OrderbookStateType, OrderbookReducerAction } from './types';
+
+import { orderAndLimit } from './utils';
 
 interface ConnectionStatusState {
   color: string;
@@ -39,8 +42,11 @@ export const useOrderbookController = ({
   subscribeToProductIds: string[];
   initialGroupBy: number;
 }): UserOrderbookConnectionProperties & {
-  orderBook: OrderbookStateType;
+  bidsData: WebSocketOrderbookDataArray;
+  asksData: WebSocketOrderbookDataArray;
   connectionStatus: ConnectionStatusState;
+  isLoading: boolean;
+  groupBy: number;
 } => {
   const lazyInitialState: OrderbookStateType = React.useMemo(
     () => ({
@@ -60,15 +66,26 @@ export const useOrderbookController = ({
     orderBookDispatch,
     subscribeToProductIds,
   });
-  /*useOrderbookProcessing({
-        onProcessCycle: React.useCallback(() => {
-            orderBookDispatch({ type: 'CALCULATE_GROUPED', payload: null });
-        }, []),
-    });
-    */
+
+  const asksData = orderAndLimit(orderBook.grouped.asks, 8, 'desc');
+  const bidsData = orderAndLimit(orderBook.grouped.bids, 8, 'desc');
+
+  const isLoading =
+    !orderBook ||
+    !orderBook.grouped ||
+    asksData.length === 0 ||
+    bidsData.length === 0;
+
   return React.useMemo(
-    () => ({ orderBook, orderBookDispatch, connectionStatus }),
-    [connectionStatus, orderBook],
+    () => ({
+      asksData,
+      bidsData,
+      groupBy: orderBook.groupBy,
+      isLoading,
+      orderBookDispatch,
+      connectionStatus,
+    }),
+    [connectionStatus, asksData, orderBook.groupBy, isLoading, bidsData],
   );
 };
 
@@ -109,7 +126,7 @@ const useTimeoutCallback = (
   timeoutMs: number,
   callback: (...args: any[]) => void,
 ) => {
-  console.log('useTimeoutCallback renders');
+  //  console.log('useTimeoutCallback renders');
   const ref = React.useRef<NodeJS.Timeout | undefined>();
 
   const runClosure = React.useCallback(() => {
@@ -129,7 +146,7 @@ const useTimeoutCallback = (
 
     // eslint-disable-next-line no-restricted-globals
     ref.current = setTimeout(runClosure, timeoutMs);
-  }, [callback, timeoutMs, runClosure]);
+  }, [timeoutMs, runClosure]);
 
   const finish = React.useCallback(() => {
     console.log('[reconnectTimer] finish');
@@ -146,7 +163,7 @@ const useTimeoutCallback = (
     return () => {
       finish();
     };
-  }, [start, finish]);
+  }, []);
 
   return React.useMemo(() => ({ start, finish }), [start, finish]);
 };
@@ -168,6 +185,15 @@ export const useOrderbookConnection = ({
         connecting: false,
       },
     });
+
+  useOrderbookProcessing({
+    onProcessCycle: React.useCallback(() => {
+      orderBookDispatch({
+        type: 'CALCULATE_GROUPED',
+        payload: null,
+      });
+    }, []),
+  });
 
   //reduceByGroupNumber
   const onMessageReceived = React.useCallback((decoded) => {
@@ -216,16 +242,12 @@ export const useOrderbookConnection = ({
   );
 
   const onConnectionStatusChange = React.useCallback(
-    (status, client): void => {
+    (status): void => {
       console.log('onConnectionStatusChange:', status);
-      if (status.connected === true) {
-        client.send(
-          JSON.stringify({
-            event: 'subscribe',
-            feed: 'book_ui_1',
-            product_ids: subscribeToProductIds,
-          }),
-        );
+      if (
+        status.connected === true &&
+        connectionStatus.websocket.connected === true
+      ) {
         setConnectionStatus((st) => ({
           ...st,
           websocket: {
@@ -254,48 +276,62 @@ export const useOrderbookConnection = ({
         websocket: { ...st.websocket, ...status },
       }));
     },
-    [reconnectTimer],
+    [connectionStatus.websocket.connected, reconnectTimer],
   );
 
-  useWebSocket<OrderbookWSMessageType>({
+  const onConnect = React.useCallback(
+    ({ send }): void => {
+      send({
+        event: 'subscribe',
+        feed: 'book_ui_1',
+        product_ids: subscribeToProductIds,
+      });
+    },
+    [subscribeToProductIds],
+  );
+
+  const { connect } = useWebSocket<OrderbookWSMessageType>({
     uri: WEBSOCKET_URI,
     onMessageReceived,
     onConnectionStatusChange,
+    onConnect,
   });
 
-  const mainEffect = React.useCallback(
-    (isMounted) => {
-      if (!isMounted()) {
-        return;
-      }
+  const mainEffect = React.useCallback((isMounted) => {
+    if (!isMounted()) {
+      return;
+    }
 
-      if (isConnected) {
-        if (isInternetReachable) {
-          setConnectionStatus((st) => ({
-            ...st,
-            color: 'green',
-            connectedToInternet: true,
-          }));
-          console.log('internet is now reachable');
-        } else {
-          setConnectionStatus((st) => ({
-            ...st,
-            color: 'yellow',
-            connectedToInternet: false,
-          }));
-        }
+    console.log('[ws] opening connection');
+    connect();
+  }, []);
+
+  useSafeEffect(mainEffect, []);
+
+  React.useEffect(() => {
+    if (isConnected) {
+      if (isInternetReachable) {
+        setConnectionStatus((st) => ({
+          ...st,
+          color: 'green',
+          connectedToInternet: true,
+        }));
+        console.log('internet is now reachable');
       } else {
         setConnectionStatus((st) => ({
           ...st,
-          color: 'red',
+          color: 'yellow',
           connectedToInternet: false,
         }));
       }
-    },
-    [isConnected, isInternetReachable],
-  );
-
-  useSafeEffect(mainEffect, []);
+    } else {
+      setConnectionStatus((st) => ({
+        ...st,
+        color: 'red',
+        connectedToInternet: false,
+      }));
+    }
+  }, [isConnected, isInternetReachable]);
 
   console.log('useOrderbookConnection renders: ', connectionStatus);
 
@@ -321,11 +357,13 @@ export const useOrderbookProcessing = ({
 }: UseOrderbookProcessingProperties) => {
   //  const calculateGrouped = useDebounceCallback(onProcessCycle, 125);
 
-  React.useEffect(() => {
+  useSafeEffect((isMounted) => {
     // eslint-disable-next-line no-restricted-globals
     const intval = setInterval(() => {
-      onProcessCycle();
-    }, 1000);
+      if (isMounted()) {
+        onProcessCycle();
+      }
+    }, 400);
     return () => {
       // eslint-disable-next-line no-restricted-globals
       if (intval) clearInterval(intval);

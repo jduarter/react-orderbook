@@ -1,34 +1,18 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import type { FC } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, Text, View, Image, Platform } from 'react-native';
 
 import { useDebounceCallback } from '@react-hook/debounce';
 
 import { default as OrderbookSection } from './components/OrderbookSection';
 
+import GroupButton from './atoms/GroupButton';
+import LoadingOverlay from '@components/LoadingOverlay';
 import type { OrderbookOrdersSortedObject } from './types';
-import { orderAndLimit, getGroupByFactor } from './utils';
+import { getGroupByFactor } from './utils';
 import { useOrderbookController } from './hooks';
 
-const ENABLE_TWO_WAY_REDUCER_ACTIONS = false;
-
-const GroupButton: FC<{
-  title: string;
-  onPress: () => void;
-  style?: ViewStyle;
-}> = ({ title, onPress, style }) => {
-  return (
-    <TouchableOpacity onPress={onPress} style={style}>
-      <Text style={styles.groupButtonDefaultStyle}>{title}</Text>
-    </TouchableOpacity>
-  );
-};
+const ENABLE_TWO_WAY_REDUCER_ACTIONS = true;
 
 const calculateSpread = (high: number, low: number) => {
   if (!low || !high) {
@@ -90,117 +74,142 @@ const SpreadWidget: FC<{
   return <Spread high={parseFloat(a[0]) / 100} low={parseFloat(b[0]) / 100} />;
 };
 
-const OrderbookComponent: FC = () => {
-  const { orderBook, orderBookDispatch, connectionStatus } =
-    useOrderbookController({
-      disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
-      subscribeToProductIds: ['PI_XBTUSD'],
-      initialGroupBy: 100,
+interface OrderbookProps {
+  initialGroupBy?: number;
+  productId: string;
+}
+
+const ERROR_TYPES = {
+  INTERNET_IS_UNAVAILABLE: Symbol('INTERNET_IS_UNAVAILABLE'),
+  SERVICE_IS_UNAVAILABLE: Symbol('SERVICE_IS_UNAVAILABLE'),
+};
+interface ErrorScreenProps {
+  errorType:
+    | typeof ERROR_TYPES.INTERNET_IS_UNAVAILABLE
+    | typeof ERROR_TYPES.SERVICE_IS_UNAVAILABLE;
+}
+
+const ERROR_TITLES = {
+  [ERROR_TYPES.INTERNET_IS_UNAVAILABLE]: 'Internet seems to be unavailable.',
+  [ERROR_TYPES.SERVICE_IS_UNAVAILABLE]: 'Service is not available.',
+};
+
+const ErrorScreen: React.FC<ErrorScreenProps> = ({ errorType }) => (
+  <View style={styles.genericConnectionProblemWrapper}>
+    <Image
+      source={require('./assets/error.gif')}
+      style={{ width: '100%', height: '100%', position: 'absolute' }}
+    />
+    <Text
+      style={{
+        textAlign: 'center',
+        margin: '10%',
+        marginTop: '30%',
+        fontFamily: Platform.OS === 'ios' ? 'Monospace' : 'monospace',
+        color: '#c7ea46',
+        fontSize: 20,
+        fontWeight: 'bold',
+      }}>
+      {ERROR_TITLES[errorType]}
+    </Text>
+  </View>
+);
+
+const getGroupByButtonPressEventHandler =
+  (v: -1 | 1, groupBy: number, orderBookDispatch: React.Dispatch<any>) => () =>
+    getGroupByFactor(groupBy, v) &&
+    orderBookDispatch({
+      type: 'SET_GROUP_BY',
+      payload: {
+        value:
+          v === -1
+            ? groupBy / getGroupByFactor(groupBy, v)
+            : groupBy * getGroupByFactor(groupBy, v),
+      },
     });
 
-  const getGroupByButton = useCallback(
-    (v: -1 | 1) => () =>
-      getGroupByFactor(orderBook.groupBy, v) &&
-      orderBookDispatch({
-        type: 'SET_GROUP_BY',
-        payload: {
-          value:
-            v === -1
-              ? orderBook.groupBy / getGroupByFactor(orderBook.groupBy, v)
-              : orderBook.groupBy * getGroupByFactor(orderBook.groupBy, v),
-        },
-      }),
-    [orderBook.groupBy],
-  );
+const GroupByButtons: React.FC<{
+  groupBy: number;
+  orderBookDispatch: React.DispatchWithoutAction;
+}> = ({ groupBy, orderBookDispatch }) => (
+  <View style={styles.groupByButtonsWrap}>
+    <GroupButton
+      title={'-'}
+      style={styles.flex1}
+      onPress={getGroupByButtonPressEventHandler(
+        -1,
+        groupBy,
+        orderBookDispatch,
+      )}
+    />
+    <GroupButton
+      title={'+'}
+      style={styles.flex1}
+      onPress={getGroupByButtonPressEventHandler(1, groupBy, orderBookDispatch)}
+    />
+  </View>
+);
 
-  const groupByButtons = useMemo(
-    () => (
-      <View style={{ padding: 4, flex: 1, flexDirection: 'row' }}>
-        <GroupButton
-          title={'-'}
-          style={{ flex: 1 }}
-          onPress={getGroupByButton(-1)}
-        />
-        <GroupButton
-          title={'+'}
-          style={{ flex: 1 }}
-          onPress={getGroupByButton(1)}
-        />
-      </View>
-    ),
-    [getGroupByButton],
-  );
-
-  if (!orderBook || !orderBook.grouped) {
-    return <Text>Loading</Text>;
-  }
-
-  const asksData = orderAndLimit(
-    orderBook.groupBy === 1 ? orderBook.asks : orderBook.grouped.asks,
-    8,
-    'desc',
-  );
-  const bidsData = orderAndLimit(
-    orderBook.groupBy === 1 ? orderBook.bids : orderBook.grouped.bids,
-    8,
-    'desc',
-  );
+const OrderbookComponent: FC<OrderbookProps> = ({
+  initialGroupBy = 100,
+  productId = 'PI_XBTUSD',
+}) => {
+  const {
+    asksData,
+    bidsData,
+    isLoading,
+    orderBookDispatch,
+    groupBy,
+    connectionStatus,
+  } = useOrderbookController({
+    disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
+    subscribeToProductIds: [productId],
+    initialGroupBy,
+  });
 
   const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
 
   return (
-    <View style={{ flex: 1 }}>
-      {connectionStatus.websocket.connected === false &&
-        (connectionStatus.connectedToInternet === true ? (
-          <View style={styles.genericConnectionProblemWrapper}>
-            <Text>Problems with Websocket service</Text>
-          </View>
-        ) : (
-          <View style={styles.genericConnectionProblemWrapper}>
-            <Text>Problems with inteernet</Text>
-          </View>
-        ))}
+    <View style={styles.flex1}>
+      {!isLoading && connectionStatus.websocket.connected === false && (
+        <ErrorScreen
+          errorType={
+            connectionStatus.connectedToInternet === false
+              ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
+              : ERROR_TYPES.SERVICE_IS_UNAVAILABLE
+          }
+        />
+      )}
 
       <View style={styles.orderBookSubWrapper}>
-        <View
-          style={{
-            height: '45%',
-            overflow: 'hidden',
-            justifyContent: 'flex-end',
-          }}>
-          {asksData.length > 0 ? (
-            <OrderbookSection
-              keyPrefix={'a_'}
-              backgroundColor={'#7c0a02'}
-              normalizedData={asksData}
-              totalOrderBy={'asc'}
-            />
-          ) : (
-            <Text>Loading</Text>
-          )}
+        <View style={styles.firstColWrap}>
+          <OrderbookSection
+            keyPrefix={'a_'}
+            backgroundColor={'#7c0a02'}
+            normalizedData={asksData}
+            totalOrderBy={'asc'}
+          />
         </View>
         <View style={styles.orderBookSummaryWrap}>
-          {spreadCalcIsReady && (
+          {/*spreadCalcIsReady && (
             <SpreadWidget bids={orderBook.bids} asks={orderBook.asks} />
-          )}
-          <Text style={{ flex: 1, flexShrink: 0 }}>
-            Group: {orderBook.groupBy}
-          </Text>
-          {groupByButtons}
+          )*/}
+          <Text style={styles.groupText}>Group: {groupBy}</Text>
+          <GroupByButtons
+            groupBy={groupBy}
+            orderBookDispatch={orderBookDispatch}
+          />
         </View>
-        <View style={{ height: '45%', overflow: 'hidden' }}>
-          {bidsData.length > 0 ? (
-            <OrderbookSection
-              keyPrefix={'b_'}
-              backgroundColor={'#043927'}
-              normalizedData={bidsData}
-              totalOrderBy={'desc'}
-            />
-          ) : (
-            <Text>Loading</Text>
-          )}
+        <View style={styles.secondColWrap}>
+          <OrderbookSection
+            keyPrefix={'b_'}
+            backgroundColor={'#043927'}
+            normalizedData={bidsData}
+            totalOrderBy={'desc'}
+          />
         </View>
       </View>
+      <LoadingOverlay visible={isLoading} />
     </View>
   );
 };
@@ -209,7 +218,7 @@ export default OrderbookComponent;
 
 const styles = StyleSheet.create({
   genericConnectionProblemWrapper: {
-    backgroundColor: 'red',
+    backgroundColor: '#000',
     position: 'absolute',
     width: '100%',
     height: '100%',
@@ -231,6 +240,13 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
   },
-
-  groupButtonDefaultStyle: { color: '#666', fontSize: 32 },
+  groupByButtonsWrap: { padding: 4, flex: 1, flexDirection: 'row' },
+  groupText: { flex: 1, flexShrink: 0, color: '#fff' },
+  firstColWrap: {
+    height: '45%',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  secondColWrap: { height: '45%', overflow: 'hidden' },
+  flex1: { flex: 1 },
 });

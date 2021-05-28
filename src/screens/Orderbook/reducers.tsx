@@ -28,7 +28,7 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   asks: {},
   grouped: { bids: {}, asks: {} },
   pendingGroupUpdates: [],
-  options: { disableTwoWayProcessing: true },
+  options: { disableTwoWayProcessing: false },
 };
 
 export const uniq = <T extends unknown = any>(array: T[]): T[] => [
@@ -60,19 +60,19 @@ export const reduceKeyPairToState = <
   data: T,
   initialState: OrderbookOrdersSortedObject,
 ): OrderbookOrdersSortedObject => {
-  console.log(
+  /*console.log(
     '    reduceKeyPairToState: input: initialState=',
     initialState,
     'updates: ',
     data,
-  );
+  );*/
 
   const res = data.reduce(
     (acc, [price, oSize]) =>
       immutableObjReplacingKey(acc, getNormalizedPrice(price), oSize),
     initialState,
   );
-  console.log('    reduceKeyPairToState: output:', res);
+  // console.log('    reduceKeyPairToState: output:', res);
   return res;
 };
 
@@ -105,7 +105,7 @@ export const mutateForGrouping = (
   if (updates.length === 0) {
     return [ob2arr(initialState), inputLastKnownExactValues];
   }
-  console.log();
+  /* console.log();
   console.log();
   console.log(
     '***** mutateForGrouping STARTS',
@@ -116,7 +116,7 @@ export const mutateForGrouping = (
     inputLastKnownExactValues,
     'initial state=',
     initialState,
-  );
+  );*/
 
   const initialAcc = initialState; //array2ob(initialReducerState);
 
@@ -141,7 +141,7 @@ export const mutateForGrouping = (
 
       const oldGroupSize = acc[usePrice] || 0;
 
-      console.log('');
+      /*   console.log('');
       console.log(
         '[***] Starts function: process: ',
         {
@@ -151,7 +151,7 @@ export const mutateForGrouping = (
           exact: { old: oldSizeForExact, diff: exactDiff },
         },
         { group: { old: oldGroupSize } },
-      );
+      );*/
 
       if (oldGroupSize > 0) {
         if (exactDiff !== 0) {
@@ -178,15 +178,12 @@ export const mutateForGrouping = (
     },
     { acc: initialAcc, lastKnownExactValues: inputLastKnownExactValues },
   );
-  const r2 = ob2arr(r1.acc);
-
+  /*
   console.log('RESULT OF NEW EXACT VALUES: ', r1.lastKnownExactValues);
-
   console.log('EXACT VALUES ORIG WAS: : ', inputLastKnownExactValues);
-
   console.log('RESULT: ', r2);
-  console.log(); //{  r2 });
-  return [r2, r1.lastKnownExactValues];
+  console.log(); */
+  return [ob2arr(r1.acc), r1.lastKnownExactValues];
 };
 
 const mutateScopeForGrouping = (
@@ -198,9 +195,6 @@ const mutateScopeForGrouping = (
   newMainState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
   groupedMutatedData: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
 } => {
-  /*  console.log('    mutateScopeForGrouping: initialState=', initialState);
-    console.log();
-*/
   const [bids, mainBids] = mutateForGrouping(
     updates.bids,
     groupBy,
@@ -237,8 +231,8 @@ const reduceUpdatesToScopedStateForGrouped = (
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
 ) => {
-  console.log();
-  console.log('<> reduceUpdatesToScopedStateForGrouped STARTS');
+  /*console.log();
+  console.log('<> reduceUpdatesToScopedStateForGrouped STARTS');*/
   /**
    * convertir datos en delta "sustitutivo"
    */
@@ -249,10 +243,10 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState,
   );
 
-  console.log('    [G] ', {
+  /*console.log('    [G] ', {
     initialState,
     mutatedData: JSON.stringify(groupedMutatedData),
-  });
+  });*/
 
   const returnValue = reduceUpdatesToScopedState(
     groupedMutatedData,
@@ -271,7 +265,7 @@ const applyMinimumThresholdsToGroups = (
   updates: WebSocketOrderbookDataArray,
 ) => {
   if (updates.length === 0) {
-    console.log('applyMinimumThresholdsToGroups: updates.length = 0');
+    //  console.log('applyMinimumThresholdsToGroups: updates.length = 0');
     return groups;
   }
 
@@ -320,10 +314,32 @@ const applyMinimumThresholdsToGroups = (
     {},
   );
 
-  console.log('applyMinimumThresholdsToGroups R1 is: ', r1);
+  // console.log('applyMinimumThresholdsToGroups R1 is: ', r1);
 
   return r1;
 };
+
+const wipeZeroRecords = (
+  input: OrderbookOrdersSortedObject,
+): OrderbookOrdersSortedObject =>
+  Object.entries(input).reduce(
+    (acc, [currKey, currVal]) =>
+      currVal !== 0 ? { ...acc, [currKey]: currVal } : acc,
+    {},
+  );
+
+const reduceScopeWithFn = <
+  T extends OrderbookOrdersSortedObject = OrderbookOrdersSortedObject,
+>(
+  input: OrderbookGenericScopeDataType<T>,
+  transformer: (
+    input: OrderbookOrdersSortedObject,
+  ) => OrderbookOrdersSortedObject,
+): OrderbookGenericScopeDataType<T> =>
+  ({
+    bids: transformer(input.bids),
+    asks: transformer(input.asks),
+  } as OrderbookGenericScopeDataType<T>);
 
 const reducePendingGroupUpdatesToState = (
   state: OrderbookStateType,
@@ -352,11 +368,15 @@ const reducePendingGroupUpdatesToState = (
         acc,
       );
 
-      return { ...acc, ...newMainState, grouped };
+      return {
+        ...acc,
+        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
+        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+      };
     },
     { ...stateWithoutPendingGroupUpdates, pendingGroupUpdates: [] },
   );
-  console.log('reducePendingGroupUpdatesToState: FINISHES: output: ', res); //state);
+
   return res;
 };
 
@@ -399,7 +419,7 @@ export const orderBookReducer = (
   state: OrderbookStateType,
   action: OrderbookReducerAction,
 ): OrderbookStateType => {
-  console.log('[ *!* ] Executing action: <' + action.type + '>', state);
+  // console.log('[ *!* ] Executing action: <' + action.type + '>', state);
   switch (action.type) {
     case 'CALCULATE_GROUPED':
       return state.options.disableTwoWayProcessing === false
