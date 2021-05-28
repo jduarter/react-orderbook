@@ -370,7 +370,7 @@ export const orderBookReducer = (
     case 'CALCULATE_GROUPED':
       return state.options.disableTwoWayProcessing === false
         ? {
-            ...reducePendingGroupUpdatesToState_NEW(
+            ...reducePendingGroupUpdatesToState(
               state.pendingGroupUpdates,
               state,
             ),
@@ -381,7 +381,7 @@ export const orderBookReducer = (
 
     case 'UPDATE_GROUPED':
       return {
-        ...reducePendingGroupUpdatesToState_NEW(action.payload.updates, state),
+        ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
       break;
