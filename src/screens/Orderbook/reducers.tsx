@@ -16,9 +16,7 @@ import type {
   OrderbookGenericScopeDataType,
   OrderbookStateType,
   PendingGroupUpdateRecord,
-  OrderbookActionUpdate,
   OrderbookReducerAction,
-  WebSocketOrderbookUpdatesType,
 } from './types';
 
 import type {
