@@ -365,7 +365,7 @@ const reducePendingGroupUpdatesToState = (
   const expiredBids = Object.entries(state.groupKeysUpdated.bids)
     .map(([p, t]) =>
       t &&
-      Date.now() - t > 10000 &&
+      Date.now() - t > 3000 &&
       parseFloat(p) / Math.pow(10, 2) >
         parseFloat(sells[0]) / Math.pow(10, 2) - state.groupBy * 3
         ? p
@@ -376,7 +376,7 @@ const reducePendingGroupUpdatesToState = (
   const expiredAsks = Object.entries(state.groupKeysUpdated.asks)
     .map(([p, t]) =>
       t &&
-      Date.now() - t > 10000 &&
+      Date.now() - t > 3000 &&
       parseFloat(p) / Math.pow(10, 2) <
         parseFloat(buys[0]) / Math.pow(10, 2) + state.groupBy * 3
         ? p
