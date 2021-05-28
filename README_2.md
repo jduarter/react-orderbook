@@ -2,7 +2,7 @@
 
 ## Install instructions.
 -  [ ] npm install # Please do not use yarn (package-lock.json)
--  [ ] npm run ios:pods
+-  [ ] npx pod-install
 -  [ ] npm test
 
 ## Approach analysis description and time spent.
