@@ -411,7 +411,7 @@ const reducePendingGroupUpdatesToState = (
 
   return nres2;
 };
-
+/*
 const reduceNewTasksToQueue = (
   state: OrderbookStateType,
   updates: WebSocketOrderbookUpdatesType,
@@ -425,7 +425,7 @@ const reduceNewTasksToQueue = (
     },
   ],
 });
-
+*/
 const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
   groupBy: number,
@@ -438,7 +438,7 @@ const reduceStateToNewGroupBySetting = (
     { ...INITIAL_ORDERBOOK_STATE.grouped },
     groupBy,
     { bids: {}, asks: {} },
-    {},
+    { bids: {}, asks: {} },
   );
   return {
     ...state,

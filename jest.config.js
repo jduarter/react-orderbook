@@ -7,9 +7,10 @@ module.exports = {
 	transform: {
 		...tsjPreset.transform,
 		'\\.js$': '<rootDir>/node_modules/react-native/jest/preprocessor.js',
+		"node_modules/react-native-orientation-locker/.+\\.(j|t)sx?$": "ts-jest"
 	},
 	testRegex: '(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$',
-	transformIgnorePatterns:['<rootDir>/node_modules/react-native-orientation-locker'],
+//	transformIgnorePatterns:['<rootDir>/node_modules/react-native-orientation-locker'],
 
 	testPathIgnorePatterns: ['\\.snap$', '<rootDir>/node_modules/'],
 	globals: {
