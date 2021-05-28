@@ -10,6 +10,10 @@ import type {
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 
+import { useSafeEffect } from '@hooks/useSafeEffect';
+import { useIntervalCallback } from '@hooks/useTimerCallbacks';
+import { useGeneratorQueue } from '@hooks/useGeneratorQueue';
+
 import * as NetInfo from '../../services/NetInfo';
 
 import type {
@@ -107,152 +111,17 @@ export const useOrderbookController = ({
   );
 };
 
-type IsMountedFunctionType = () => boolean;
-type UseSafeEffectDestructor = () => void;
+const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
+  useGeneratorQueue<PendingGroupUpdateRecord>(initial);
 
-type UseSafeEffectEffect = (
-  m: IsMountedFunctionType,
-) => void | UseSafeEffectDestructor;
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const voidFn = (): void => {};
-
-const useSafeEffect = (
-  effect: UseSafeEffectEffect,
-  deps?: React.DependencyList,
-) => {
-  const ref = React.useRef<{
-    mounted: boolean;
-    effectFn: null | UseSafeEffectEffect;
-  }>({ mounted: false, effectFn: null });
-  React.useEffect(() => {
-    ref.current.mounted = true;
-    return () => {
-      ref.current.effectFn = voidFn;
-      ref.current.mounted = false;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    ref.current.effectFn = effect;
-  }, [effect]);
-
-  const getLastEffectVersion = React.useCallback(() => {
-    return ref.current.effectFn || voidFn;
-  }, []);
-
-  const isMounted = React.useCallback(() => ref.current.mounted, []);
-
-  React.useEffect(
-    () =>
-      ref.current.mounted === true
-        ? getLastEffectVersion()(isMounted)
-        : undefined,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [...(deps || []), getLastEffectVersion, isMounted],
-  );
-
-  return React.useMemo<{ isMounted: IsMountedFunctionType }>(
-    () => ({ isMounted }),
-    [isMounted],
-  );
-};
-
-type UseGenericTimerCallbackKind =
-  // eslint-disable-next-line no-restricted-globals
-  | [typeof setTimeout, typeof setInterval]
-  // eslint-disable-next-line no-restricted-globals
-  | [typeof clearTimeout, typeof clearInterval];
-
-const useGenericTimerCallback = <T = NodeJS.Timeout>(
-  [setF, clearF]: UseGenericTimerCallbackKind,
-  ms: number,
-  cleanupAtFirstExecution: boolean,
-  callback: (...args: any[]) => void,
-) => {
-  const ref = React.useRef<T | undefined>();
-
-  const finish = React.useCallback(() => {
-    console.log('[reconnectTimer] finish');
-    if (!ref.current) {
-      return;
-    }
-
-    console.log('[reconnectTimer] finish');
-
-    clearF(ref.current);
-    ref.current = undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const runClosure = React.useCallback(() => {
-    callback(finish);
-    if (cleanupAtFirstExecution) {
-      ref.current = undefined;
-    }
-  }, [cleanupAtFirstExecution, callback, finish]);
-
-  const start = React.useCallback(() => {
-    if (ref.current !== undefined) {
-      console.warn(
-        'useGenericTimerCallback: trying to start when there is already a timer',
-      );
-      return;
-    }
-
-    ref.current = setF(runClosure, ms);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ms, runClosure]);
-
-  const isStarted = React.useCallback(() => ref.current !== undefined, []);
-
-  React.useEffect(() => {
-    return () => {
-      finish();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return React.useMemo(
-    () => ({ start, finish, isStarted }),
-    [start, finish, isStarted],
-  );
-};
-
-const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
-  useGenericTimerCallback<NodeJS.Timeout>(
-    // eslint-disable-next-line no-restricted-globals
-    [setTimeout, clearTimeout],
-    ms,
-
-    true,
-    callback,
-  );
-
-const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
-  useGenericTimerCallback<number>(
-    [setInterval, clearInterval], // eslint-disable-line no-restricted-globals
-    ms,
-
-    false,
-    callback,
-  );
-
-type MainStateRefType = {
-  pendingUpdates: Array<{ updates: Array<PendingGroupUpdateRecord> }>;
-};
-
-const useOrderbookMainStateRef = () => {
-  const ref = React.useRef<MainStateRefType>({ pendingUpdates: [] });
-  const dispatchUpdate = React.useCallback(({ payload: { updates } }) => {
-    // console.log('-> push to queue');
-    ref.current.pendingUpdates.push({ updates });
-  }, []);
-  const getSingleUpdate = function* () {
-    yield ref.current.pendingUpdates.shift();
-  };
-  return { dispatchUpdate, getSingleUpdate };
-};
+const INITIAL_CONNECTION_STATUS_STATE = () => ({
+  color: 'white',
+  connectedToInternet: false,
+  websocket: {
+    connected: false,
+    connecting: false,
+  },
+});
 
 export const useOrderbookConnection = ({
   orderBookDispatch,
@@ -261,22 +130,15 @@ export const useOrderbookConnection = ({
 }: UserOrderbookConnectionProperties): {
   connectionStatus: ConnectionStatusState;
 } => {
-  const { dispatchUpdate, getSingleUpdate } = useOrderbookMainStateRef();
+  const { dispatchFromQ, consumeQ } = useOrderbookMainStateRef();
   const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
 
   const [connectionStatus, setConnectionStatus] =
-    React.useState<ConnectionStatusState>({
-      color: 'white',
-      connectedToInternet: false,
-      websocket: {
-        connected: false,
-        connecting: false,
-      },
-    });
+    React.useState<ConnectionStatusState>(INITIAL_CONNECTION_STATUS_STATE);
 
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
-      for (const update of getSingleUpdate()) {
+      for (const update of consumeQ()) {
         if (!update) {
           continue;
         }
@@ -286,41 +148,37 @@ export const useOrderbookConnection = ({
           payload: { updates: [update] },
         });
       }
-    }, [getSingleUpdate]),
+    }, []),
   });
 
-  const onMessageReceived = React.useCallback((decoded) => {
-    if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
-      console.log('Orderbook: Websocket info: ', decoded);
-    } else {
-      if (!decoded?.event) {
-        if (decoded?.feed === 'book_ui_1') {
-          dispatchUpdate({
-            type: 'ORDERBOOK_UPDATE',
-            payload: {
-              updates: decoded as WebSocketOrderbookUpdateMessage<any>[],
-            },
-          });
-        } else if (decoded?.feed === 'book_ui_1_snapshot') {
-          dispatchUpdate({
-            type: 'ORDERBOOK_SNAPSHOT',
-            payload: {
-              updates: decoded as WebSocketOrderbookSnapshotMessage<any>[],
-            },
-          });
+  const onMessageReceived = React.useCallback(
+    (decoded: WebSocketOrderbookUpdateMessage<any>) => {
+      if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
+        console.log('Orderbook: Websocket info: ', decoded);
+      } else {
+        if (!decoded?.event) {
+          if (decoded?.feed === 'book_ui_1') {
+            dispatchFromQ([{ kind: 'u', updates: decoded }]);
+          } else if (decoded?.feed === 'book_ui_1_snapshot') {
+            dispatchFromQ([{ kind: 's', updates: decoded }]);
+          } else {
+            console.warn(
+              'Orderbook: Unknown message received from WebSocket: ',
+              {
+                decoded,
+              },
+            );
+          }
         } else {
           console.warn('Orderbook: Unknown message received from WebSocket: ', {
             decoded,
           });
         }
-      } else {
-        console.warn('Orderbook: Unknown message received from WebSocket: ', {
-          decoded,
-        });
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [],
+  );
 
   const reconnectTimer = useIntervalCallback(
     5000,
