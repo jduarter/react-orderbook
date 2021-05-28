@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Images, StyleSheet, Platform } from 'react-native';
+import { View, Image, Text, StyleSheet, Platform } from 'react-native';
 
 import { ERROR_TITLES } from './constants';
 
