@@ -79,21 +79,21 @@ export const mutateForGrouping = (
         : -1 * ((oldSizeForExact || 0) - v);
 
       const oldGroupSize = acc[usePrice] || 0;
+      const sumB = oldGroupSize + exactDiff;
 
-      if (oldGroupSize > 0) {
-        if (exactDiff !== 0) {
-          const sumB = oldGroupSize + exactDiff;
-
-          if (sumB >= 0) {
-            return {
-              acc: { ...acc, [usePrice]: sumB },
-              lastKnownExactValues: {
-                ...lastKnownExactValues,
-                [normalizedExactPrice]: v,
-              },
-            };
-          }
-        }
+      if (
+        oldGroupSize > 0 &&
+        exactDiff !== 0 &&
+        typeof sumB !== 'undefined' &&
+        sumB >= 0
+      ) {
+        return {
+          acc: { ...acc, [usePrice]: sumB },
+          lastKnownExactValues: {
+            ...lastKnownExactValues,
+            [normalizedExactPrice]: v,
+          },
+        };
       }
       return {
         acc: { ...acc },

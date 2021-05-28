@@ -224,17 +224,18 @@ const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
     // eslint-disable-next-line no-restricted-globals
     [setTimeout, clearTimeout],
     ms,
-    callback,
+
     true,
+    callback,
   );
 
 const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
-  // eslint-disable-next-line no-restricted-globals
   useGenericTimerCallback<number>(
-    [setInterval, clearInterval],
+    [setInterval, clearInterval], // eslint-disable-line no-restricted-globals
     ms,
-    callback,
+
     false,
+    callback,
   );
 
 type MainStateRefType = {
