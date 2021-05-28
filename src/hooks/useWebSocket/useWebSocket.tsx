@@ -25,7 +25,7 @@ const bindHandlersToClient: BindHandlersFunction = (
     }
 
     if (onConnectionStatusChange) {
-      onConnectionStatusChange({ connected: true });
+      onConnectionStatusChange({ connected: true, connecting: false });
     }
   };
 

@@ -132,11 +132,16 @@ export const orderAndLimit = (
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
 ): WebSocketOrderbookDataArray => {
-  const array = Object.entries(obj)
-    .slice(0, limit)
-    .map(([key, size]): WebSocketOrderbookSizePricePair => [Number(key), size]);
+  const array = Object.entries(obj);
 
-  return orderBy === 'desc' ? immutableGetReversedArr(array) : array;
+  const sorted =
+    orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
+
+  const r1 = sorted.map(
+    ([key, size]): WebSocketOrderbookSizePricePair => [Number(key), size],
+  );
+
+  return immutableGetReversedArr(r1);
 };
 
 export const getGroupByFactor = (

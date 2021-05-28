@@ -20,7 +20,7 @@ import type {
   PendingGroupUpdateRecord,
 } from './types';
 
-import { orderAndLimit } from './utils';
+import { orderAndLimit, immutableGetReversedArr } from './utils';
 
 interface ConnectionStatusState {
   color: string;
@@ -43,6 +43,7 @@ export const useOrderbookController = ({
   subscribeToProductIds,
   initialGroupBy = 100,
   webSocketUri,
+  addRdbg,
 }: {
   disableTwoWayProcessing: boolean;
   subscribeToProductIds: string[];
@@ -74,10 +75,20 @@ export const useOrderbookController = ({
     webSocketUri,
     orderBookDispatch,
     subscribeToProductIds,
+    addRdbg,
   });
 
   const asksData = orderAndLimit(orderBook.grouped.asks, 8, 'desc');
-  const bidsData = orderAndLimit(orderBook.grouped.bids, 8, 'desc');
+  const bidsData = orderAndLimit(orderBook.grouped.bids, 8, 'asc');
+  /*
+  console.log(
+    'ASKS (' + Object.keys(orderBook.grouped.asks).length + '): ',
+    Object.keys(orderBook.grouped.asks),
+  );
+  console.log(
+    'BIDS (' + Object.keys(orderBook.grouped.bids).length + '): ',
+    Object.keys(orderBook.grouped.bids),
+  );*/
 
   return React.useMemo(
     () => ({
@@ -117,10 +128,8 @@ const useSafeEffect = (
     effectFn: null | UseSafeEffectEffect;
   }>({ mounted: false, effectFn: null });
   React.useEffect(() => {
-    console.log('useSafeEffect main effect - BOOTING UP ');
     ref.current.mounted = true;
     return () => {
-      console.log('useSafeEffect main effect - UNMOTING!');
       ref.current.effectFn = voidFn;
       ref.current.mounted = false;
     };
@@ -131,7 +140,6 @@ const useSafeEffect = (
   }, [effect]);
 
   const getLastEffectVersion = React.useCallback(() => {
-    console.log('getLastEffectVersion');
     return ref.current.effectFn || voidFn;
   }, []);
 
@@ -162,8 +170,8 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
   [setF, clearF]: UseGenericTimerCallbackKind,
   ms: number,
   callback: (...args: any[]) => void,
+  addRdbg,
 ) => {
-  //  console.log('useTimeoutCallback renders');
   const ref = React.useRef<T | undefined>();
 
   const finish = React.useCallback(() => {
@@ -178,23 +186,26 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
   }, []);
 
   const runClosure = React.useCallback(() => {
-    console.log('[reconnectTimer] RUN');
+    addRdbg('[reconnectTimer] RUN');
     callback(finish);
     ref.current = undefined;
   }, [callback, finish]);
 
   const start = React.useCallback(() => {
-    console.log('[reconnectTimer] start');
-    if (ref.current !== null) {
+    addRdbg('[reconnectTimer] start');
+    if (ref.current !== undefined) {
       console.warn(
         'useGenericTimerCallback: trying to start when there is already a timer',
       );
       return;
     }
+    addRdbg('[reconnectTimer] call!');
 
     ref.current = setF(runClosure, ms);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ms, runClosure]);
+
+  const isStarted = React.useCallback(() => ref.current !== undefined, []);
 
   React.useEffect(() => {
     return () => {
@@ -203,7 +214,10 @@ const useGenericTimerCallback = <T = NodeJS.Timeout>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return React.useMemo(() => ({ start, finish }), [start, finish]);
+  return React.useMemo(
+    () => ({ start, finish, isStarted }),
+    [start, finish, isStarted],
+  );
 };
 
 const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
@@ -214,9 +228,18 @@ const useTimeoutCallback = (ms: number, callback: (...args: any[]) => void) =>
     callback,
   );
 
-const useIntervalCallback = (ms: number, callback: (...args: any[]) => void) =>
+const useIntervalCallback = (
+  ms: number,
+  callback: (...args: any[]) => void,
+  addRdbg,
+) =>
   // eslint-disable-next-line no-restricted-globals
-  useGenericTimerCallback<number>([setInterval, clearInterval], ms, callback);
+  useGenericTimerCallback<number>(
+    [setInterval, clearInterval],
+    ms,
+    callback,
+    addRdbg,
+  );
 
 type MainStateRefType = {
   pendingUpdates: Array<{ updates: Array<PendingGroupUpdateRecord> }>;
@@ -238,7 +261,8 @@ export const useOrderbookConnection = ({
   orderBookDispatch,
   subscribeToProductIds,
   webSocketUri,
-}: UserOrderbookConnectionProperties): {
+  addRdbg,
+}: UserOrderbookConnectionProperties & { addRdbg: any }): {
   connectionStatus: ConnectionStatusState;
 } => {
   const { dispatchUpdate, getSingleUpdate } = useOrderbookMainStateRef();
@@ -271,7 +295,7 @@ export const useOrderbookConnection = ({
 
   const onMessageReceived = React.useCallback((decoded) => {
     if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
-      console.log('Orderbook: Websocket info: ', { decoded });
+      console.log('Orderbook: Websocket info: ', decoded);
     } else {
       if (!decoded?.event) {
         if (decoded?.feed === 'book_ui_1') {
@@ -304,23 +328,27 @@ export const useOrderbookConnection = ({
 
   const reconnectTimer = useIntervalCallback(
     5000,
-    React.useCallback(
-      (connect: () => void, connectedToInternet: boolean): void => {
-        console.log('[reconnectTimer]');
-        if (connectedToInternet === true) {
-          console.log('should retry reconnect NOW');
-          connect();
-        } else {
-          console.log('should retry reconnect after internet comes');
-        }
-      },
-      [],
-    ),
+    React.useCallback((): void => {
+      addRdbg('[reconnectTimer]');
+
+      if (connectionStatus.websocket.connecting === false) {
+        addRdbg('should retry reconnect NOW');
+        orderBookDispatch({ type: 'SET_LOADING', payload: { value: true } });
+        connect();
+      } else {
+        addRdbg(
+          'should retry reconnect later: ' +
+            JSON.stringify(connectionStatus.websocket),
+        );
+      }
+    }, [connectionStatus.websocket, connect]),
+    addRdbg,
   );
 
   const onConnectionStatusChange = React.useCallback(
     (status): void => {
-      console.log('onConnectionStatusChange:', status);
+      console.log('onConnectionStatusChange:', status, addRdbg);
+      addRdbg('SC: ' + JSON.stringify(status));
       if (
         status.connected === true &&
         connectionStatus.websocket.connected === true
@@ -344,7 +372,13 @@ export const useOrderbookConnection = ({
           },
         }));
 
-        reconnectTimer.start();
+        if (!reconnectTimer.isStarted()) {
+          addRdbg('call reconnectTimer!');
+          reconnectTimer.start();
+        } else {
+          addRdbg('IT WAS ALREADY STARTED! reconnectTimer!');
+        }
+
         return;
       }
 
@@ -353,18 +387,25 @@ export const useOrderbookConnection = ({
         websocket: { ...st.websocket, ...status },
       }));
     },
-    [connectionStatus.websocket.connected, reconnectTimer],
+    [connectionStatus.websocket.connected, addRdbg, reconnectTimer],
   );
 
   const onConnect = React.useCallback(
     ({ send }): void => {
+      console.log('*** onConnect triggered correctly');
+      addRdbg('*** onConnect triggered correctly');
+      if (reconnectTimer.isStarted()) {
+        reconnectTimer.finish();
+      }
+
+      orderBookDispatch({ type: 'SET_LOADING', payload: { value: false } });
       send({
         event: 'subscribe',
         feed: 'book_ui_1',
         product_ids: subscribeToProductIds,
       });
     },
-    [subscribeToProductIds],
+    [subscribeToProductIds, orderBookDispatch, reconnectTimer],
   );
 
   const { connect } = useWebSocket<OrderbookWSMessageType>({
@@ -379,8 +420,17 @@ export const useOrderbookConnection = ({
       return;
     }
 
+    const unsub = NetInfo.subscribe((x) => {
+      addRdbg('SUB: ' + JSON.stringify(x));
+      console.log('---> SUB: ', x);
+    });
+
     console.log('[ws] opening connection from mainEffect');
     connect();
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   useSafeEffect(mainEffect, []);

@@ -38,6 +38,7 @@ export interface OrderbookStateType
     disableTwoWayProcessing: boolean;
   };
   isLoading: boolean;
+  groupKeysUpdated: Record<string, number>;
 }
 
 export type OrderbookReducerActionTypes =

@@ -37,7 +37,9 @@ const DEFAULT_TRANSITION_OPTIONS = ({
 
 type NormalizedRecord = [number, number];
 type NormalizedData = NormalizedRecord[];
-const ENABLE_ANIMATIONS = false;
+
+const ENABLE_ANIMATIONS = true;
+
 const getTotalForRow = (
   rows: NormalizedData,
   index: number,

@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { StyleProp, TextProps } from 'react-native';
 import { useSpring, animated } from '@react-spring/native';
 
-const ENABLE_ANIMATIONS = false;
+const ENABLE_ANIMATIONS = true;
 
 const DEFAULT_ANIMATION_OPTIONS = ({
   textColor,

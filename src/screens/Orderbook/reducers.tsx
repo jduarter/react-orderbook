@@ -7,6 +7,7 @@ import {
   reduceScopeWithFn,
   wipeZeroRecords,
   ob2arr,
+  getAffectedPricesInUpdateList,
   getEstimatedMinimumSize,
 } from './utils';
 
@@ -31,6 +32,7 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   asks: {},
   grouped: { bids: {}, asks: {} },
   pendingGroupUpdates: [],
+  groupKeysUpdated: { bids: {}, asks: {} },
   options: { disableTwoWayProcessing: false },
   isLoading: true,
 };
@@ -186,17 +188,25 @@ const reduceUpdatesToScopedState = (
   asks: reduceKeyPairToState(updates.asks, initialState.asks),
 });
 
+const getUpdatedActivityTimes = (data, initialGroupKeysUpdated, initialState) =>
+  getAffectedPricesInUpdateList(data).reduce((acc, normalizedPrice) => {
+    const last = data.filter(
+      (d) => d[0] === parseFloat(normalizedPrice) / Math.pow(10, 2),
+    )[0][1];
+    if (last !== initialState[normalizedPrice]) {
+      return { ...acc, [normalizedPrice]: Date.now() };
+    } else {
+      return acc;
+    }
+  }, initialGroupKeysUpdated);
+
 const reduceUpdatesToScopedStateForGrouped = (
   updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  initialGroupKeysUpdated: Record<string, number>,
 ) => {
-  /*console.log();
-  console.log('<> reduceUpdatesToScopedStateForGrouped STARTS');*/
-  /**
-   * convertir datos en delta "sustitutivo"
-   */
   const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
     updates,
     groupBy,
@@ -204,19 +214,30 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState,
   );
 
-  /*console.log('    [G] ', {
-    initialState,
-    mutatedData: JSON.stringify(groupedMutatedData),
-  });*/
-
   const returnValue = reduceUpdatesToScopedState(
     groupedMutatedData,
     initialState,
   );
 
+  const groupKeysUpdated = {
+    asks: getUpdatedActivityTimes(
+      groupedMutatedData.asks,
+      initialGroupKeysUpdated.asks,
+      initialState.asks,
+    ),
+    bids: getUpdatedActivityTimes(
+      groupedMutatedData.bids,
+      initialGroupKeysUpdated.bids,
+      initialState.bids,
+    ),
+  };
+
+  // console.log(groupKeysUpdated);
+
   return {
     newMainState,
     grouped: returnValue,
+    groupKeysUpdated,
   };
 };
 
@@ -284,6 +305,7 @@ const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: PendingGroupUpdateRecord[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
+  const initialGroupKeysUpdated = {};
   const res = pendingGroupUpdates.reduce(
     (
       acc: OrderbookStateType,
@@ -302,23 +324,75 @@ const reducePendingGroupUpdatesToState = (
         ),
       };
 
-      const { grouped, newMainState } = reduceUpdatesToScopedStateForGrouped(
-        updates,
-        groupedWithMinimumThresholdsApplied,
-        state.groupBy,
-        acc,
-      );
+      const { grouped, newMainState, groupKeysUpdated } =
+        reduceUpdatesToScopedStateForGrouped(
+          updates,
+          groupedWithMinimumThresholdsApplied,
+          state.groupBy,
+          acc,
+          { ...initialGroupKeysUpdated, ...acc.groupKeysUpdated },
+        );
 
       return {
         ...acc,
         ...reduceScopeWithFn(newMainState, wipeZeroRecords),
         grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+        groupKeysUpdated,
       };
     },
     { ...state },
   );
 
-  return res;
+  const expiredBids = Object.entries(state.groupKeysUpdated.bids)
+    .map(([p, t]) => {
+      if (Date.now() - t > 10000) {
+        /* console.log('-----> ', p, ' IS EXPIRED', {
+          a: t + 3000,
+          b: Date.now(),
+        });*/
+        return p;
+      } else {
+        return;
+      }
+    })
+    .filter((x) => x);
+
+  const expiredAsks = Object.entries(state.groupKeysUpdated.asks)
+    .map(([p, t]) => {
+      if (Date.now() - t > 10000) {
+        /* console.log('-----> ', p, ' IS EXPIRED', {
+          a: t + 3000,
+          b: Date.now(),
+        });*/
+        return p;
+      } else {
+        return;
+      }
+    })
+    .filter((x) => x);
+
+  const nres = {
+    ...res,
+    grouped: {
+      ...res.grouped,
+      bids: Object.entries(res.grouped.bids).reduce((acc, [currK, currV]) => {
+        if (expiredBids.indexOf(currK) >= 0) {
+          return { ...acc };
+        } else {
+          return { ...acc, [currK]: currV };
+        }
+      }, {}),
+      asks: Object.entries(res.grouped.asks).reduce((acc, [currK, currV]) => {
+        if (expiredAsks.indexOf(currK) >= 0) {
+          return { ...acc };
+        } else {
+          return { ...acc, [currK]: currV };
+        }
+      }, {}),
+    },
+  };
+
+  return nres;
 };
 
 const reduceNewTasksToQueue = (
@@ -347,6 +421,7 @@ const reduceStateToNewGroupBySetting = (
     { ...INITIAL_ORDERBOOK_STATE.grouped },
     groupBy,
     { bids: {}, asks: {} },
+    {},
   );
   return {
     ...state,
@@ -369,13 +444,7 @@ export const orderBookReducer = (
 
     case 'CALCULATE_GROUPED':
       return state.options.disableTwoWayProcessing === false
-        ? {
-            ...reducePendingGroupUpdatesToState(
-              state.pendingGroupUpdates,
-              state,
-            ),
-            isLoading: false,
-          }
+        ? reducePendingGroupUpdatesToState(state.pendingGroupUpdates, state)
         : { ...state };
       break;
 
