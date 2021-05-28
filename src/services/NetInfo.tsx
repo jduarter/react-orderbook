@@ -5,8 +5,8 @@ const DEFAULT_OPTIONS = {
   reachabilityTest: async (response: { status: number }) =>
     response.status === 204,
   reachabilityLongTimeout: 60 * 1000, // 60s
-  reachabilityShortTimeout: 5 * 1000, // 5s
-  reachabilityRequestTimeout: 15 * 1000, // 15s
+  reachabilityShortTimeout: 10 * 1000, // 5s
+  reachabilityRequestTimeout: 20 * 1000, // 15s
 };
 
 NetInfo.configure(DEFAULT_OPTIONS);
