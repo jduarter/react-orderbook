@@ -64,7 +64,7 @@ const groupHandlersInObject = <
 const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
   properties: UseWebSocketProperties<MT>,
 ): WebSocketInstanceType => {
-  console.log('useWebSocket called: ', properties);
+  // console.log('useWebSocket called: ', properties);
   const {
     uri,
     onMessageReceived = voidFunction,
