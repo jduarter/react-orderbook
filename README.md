@@ -10,9 +10,11 @@
 
 - [ ] Add a new .env file in the root of the project with the following data:
 
-    ```ADB_IP=(your LAN IP address)
+    ```
+    ADB_IP=(your LAN IP address)
     REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address)
-    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1```
+    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
+    ```
 
 - [ ] Start the metro packager
 
