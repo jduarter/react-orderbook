@@ -61,3 +61,8 @@ export type OrderbookReducerCalculateGroupedPartialState = Pick<
   OrderbookStateType,
   'pendingGroupUpdates' | 'bids' | 'asks' | 'grouped'
 >;
+
+export interface OrderbookProps {
+  initialGroupBy?: number;
+  productId: string;
+}

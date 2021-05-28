@@ -1,14 +1,15 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import type { FC } from 'react';
-import { StyleSheet, Text, View, Image, Platform } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useDebounceCallback } from '@react-hook/debounce';
 
 import { default as OrderbookSection } from './components/OrderbookSection';
 
 import GroupButton from './atoms/GroupButton';
+import ErrorScreen from '@components/ErrorScreen';
 import LoadingOverlay from '@components/LoadingOverlay';
-import type { OrderbookOrdersSortedObject } from './types';
+import type { OrderbookOrdersSortedObject, OrderbookProps } from './types';
 import { getGroupByFactor } from './utils';
 import { useOrderbookController } from './hooks';
 
@@ -73,47 +74,6 @@ const SpreadWidget: FC<{
 
   return <Spread high={parseFloat(a[0]) / 100} low={parseFloat(b[0]) / 100} />;
 };
-
-interface OrderbookProps {
-  initialGroupBy?: number;
-  productId: string;
-}
-
-const ERROR_TYPES = {
-  INTERNET_IS_UNAVAILABLE: Symbol('INTERNET_IS_UNAVAILABLE'),
-  SERVICE_IS_UNAVAILABLE: Symbol('SERVICE_IS_UNAVAILABLE'),
-};
-interface ErrorScreenProps {
-  errorType:
-    | typeof ERROR_TYPES.INTERNET_IS_UNAVAILABLE
-    | typeof ERROR_TYPES.SERVICE_IS_UNAVAILABLE;
-}
-
-const ERROR_TITLES = {
-  [ERROR_TYPES.INTERNET_IS_UNAVAILABLE]: 'Internet seems to be unavailable.',
-  [ERROR_TYPES.SERVICE_IS_UNAVAILABLE]: 'Service is not available.',
-};
-
-const ErrorScreen: React.FC<ErrorScreenProps> = ({ errorType }) => (
-  <View style={styles.genericConnectionProblemWrapper}>
-    <Image
-      source={require('./assets/error.gif')}
-      style={{ width: '100%', height: '100%', position: 'absolute' }}
-    />
-    <Text
-      style={{
-        textAlign: 'center',
-        margin: '10%',
-        marginTop: '30%',
-        fontFamily: Platform.OS === 'ios' ? 'Monospace' : 'monospace',
-        color: '#c7ea46',
-        fontSize: 20,
-        fontWeight: 'bold',
-      }}>
-      {ERROR_TITLES[errorType]}
-    </Text>
-  </View>
-);
 
 const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: React.Dispatch<any>) => () =>
@@ -217,13 +177,6 @@ const OrderbookComponent: FC<OrderbookProps> = ({
 export default OrderbookComponent;
 
 const styles = StyleSheet.create({
-  genericConnectionProblemWrapper: {
-    backgroundColor: '#000',
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: 10,
-  },
   orderBookSummaryWrap: {
     justifyContent: 'center',
     flex: 1,
