@@ -2,30 +2,30 @@
 
 ## Install instructions.
 
-- [ ] npm install # Please do not use yarn (package-lock.json)
-- [ ] npx pod-install
-- [ ] npm test
+- [ ] ```npm install``` # Please do not use yarn (package-lock.json)
+- [ ] ```npx pod-install```
+- [ ] ```npm test```
 
 ## Configuration
 
 - [ ] Add a new .env file in the root of the project with the following data:
 
-    ADB_IP=(your LAN IP address)
+    ```ADB_IP=(your LAN IP address)
     REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address)
-    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
+    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1```
 
 - [ ] Start the metro packager
 
-    npx react-native start
+   ``` npx react-native start```
 
 - [ ] Execute docker to generate the container
 
-    docker-compose build orderbook1rn
+    ```docker-compose build orderbook1rn
     docker run -e ADB_IP=(your LAN IP address) \
      -e REACT_NATIVE_PACKAGER_HOSTNAME=(your LAN IP address) \
      -p 19000:19000 \
      -p 19001:19001 \
-     orderbook1rn
+     orderbook1rn```
 
 ### 1. Project bootstrapping.
 
