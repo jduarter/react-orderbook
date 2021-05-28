@@ -12,15 +12,20 @@ import type {
 
 const voidFunction = ((): void => undefined) as any;
 
+export class WebSocketError extends Error {}
+
 const bindHandlersToClient: BindHandlersFunction = (
-  client,
-  { onConnectionStatusChange, onMessageReceived },
+  { client, send },
+  { onConnectionStatusChange, onMessageReceived, onConnect },
 ): void => {
-  console.log('bindHandlersToClient');
   client.onopen = () => {
-    console.log('CLIENT ON OPEN');
+    console.log('-------> client.onopen');
+    if (onConnect) {
+      onConnect({ client, send });
+    }
+
     if (onConnectionStatusChange) {
-      onConnectionStatusChange({ connected: true }, client);
+      onConnectionStatusChange({ connected: true });
     }
   };
 
@@ -64,32 +69,40 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
     uri,
     onMessageReceived = voidFunction,
     onConnectionStatusChange = voidFunction,
+    onConnect = voidFunction,
   } = properties;
 
   const reference = React.useRef<WebSocket>();
 
+  const send = React.useCallback((obj: any) => {
+    if (!reference.current) {
+      throw new WebSocketError('[useWebSocket] client is not connected');
+    }
+
+    return reference.current.send(JSON.stringify(obj));
+  }, []);
+
   const connect = React.useCallback(async (): Promise<boolean> => {
-    console.log('CONNECT!!!!!!');
+    console.log('CONNECT!!!!!! -> ', uri);
     onConnectionStatusChange({ connected: false, connecting: true });
 
     reference.current = new WebSocket(uri) as WebSocketInstanceType;
 
     bindHandlersToClient(
-      reference.current,
+      { client: reference.current, send },
       groupHandlersInObject({
         onConnectionStatusChange,
         onMessageReceived,
+        onConnect,
       }),
     );
 
     return true;
-  }, [onConnectionStatusChange, onMessageReceived, uri]);
+  }, [onConnectionStatusChange, onMessageReceived, onConnect, uri, send]);
 
   React.useEffect(() => {
-    console.log('[ws] opening connection');
-    connect();
     return () => {
-      console.log('closing connection');
+      console.log('[WS] closing connection');
       if (reference.current) {
         reference.current.close();
         reference.current.onopen = null;
@@ -99,13 +112,14 @@ const useWebSocket = <MT extends GenericMessageType = GenericMessageType>(
         reference.current = undefined;
       }
     };
-  }, [uri, connect]);
+  }, []);
 
   return React.useMemo(
     () => ({
       connect,
+      send,
     }),
-    [connect],
+    [connect, send],
   );
 };
 

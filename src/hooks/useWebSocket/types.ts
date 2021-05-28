@@ -44,12 +44,15 @@ export type OnMessageReceivedFunction<MT extends GenericMessageType> = (
   data: MT,
 ) => void;
 
+export type OnConnectFunction = (client: WebSocketInstanceType) => void;
+
 export interface WebSocketHandlers<
   MT extends GenericMessageType = GenericMessageType,
   S = WebSocketState,
 > {
   onConnectionStatusChange: OnConnectionStatusChangeFunction<S> | null;
   onMessageReceived: OnMessageReceivedFunction<MT> | null;
+  onConnect: OnConnectFunction | null;
 }
 
 export type UseWebSocketOptionalProps<
