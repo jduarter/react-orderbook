@@ -42,22 +42,12 @@ export const reduceKeyPairToState = <
 >(
   data: T,
   initialState: OrderbookOrdersSortedObject,
-): OrderbookOrdersSortedObject => {
-  /*console.log(
-    '    reduceKeyPairToState: input: initialState=',
-    initialState,
-    'updates: ',
-    data,
-  );*/
-
-  const res = data.reduce(
+): OrderbookOrdersSortedObject =>
+  data.reduce(
     (acc, [price, oSize]) =>
       immutableObjReplacingKey(acc, getNormalizedPrice(price), oSize),
     initialState,
   );
-  // console.log('    reduceKeyPairToState: output:', res);
-  return res;
-};
 
 export const mutateForGrouping = (
   updates: WebSocketOrderbookDataArray,
@@ -68,20 +58,8 @@ export const mutateForGrouping = (
   if (updates.length === 0) {
     return [ob2arr(initialState), inputLastKnownExactValues];
   }
-  /* console.log();
-  console.log();
-  console.log(
-    '***** mutateForGrouping STARTS',
-    'updates:',
-    JSON.stringify(updates),
 
-    'last exact known values=',
-    inputLastKnownExactValues,
-    'initial state=',
-    initialState,
-  );*/
-
-  const initialAcc = initialState; //array2ob(initialReducerState);
+  const initialAcc = initialState;
 
   const r1 = updates.reduce(
     (accR, [price, v]) => {
@@ -89,7 +67,7 @@ export const mutateForGrouping = (
 
       const normalizedExactPrice = getNormalizedPrice(price);
       const groupedPrice = getGroupedPrice(price, groupBy);
-      const usePrice = getNormalizedPrice(groupedPrice); // getNormalizedGroupedPrice(price, groupBy);
+      const usePrice = getNormalizedPrice(groupedPrice);
 
       const oldExactPriceSizeIsKnown =
         normalizedExactPrice in lastKnownExactValues;
@@ -103,18 +81,6 @@ export const mutateForGrouping = (
         : -1 * ((oldSizeForExact || 0) - v);
 
       const oldGroupSize = acc[usePrice] || 0;
-
-      /*   console.log('');
-      console.log(
-        '[***] Starts function: process: ',
-        {
-          in: { price, v },
-        },
-        {
-          exact: { old: oldSizeForExact, diff: exactDiff },
-        },
-        { group: { old: oldGroupSize } },
-      );*/
 
       if (oldGroupSize > 0) {
         if (exactDiff !== 0) {
@@ -141,11 +107,7 @@ export const mutateForGrouping = (
     },
     { acc: initialAcc, lastKnownExactValues: inputLastKnownExactValues },
   );
-  /*
-  console.log('RESULT OF NEW EXACT VALUES: ', r1.lastKnownExactValues);
-  console.log('EXACT VALUES ORIG WAS: : ', inputLastKnownExactValues);
-  console.log('RESULT: ', r2);
-  console.log(); */
+
   return [ob2arr(r1.acc), r1.lastKnownExactValues];
 };
 
@@ -238,8 +200,6 @@ const reduceUpdatesToScopedStateForGrouped = (
     ),
   };
 
-  // console.log('GKU:', groupKeysUpdated);
-
   return {
     newMainState,
     grouped: returnValue,
@@ -253,7 +213,6 @@ const applyMinimumThresholdsToGroups = (
   updates: WebSocketOrderbookDataArray,
 ) => {
   if (updates.length === 0) {
-    //  console.log('applyMinimumThresholdsToGroups: updates.length = 0');
     return groups;
   }
 
@@ -266,7 +225,6 @@ const applyMinimumThresholdsToGroups = (
       ]: WebSocketOrderbookSizePricePair,
     ) => {
       const groupedPrice = getGroupedPrice(exactPriceInFloat, groupBy);
-
       const normalizedGroupPrice = getNormalizedPrice(groupedPrice);
 
       return {
@@ -302,60 +260,10 @@ const applyMinimumThresholdsToGroups = (
     {},
   );
 
-  // console.log('applyMinimumThresholdsToGroups R1 is: ', r1);
-
   return r1;
 };
 
-const reducePendingGroupUpdatesToState = (
-  pendingGroupUpdates: PendingGroupUpdateRecord[],
-  state: OrderbookStateType,
-): OrderbookStateType => {
-  const initialGroupKeysUpdated = { asks: {}, bids: {} };
-
-  const res = pendingGroupUpdates.reduce(
-    (acc: OrderbookStateType, { updates }) => {
-      const groupedWithMinimumThresholdsApplied = {
-        bids: applyMinimumThresholdsToGroups(
-          acc.grouped.bids,
-          state.groupBy,
-          updates.bids,
-        ),
-        asks: applyMinimumThresholdsToGroups(
-          acc.grouped.asks,
-          state.groupBy,
-          updates.asks,
-        ),
-      };
-
-      const { grouped, newMainState, groupKeysUpdated } =
-        reduceUpdatesToScopedStateForGrouped(
-          updates,
-          groupedWithMinimumThresholdsApplied,
-          state.groupBy,
-          acc,
-          {
-            asks: {
-              ...initialGroupKeysUpdated.asks,
-              ...acc.groupKeysUpdated.asks,
-            },
-            bids: {
-              ...initialGroupKeysUpdated.bids,
-              ...acc.groupKeysUpdated.bids,
-            },
-          },
-        );
-
-      return {
-        ...acc,
-        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
-        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
-        groupKeysUpdated,
-      };
-    },
-    state,
-  );
-
+const ensureRowConsistency = (state, res) => {
   const sells = Object.entries(state.grouped.bids).slice(
     Object.entries(state.grouped.bids).length - 1,
   )[0];
@@ -434,8 +342,59 @@ const reducePendingGroupUpdatesToState = (
         }, {}),
     },
   };
-
   return nres2;
+};
+
+const reducePendingGroupUpdatesToState = (
+  pendingGroupUpdates: PendingGroupUpdateRecord[],
+  state: OrderbookStateType,
+): OrderbookStateType => {
+  const initialGroupKeysUpdated = { asks: {}, bids: {} };
+
+  const res = pendingGroupUpdates.reduce(
+    (acc: OrderbookStateType, { updates }) => {
+      const groupedWithMinimumThresholdsApplied = {
+        bids: applyMinimumThresholdsToGroups(
+          acc.grouped.bids,
+          state.groupBy,
+          updates.bids,
+        ),
+        asks: applyMinimumThresholdsToGroups(
+          acc.grouped.asks,
+          state.groupBy,
+          updates.asks,
+        ),
+      };
+
+      const { grouped, newMainState, groupKeysUpdated } =
+        reduceUpdatesToScopedStateForGrouped(
+          updates,
+          groupedWithMinimumThresholdsApplied,
+          state.groupBy,
+          acc,
+          {
+            asks: {
+              ...initialGroupKeysUpdated.asks,
+              ...acc.groupKeysUpdated.asks,
+            },
+            bids: {
+              ...initialGroupKeysUpdated.bids,
+              ...acc.groupKeysUpdated.bids,
+            },
+          },
+        );
+
+      return {
+        ...acc,
+        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
+        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+        groupKeysUpdated,
+      };
+    },
+    state,
+  );
+
+  return ensureRowConsistency(state, res);
 };
 
 const reduceStateToNewGroupBySetting = (
