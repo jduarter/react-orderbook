@@ -370,7 +370,7 @@ const reducePendingGroupUpdatesToState = (
       sells[0] &&
       parseFloat(p) / Math.pow(10, 2) >
         parseFloat(sells[0]) / Math.pow(10, 2) -
-          state.groupBy * (Math.max(state.grouped.bids.length, 12) / 4)
+          state.groupBy * (Math.min(state.grouped.bids.length, 12) / 4)
         ? p
         : undefined,
     )
@@ -384,7 +384,7 @@ const reducePendingGroupUpdatesToState = (
       buys[0] &&
       parseFloat(p) / Math.pow(10, 2) <
         parseFloat(buys[0]) / Math.pow(10, 2) +
-          state.groupBy * (Math.max(state.grouped.asks.length, 12) / 4)
+          state.groupBy * (Math.min(state.grouped.asks.length, 12) / 4)
         ? p
         : undefined,
     )
