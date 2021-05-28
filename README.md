@@ -44,18 +44,19 @@ Additionally, I've added some package.json scripts for ease of development and e
 
 | **Command**     | **Description**                              |
 | --------------- | -------------------------------------------- |
-| npm install     | Install needed dependencies.                 |
-| npx pod-install | Install iOS pods.                            |
-| npm test        | Runs the test suite.                         |
-| npm clean       | Cleans the build and node_modules directory. |
-
-## Possible improvements:
-
-- Safe compilation of regexps used by json-2.js sanitizer (src/json-sanitizer.js) to prevent regexp-security issues.
-- Test: malformed JSON.
-- Test: unsafe JSONs.
-- Test: the reading date will always have the time set to 00:00:00.000
-
+| npm install                | Install needed dependencies.                 |
+| npx pod-install            | Install iOS pods.                            |
+| npm test                   | Runs the test suite.                         |
+| npm run lint:check         | Runs the linter in check (no-fix) mode.      |
+| npm run format:fix         | Runs the linter in format (fix) mode.        |
+| npm run cache:clearfull    | Completely wipes the RN cache.               |
+| npm run typescript.        | Performs static typing validation (TS).      |
+| npm run sec:hash           | Generates new hashes for integrity control.  |
+| npm run sec:detect-secrets | Scans the code for included secrets          | 
+| npm run sec:lockfile       | Scans lockfile for suspicious pkgs.          |
+| npm run sec:outdated.      | Scans outdated packages.                     |
+| npm clean                  | Cleans the build and node_modules directory. |
+ 
 ## License.
 
 This project is licensed with MIT.
