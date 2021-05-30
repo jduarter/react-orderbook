@@ -7,12 +7,8 @@ import type {
   OrderbookOrdersSortedObject,
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
+  WSDataPriceSizePair,
 } from './types';
-
-import type {
-  WebSocketOrderbookDataArray,
-  WebSocketOrderbookSizePricePair,
-} from '../../hooks/useWebSocket';
 
 type SortByOperationTypes = -1 | 1;
 type GroupByOptionType = number;
@@ -25,15 +21,13 @@ const AVAILABLE_FACTORS = [
 // doesnt properly work in RN in certain circumstances
 // forcing format to Spanish emulation
 
-const _format = (
+const numberFormater = (
   overrideThousandSeparator = ',',
   overrideDecimalSeparator = '.',
 ) => commaNumber.bindWith(overrideThousandSeparator, overrideDecimalSeparator);
 
-const __format = _format();
-
 export const formatNumber = (v: number, decimals = 2): string =>
-  __format(commaNumber(v.toFixed(decimals)));
+  numberFormater()(commaNumber(v.toFixed(decimals)));
 
 export const getPrintPriceForNormalizedPrice = (
   input: OrderbookNormalizedPrice,
@@ -64,8 +58,8 @@ export const immutableObjectWithoutKey = <O extends Record<string, any>>(
   key: string,
 ): O => {
   const objCopy: O = { ...obj };
+  // eslint-disable-next-line security/detect-object-injection
   delete objCopy[key];
-
   return objCopy;
 };
 
@@ -81,29 +75,8 @@ export const immutableObjReplacingKey = <
   obj: O,
   key: string,
   v: number,
-): O => {
-  /*console.log(
-        'immutableObjReplacingKey: add <' + key + '> with val: ',
-        v,
-    );
-    */
-
-  if (v < 0) {
-    console.log(
-      '-----> WARNING!! VALUE IS ' + v + ' ----- <> ----  ',
-      key,
-      v,
-      typeof v,
-      {
-        obj,
-      },
-    );
-  }
-
-  return v <= 0
-    ? immutableObjWithoutKeyIfExists<O>(obj, key)
-    : { ...obj, [key]: v };
-};
+): O =>
+  v <= 0 ? immutableObjWithoutKeyIfExists<O>(obj, key) : { ...obj, [key]: v };
 
 export const immutableGetReversedArr = <T extends unknown = any>(
   array: T[],
@@ -117,14 +90,14 @@ export const orderAndLimit = (
   obj: OrderbookOrdersSortedObject,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
-): WebSocketOrderbookDataArray => {
+): WSDataPriceSizePair[] => {
   const array = Object.entries(obj);
 
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
 
   const r1 = sorted.map(
-    ([key, size]): WebSocketOrderbookSizePricePair => [Number(key), size],
+    ([key, size]): WSDataPriceSizePair => [Number(key), size],
   );
 
   return immutableGetReversedArr(r1);
@@ -133,10 +106,11 @@ export const orderAndLimit = (
 export const getGroupByFactor = (
   groupBy: GroupByOptionType,
   op: SortByOperationTypes,
-) => {
+): number => {
   if (op === 1) {
     const index = AVAILABLE_FACTORS.indexOf(groupBy);
     if (index >= 0 && index - 1 <= AVAILABLE_FACTORS.length) {
+      // eslint-disable-next-line security/detect-object-injection
       return AVAILABLE_FACTORS[index + 1] / AVAILABLE_FACTORS[index];
     }
     return 0;
@@ -146,19 +120,24 @@ export const getGroupByFactor = (
 };
 
 export const getGroupByButtonPressEventHandler =
-  (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) => () =>
-    getGroupByFactor(groupBy, v) &&
-    orderBookDispatch({
-      type: 'SET_GROUP_BY',
-      payload: {
-        value:
-          v === -1
-            ? groupBy / getGroupByFactor(groupBy, v)
-            : groupBy * getGroupByFactor(groupBy, v),
-      },
-    });
+  (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
+  (): void => {
+    const f = getGroupByFactor(groupBy, v);
 
-export const calculateSpread = (high: number, low: number) => {
+    if (f > 0) {
+      orderBookDispatch({
+        type: 'SET_GROUP_BY',
+        payload: {
+          value:
+            v === -1
+              ? groupBy / getGroupByFactor(groupBy, v)
+              : groupBy * getGroupByFactor(groupBy, v),
+        },
+      });
+    }
+  };
+
+export const calculateSpread = (high: number, low: number): number => {
   if (!low || !high) {
     return 0;
   }
@@ -177,36 +156,37 @@ export const wipeZeroRecords = (
 
 export const reduceScopeWithFn = <
   T extends OrderbookOrdersSortedObject = OrderbookOrdersSortedObject,
+  FR = OrderbookGenericScopeDataType<T>,
 >(
   input: OrderbookGenericScopeDataType<T>,
-  transformer: (
-    input: OrderbookOrdersSortedObject,
-  ) => OrderbookOrdersSortedObject,
-): OrderbookGenericScopeDataType<T> =>
-  ({
-    bids: transformer(input.bids),
-    asks: transformer(input.asks),
-  } as OrderbookGenericScopeDataType<T>);
+  transformer: (input: OrderbookOrdersSortedObject) => FR,
+): OrderbookGenericScopeDataType<FR> => ({
+  bids: transformer(input.bids) as FR,
+  asks: transformer(input.asks) as FR,
+});
 
 export const ob2arr = (
   input: OrderbookOrdersSortedObject,
   initialState = [],
-): WebSocketOrderbookDataArray =>
+): WSDataPriceSizePair[] =>
   Object.entries(input).reduce(
-    (acc: WebSocketOrderbookDataArray, [currentK, currentV]) => [
+    (acc: WSDataPriceSizePair[], [currentK, currentV]) => [
       ...acc,
       [customFormatNumberToFloat(currentK), currentV],
     ],
     initialState,
   );
 
-export const array2ob = (
-  input: WebSocketOrderbookDataArray,
+export const arr2obj = (
+  input: WSDataPriceSizePair[],
   initialState = {},
 ): OrderbookOrdersSortedObject =>
-  input.reduce((acc, [price, val]) => {
-    return { ...acc, [getNormalizedPrice(price)]: val };
-  }, initialState);
+  input.reduce(
+    (acc: OrderbookOrdersSortedObject, [price, val]: WSDataPriceSizePair) => {
+      return { ...acc, [getNormalizedPrice(price)]: val };
+    },
+    initialState,
+  );
 
 export const uniq = <T extends unknown = any>(array: T[]): T[] => [
   ...new Set(array),
@@ -223,19 +203,17 @@ export const customFormatNumberToFloat = (price: string): number =>
   Number.parseInt(price) / 100;
 
 export const getAffectedPricesInUpdateList = (
-  array: WebSocketOrderbookSizePricePair[],
+  array: WSDataPriceSizePair[],
 ): OrderbookNormalizedPrice[] =>
   uniq<OrderbookNormalizedPrice>(
-    array.map(([price]: WebSocketOrderbookSizePricePair) =>
-      getNormalizedPrice(price),
-    ),
+    array.map(([price]: WSDataPriceSizePair) => getNormalizedPrice(price)),
   );
 
 export const exactPriceIsWithinGroupPrice = (
   exact: number,
   groupPrice: number,
   groupBy: number,
-) => exact >= groupPrice && exact < groupPrice + groupBy;
+): boolean => exact >= groupPrice && exact < groupPrice + groupBy;
 
 export const getEstimatedMinimumSize = (
   sortedObj: OrderbookOrdersSortedObject,

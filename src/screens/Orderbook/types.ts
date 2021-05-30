@@ -1,4 +1,4 @@
-import type { WebSocketOrderbookDataArray } from '../../hooks/useWebSocket';
+import type { GenericMessageFromServer } from '../../hooks/useWebSocket';
 
 export type OrderbookGroupedPrice = number;
 export type OrderbookNormalizedPrice = string;
@@ -14,19 +14,65 @@ export interface OrderbookGenericScopeDataType<T> {
   asks: T;
 }
 
+export type WSDataPriceSizePair = [number, number];
+
+type OrderbookBidsType = WSDataPriceSizePair[];
+type OrderbookAsksType = WSDataPriceSizePair[];
+
+export interface UseOrderbookConnectionProperties {
+  orderBookDispatch: OrderbookDispatch;
+  webSocketUri: string;
+  subscribeToProductIds: string[];
+  reconnectCheckIntervalMs?: number;
+  autoReconnect?: boolean;
+}
+
+type OnProcessCycle = () => void;
+
+export interface UseOrderbookProcessingProperties {
+  onProcessCycle: OnProcessCycle;
+  intervalMs?: number;
+}
+
+type ProductIdType = string;
+
+export interface WSSnapshotMessage<PID extends ProductIdType = 'PI_XBTUSD'>
+  extends GenericMessageFromServer {
+  asks: OrderbookAsksType;
+  bids: OrderbookBidsType;
+  feed: 'book_ui_1_snapshot';
+
+  numLevels: number;
+  product_id: PID;
+}
+
+export interface WSUpdateMessage<PID extends ProductIdType = 'PI_XBTUSD'>
+  extends GenericMessageFromServer {
+  asks: OrderbookAsksType;
+  bids: OrderbookBidsType;
+  feed: 'book_ui_1';
+
+  numLevels: number;
+  product_id: PID;
+}
+
+export type OrderbookWSMessageType<PID extends ProductIdType = 'PI_XBTUSD'> =
+  | WSSnapshotMessage<PID>
+  | WSUpdateMessage<PID>;
+
 export type OrderbookActionUpdate = 'u';
 export type OrderbookActionSnapshot = 's';
 type OrderbookDataUpdateActions =
   | OrderbookActionUpdate
   | OrderbookActionSnapshot;
 
-export type WebSocketOrderbookUpdatesType =
-  OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
+export type WSUpdatesType = OrderbookGenericScopeDataType<
+  WSDataPriceSizePair[]
+>;
 
 export interface PendingGroupUpdateRecord {
   kind: OrderbookDataUpdateActions;
-  updates: WebSocketOrderbookUpdatesType;
-  //   selectedLastState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
+  updates: WSUpdatesType;
 }
 
 export interface OrderbookStateType

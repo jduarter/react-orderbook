@@ -1,5 +1,7 @@
 /* eslint security/detect-object-injection:0 */
 
+import at from 'array.prototype.at';
+
 import {
   getNormalizedPrice,
   getGroupedPrice,
@@ -9,6 +11,7 @@ import {
   ob2arr,
   getAffectedPricesInUpdateList,
   getEstimatedMinimumSize,
+  arr2obj,
 } from './utils';
 
 import type {
@@ -17,12 +20,8 @@ import type {
   OrderbookStateType,
   PendingGroupUpdateRecord,
   OrderbookReducerAction,
+  WSDataPriceSizePair,
 } from './types';
-
-import type {
-  WebSocketOrderbookDataArray,
-  WebSocketOrderbookSizePricePair,
-} from '../../hooks/useWebSocket';
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   groupBy: 100,
@@ -35,9 +34,7 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   isLoading: true,
 };
 
-export const reduceKeyPairToState = <
-  T extends any[] = WebSocketOrderbookDataArray,
->(
+export const reduceKeyPairToState = <T extends any[] = WSDataPriceSizePair[]>(
   data: T,
   initialState: OrderbookOrdersSortedObject,
 ): OrderbookOrdersSortedObject =>
@@ -48,11 +45,11 @@ export const reduceKeyPairToState = <
   );
 
 export const mutateForGrouping = (
-  updates: WebSocketOrderbookDataArray,
+  updates: WSDataPriceSizePair[],
   groupBy: number,
   inputLastKnownExactValues: OrderbookOrdersSortedObject,
   initialState: OrderbookOrdersSortedObject,
-): [WebSocketOrderbookDataArray, OrderbookOrdersSortedObject] => {
+): [WSDataPriceSizePair[], OrderbookOrdersSortedObject] => {
   if (updates.length === 0) {
     return [ob2arr(initialState), inputLastKnownExactValues];
   }
@@ -110,13 +107,13 @@ export const mutateForGrouping = (
 };
 
 const mutateScopeForGrouping = (
-  updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
+  updates: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
 ): {
   newMainState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
-  groupedMutatedData: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>;
+  groupedMutatedData: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>;
 } => {
   const [bids, mainBids] = mutateForGrouping(
     updates.bids,
@@ -141,7 +138,7 @@ const mutateScopeForGrouping = (
 };
 
 const reduceUpdatesToScopedState = (
-  updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
+  updates: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
 ): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => ({
   bids: reduceKeyPairToState(updates.bids, initialState.bids),
@@ -149,14 +146,13 @@ const reduceUpdatesToScopedState = (
 });
 
 const getUpdatedActivityTimes = (
-  data: WebSocketOrderbookSizePricePair[],
+  data: WSDataPriceSizePair[],
   initialGroupKeysUpdated: OrderbookOrdersSortedObject,
   initialState: OrderbookOrdersSortedObject,
 ) =>
   getAffectedPricesInUpdateList(data).reduce((acc, normalizedPrice) => {
-    // eslint-disable-next-line unicorn/prefer-array-find
     const last = data.filter(
-      (d) => d[0] === parseFloat(normalizedPrice) / Math.pow(10, 2),
+      (d) => d[0] === convertSpecialObjKeyToFloat(normalizedPrice),
     )[0][1];
 
     return last !== initialState[normalizedPrice]
@@ -165,7 +161,7 @@ const getUpdatedActivityTimes = (
   }, initialGroupKeysUpdated);
 
 const reduceUpdatesToScopedStateForGrouped = (
-  updates: OrderbookGenericScopeDataType<WebSocketOrderbookDataArray>,
+  updates: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
@@ -208,20 +204,14 @@ const reduceUpdatesToScopedStateForGrouped = (
 const applyMinimumThresholdsToGroups = (
   groups: OrderbookOrdersSortedObject,
   groupBy: number,
-  updates: WebSocketOrderbookDataArray,
+  updates: WSDataPriceSizePair[],
 ) => {
   if (updates.length === 0) {
     return groups;
   }
 
   const groupMins = updates.reduce(
-    (
-      acc,
-      [
-        exactPriceInFloat,
-        absoluteSizeInUpdate,
-      ]: WebSocketOrderbookSizePricePair,
-    ) => {
+    (acc, [exactPriceInFloat, absoluteSizeInUpdate]: WSDataPriceSizePair) => {
       const groupedPrice = getGroupedPrice(exactPriceInFloat, groupBy);
       const normalizedGroupPrice = getNormalizedPrice(groupedPrice);
 
@@ -235,7 +225,8 @@ const applyMinimumThresholdsToGroups = (
 
   const r1 = Object.entries(groupMins).reduce(
     (acc, [normalizedGroupedPrice, calcSumSizeForUpdates]) => {
-      const groupedPrice = parseFloat(normalizedGroupedPrice) / Math.pow(10, 2);
+      const groupedPrice = convertSpecialObjKeyToFloat(normalizedGroupedPrice);
+
       const minimumSizeForGroup = getEstimatedMinimumSize(
         groups,
         groupedPrice,
@@ -261,89 +252,139 @@ const applyMinimumThresholdsToGroups = (
   return r1;
 };
 
-const ensureRowConsistency = (
-  state: OrderbookStateType,
-  res: OrderbookStateType,
-): OrderbookStateType => {
-  const sells = Object.entries(state.grouped.bids).slice(
-    Object.entries(state.grouped.bids).length - 1,
-  )[0];
+const getAffectedPricesInUpdateListForObj = (
+  subgroup: OrderbookOrdersSortedObject,
+): string[] => getAffectedPricesInUpdateList(ob2arr(subgroup));
 
-  const buys = Object.entries(state.grouped.asks)[0];
+const sortedObjValueSymDiff = (
+  a: OrderbookOrdersSortedObject,
+  b: OrderbookOrdersSortedObject,
+): number[] => {
+  const aa = Object.values(a);
+  const ab = Object.values(b);
 
-  const expiredBids = Object.entries(state.groupKeysUpdated.bids)
-    .map(([p, t]) =>
-      t &&
-      Date.now() - t > 3000 &&
-      sells &&
-      sells[0] &&
-      parseFloat(p) / Math.pow(10, 2) >
-        parseFloat(sells[0]) / Math.pow(10, 2) -
-          state.groupBy * (Math.min(state.grouped.bids.length, 12) / 4)
-        ? p
-        : undefined,
-    )
-    .filter((x) => x);
+  return aa
+    .filter((x) => !ab.includes(x))
+    .concat(ab.filter((x) => !aa.includes(x)));
+};
 
-  const expiredAsks = Object.entries(state.groupKeysUpdated.asks)
-    .map(([p, t]) =>
-      t &&
-      Date.now() - t > 3000 &&
-      buys &&
-      buys[0] &&
-      parseFloat(p) / Math.pow(10, 2) <
-        parseFloat(buys[0]) / Math.pow(10, 2) +
-          state.groupBy * (Math.min(state.grouped.asks.length, 12) / 4)
-        ? p
-        : undefined,
-    )
-    .filter((x) => x);
+const calculateDiff = (
+  before: string[],
+  after: string[],
+): { created: string[]; removed: string[] } => {
+  // console.log('calculateDiff: ', { before, after });
+  return {
+    created: after.filter((x) => !before.includes(x)), // after.filter((x) => !before.includes(x)),
+    removed: before.filter((x) => !after.includes(x)),
+  };
+};
 
-  if (expiredAsks.length > 0 || expiredBids.length > 0) {
-    console.log({ expiredAsks, expiredBids });
+type AllScopePropertyNames = 'bids' | 'asks';
+
+const reduceTwoScopesWithFn = <T, FR, TP = OrderbookGenericScopeDataType<T>>(
+  a: TP,
+  b: TP,
+  fn: (aa: T, bb: T) => FR,
+  scopeProps: AllScopePropertyNames[] = ['bids', 'asks'],
+): OrderbookGenericScopeDataType<FR> =>
+  scopeProps.reduce(
+    (acc, scopeKeyName) => ({
+      ...acc,
+      [scopeKeyName]: fn(a[scopeKeyName], b[scopeKeyName]),
+    }),
+    {},
+  ) as OrderbookGenericScopeDataType<FR>;
+
+const getGroupMembersDiff = (
+  before: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  after: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+): OrderbookGenericScopeDataType<{ created: string[]; removed: string[] }> => {
+  const a = reduceScopeWithFn<OrderbookOrdersSortedObject, string[]>(
+    before,
+    getAffectedPricesInUpdateListForObj,
+  );
+
+  const b = reduceScopeWithFn<OrderbookOrdersSortedObject, string[]>(
+    after,
+    getAffectedPricesInUpdateListForObj,
+  );
+
+  const changedKeys = reduceTwoScopesWithFn<
+    OrderbookOrdersSortedObject,
+    string[],
+    string[]
+  >(a, b, sortedObjValueSymDiff);
+
+  const beforeKeys = reduceScopeWithFn<OrderbookOrdersSortedObject, string[]>(
+    before,
+    Object.keys,
+  );
+
+  const diff = reduceTwoScopesWithFn(beforeKeys, changedKeys, calculateDiff); //calculateDiff(cmp1, ret);
+
+  return diff;
+};
+
+const convertSpecialObjKeyToFloat = (x: string) =>
+  parseFloat(x) / Math.pow(10, 2);
+
+const ensureConsistencyWithDiff = (
+  grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  acc: OrderbookStateType,
+): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => {
+  const newGrouped = { ...acc.grouped };
+
+  const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
+
+  // b) if new asks are added, check if bids should be corrected
+  if (groupsDiff.asks.created.length > 0) {
+    const cheaperDiffAsk = Math.min(
+      ...groupsDiff.asks.created.map((x) => convertSpecialObjKeyToFloat(x)),
+    );
+
+    let newBidsArr = ob2arr(acc.grouped.bids);
+    if (newBidsArr.length > 0) {
+      do {
+        if (newBidsArr.length === 0) {
+          break;
+        }
+        const firstBidRow = at(newBidsArr, -1)[0];
+        if (cheaperDiffAsk < firstBidRow) {
+          console.log('---> REMOVE BID: ', firstBidRow);
+          newBidsArr = newBidsArr.slice(0, 1);
+        } else {
+          break;
+        }
+        // eslint-disable-next-line no-constant-condition
+      } while (true);
+      newGrouped.bids = arr2obj(newBidsArr);
+    }
   }
 
-  const nres = {
-    ...res,
-    grouped: {
-      ...res.grouped,
-      bids: Object.entries(res.grouped.bids).reduce((acc, [currK, currV]) => {
-        // eslint-disable-next-line unicorn/prefer-includes
-        return expiredBids.indexOf(currK) >= 0
-          ? acc
-          : { ...acc, [currK]: currV };
-      }, {}),
-      asks: Object.entries(res.grouped.asks).reduce((acc, [currK, currV]) => {
-        // eslint-disable-next-line unicorn/prefer-includes
-        return expiredAsks.indexOf(currK) >= 0
-          ? acc
-          : { ...acc, [currK]: currV };
-      }, {}),
-    },
-  };
+  // b) if new bids are added, check if asks should be corrected
+  if (groupsDiff.bids.created.length > 0) {
+    const mostExpensiveDiffBids = Math.max(
+      ...groupsDiff.bids.created.map((x) => convertSpecialObjKeyToFloat(x)),
+    );
 
-  const nres2 = {
-    ...nres,
-    groupKeysUpdated: {
-      bids: Object.entries(res.groupKeysUpdated.bids)
-        .filter((gb) => {
-          // eslint-disable-next-line unicorn/prefer-includes
-          return expiredBids.indexOf(gb[0]) === -1;
-        })
-        .reduce((ac, [ck, cv]) => {
-          return { ...ac, [ck]: cv };
-        }, {}),
-      asks: Object.entries(res.groupKeysUpdated.asks)
-        .filter((gb) => {
-          // eslint-disable-next-line unicorn/prefer-includes
-          return expiredAsks.indexOf(gb[0]) === -1;
-        })
-        .reduce((ac, [ck, cv]) => {
-          return { ...ac, [ck]: cv };
-        }, {}),
-    },
-  };
-  return nres2;
+    let newAsksArr = ob2arr(acc.grouped.asks);
+    if (newAsksArr.length > 0) {
+      do {
+        if (newAsksArr.length === 0) {
+          break;
+        }
+        const firstAskRow = at(newAsksArr, 0)[0];
+        if (firstAskRow < mostExpensiveDiffBids) {
+          newAsksArr = newAsksArr.slice(1);
+        } else {
+          break;
+        }
+        // eslint-disable-next-line no-constant-condition
+      } while (true);
+      newGrouped.asks = arr2obj(newAsksArr);
+    }
+  }
+  return newGrouped;
 };
 
 const reducePendingGroupUpdatesToState = (
@@ -395,7 +436,12 @@ const reducePendingGroupUpdatesToState = (
     state,
   );
 
-  return ensureRowConsistency(state, res);
+  // the "ensureConsistencyWithDiff" is to make sure some
+  // rows are properly wiped (the API doesnt have a "snapshot" action,
+  // therefore, some estimations are made, specially over the first
+  // renders of the widget).
+
+  return { ...res, grouped: ensureConsistencyWithDiff(state.grouped, res) };
 };
 
 const reduceStateToNewGroupBySetting = (

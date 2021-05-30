@@ -94,30 +94,24 @@ const OrderbookComponent: FC<OrderbookProps> = ({
             ))}
           </ScrollView>
   */
-  const {
-    asksData,
-    bidsData,
-    isLoading,
-    orderBookDispatch,
-    groupBy,
-    connectionStatus,
-  } = useOrderbookController({
-    disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
-    subscribeToProductIds: [productId],
-    initialGroupBy,
-    webSocketUri,
-  });
+  const { asksData, bidsData, isLoading, orderBookDispatch, groupBy, wsState } =
+    useOrderbookController({
+      disableTwoWayProcessing: !ENABLE_TWO_WAY_REDUCER_ACTIONS,
+      subscribeToProductIds: [productId],
+      initialGroupBy,
+      webSocketUri,
+    });
 
   const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
 
   return (
     <View style={styles.flex1}>
-      {!isLoading && connectionStatus.websocket.connected === false && (
+      {!isLoading && wsState.connected === false && (
         <ErrorScreen
           errorType={
-            connectionStatus.connectedToInternet === false
+            /*  connectionStatus.connectedToInternet === false
               ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
-              : ERROR_TYPES.SERVICE_IS_UNAVAILABLE
+              : */ ERROR_TYPES.SERVICE_IS_UNAVAILABLE
           }
         />
       )}
