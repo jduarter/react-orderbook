@@ -2,20 +2,29 @@ import * as React from 'react';
 import { View, Image, Text, StyleSheet, Platform } from 'react-native';
 
 import { ERROR_TITLES } from './constants';
+import type { ErrorScreenProps } from './types';
 
-const ErrorScreen: React.FC<ErrorScreenProps> = ({ errorType }) => (
+// TS doesnt currently allow Map/Object of Symbols indexes
+const getErrorTitle = (errorType: symbol) =>
+  (ERROR_TITLES as typeof ERROR_TITLES & { [k: string]: string })[
+    errorType as unknown as string
+  ];
+
+const ErrorScreen: React.FC<ErrorScreenProps> = ({
+  errorType,
+}: {
+  errorType: symbol;
+}) => (
   <View style={styles.wrapper}>
-    <Image
-      source={require('./assets/error.gif')}
-      style={{ width: '100%', height: '100%', position: 'absolute' }}
-    />
-    <Text style={styles.title}>{ERROR_TITLES[errorType]}</Text>
+    <Image source={require('./assets/error.gif')} style={styles.image} />
+    <Text style={styles.title}>{getErrorTitle(errorType)}</Text>
   </View>
 );
 
 export default ErrorScreen;
 
 const styles = StyleSheet.create({
+  image: { width: '100%', height: '100%', position: 'absolute' },
   wrapper: {
     backgroundColor: '#000',
     position: 'absolute',

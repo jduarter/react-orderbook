@@ -1,4 +1,4 @@
-import { ERROR_TYPES } from './constants';
+import type { ERROR_TYPES } from './constants';
 
 export interface ErrorScreenProps {
   errorType:
