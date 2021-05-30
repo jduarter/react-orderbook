@@ -26,17 +26,21 @@ export const useOrderbookController = ({
   subscribeToProductIds,
   initialGroupBy = 100,
   webSocketUri,
+  rowsPerSection = 8,
 }: {
   disableTwoWayProcessing: boolean;
   subscribeToProductIds: string[];
   initialGroupBy: number;
   webSocketUri: string;
+  rowsPerSection: number;
 }): {
   orderBookDispatch: OrderbookDispatch;
   bidsData: WSDataPriceSizePair[];
   asksData: WSDataPriceSizePair[];
   isLoading: boolean;
   groupBy: number;
+  rowsPerSection?: number;
+  wsState: WebSocketState;
 } => {
   const lazyInitialState: OrderbookStateType = React.useMemo(
     () => ({
@@ -58,8 +62,12 @@ export const useOrderbookController = ({
     subscribeToProductIds,
   });
 
-  const asksData = orderAndLimit(orderBook.grouped.asks, 12, 'desc');
-  const bidsData = orderAndLimit(orderBook.grouped.bids, 12, 'asc');
+  const asksData = orderAndLimit(
+    orderBook.grouped.asks,
+    rowsPerSection,
+    'desc',
+  );
+  const bidsData = orderAndLimit(orderBook.grouped.bids, rowsPerSection, 'asc');
   /*
   console.log(
     'ASKS (' + Object.keys(orderBook.grouped.asks).length + '): ',

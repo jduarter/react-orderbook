@@ -121,6 +121,7 @@ export interface OrderbookProps {
   initialGroupBy?: number;
   productId: string;
   webSocketUri: string;
+  numberOfRowsPerSection?: number;
 }
 
 export type OrderbookReducerInitialState =

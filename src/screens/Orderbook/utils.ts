@@ -31,9 +31,13 @@ export const formatNumber = (v: number, decimals = 2): string =>
 
 export const getPrintPriceForNormalizedPrice = (
   input: OrderbookNormalizedPrice,
-  decimals = 2,
+  decimalsToPrint = 2,
+  decimalsToParse = 2,
 ): string =>
-  formatNumber(Number.parseFloat(input) / Math.pow(10, decimals), decimals);
+  formatNumber(
+    Number.parseFloat(input) / Math.pow(10, decimalsToParse),
+    decimalsToPrint,
+  );
 
 export const getGroupedPrice = (
   price: number,

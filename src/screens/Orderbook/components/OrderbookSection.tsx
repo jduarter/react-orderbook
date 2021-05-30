@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
 
 import { default as OrderbookRow } from './OrderbookRow';
@@ -66,29 +66,20 @@ const processNormalizedData = (
     return returnValue;
   });
 
-const MIDDLE_MENU_RELATIVE_HEIGHT = 0.1;
-
-const determineNumberOfRowsAutomatically = (
-  deviceHeight: number,
-  suggestedRowHeight = 42,
-): number =>
-  Math.ceil(
-    (deviceHeight * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) / suggestedRowHeight,
-  );
-
 const OrderbookSection: React.FC<{
   backgroundColor: string;
   normalizedData: NormalizedData;
   keyPrefix: string;
   totalOrderBy: 'asc' | 'desc';
   textColor?: string;
+  rowHeight?: number;
 }> = ({
   backgroundColor,
   normalizedData,
   keyPrefix,
   totalOrderBy,
   textColor = '#c2c2c2',
-  numberOfRows = null,
+  rowHeight = 42,
 }) => {
   const data = processNormalizedData(normalizedData, keyPrefix, totalOrderBy);
   const transitions = useTransition(
@@ -96,45 +87,38 @@ const OrderbookSection: React.FC<{
     DEFAULT_TRANSITION_OPTIONS({ backgroundColor, textColor }),
   );
 
-  const { height } = useWindowDimensions();
-
-  const effectiveNumberOfRowsPerSection =
-    numberOfRows !== null
-      ? numberOfRows
-      : determineNumberOfRowsAutomatically(height) / 2;
-
-  const improvedRowHeight =
-    (height * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) /
-    (effectiveNumberOfRowsPerSection * 2);
+  const cb = React.useCallback(
+    (style, item) => {
+      return (
+        <animated.View
+          key={item[2]}
+          style={
+            style.height
+              ? {
+                  ...style,
+                  height:
+                    style.height.get() === -1
+                      ? style.height.set(rowHeight)
+                      : style.height,
+                }
+              : style
+          }>
+          <OrderbookRow
+            price={item[0].toString()}
+            textColor={textColor}
+            val={item[1]}
+            total={item[3]}
+            backgroundColor={backgroundColor}
+          />
+        </animated.View>
+      );
+    },
+    [rowHeight, textColor],
+  );
 
   return React.useMemo(
-    () => (
-      <View style={{ backgroundColor }}>
-        {transitions((style, item) => {
-          const _s = {
-            ...style,
-            height: style.height === -1 ? improvedRowHeight : style.height,
-          };
-          if (_s.height <= 0) {
-            console.log('[T] item: ' + item[0] + ' -> ', _s, {
-              improvedRowHeight,
-            });
-          }
-
-          return (
-            <animated.View key={item[2]} style={_s}>
-              <OrderbookRow
-                price={item[0].toString()}
-                textColor={textColor}
-                val={item[1]}
-                total={item[3]}
-              />
-            </animated.View>
-          );
-        })}
-      </View>
-    ),
-    [textColor, backgroundColor, transitions],
+    () => <View style={{ backgroundColor }}>{transitions(cb)}</View>,
+    [backgroundColor, transitions, cb],
   );
 };
 

@@ -1,6 +1,13 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import type { FC } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  StatusBar,
+  useWindowDimensions,
+} from 'react-native';
 
 import { useDebounceCallback } from '@react-hook/debounce';
 
@@ -67,11 +74,41 @@ const SpreadWidget: FC<{
   return <Spread high={parseFloat(a[0]) / 100} low={parseFloat(b[0]) / 100} />;
 };
 
+const MIDDLE_MENU_RELATIVE_HEIGHT = 0.125;
+const ROW_VERTICAL_PADDING = 10;
+const ROW_VERTICAL_MARGIN = 2;
+
+const FONT_SIZE = 18;
+const LINE_HEIGHT_DEFAULT_RATIO = 1.1;
+const SUGGESTED_ROW_HEIGHT =
+  FONT_SIZE * 2 * LINE_HEIGHT_DEFAULT_RATIO + ROW_VERTICAL_MARGIN * 2;
+
+const determineNumberOfRowsAutomatically = (
+  deviceHeight: number,
+  suggestedRowHeight = SUGGESTED_ROW_HEIGHT,
+): number =>
+  Math.ceil(
+    (deviceHeight * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) / suggestedRowHeight,
+  );
+
 const OrderbookComponent: FC<OrderbookProps> = ({
   initialGroupBy = 100,
   productId = 'PI_XBTUSD',
   webSocketUri = 'wss://www.cryptofacilities.com/ws/v1',
+  numberOfRowsPerSection = null,
 }) => {
+  const { height } = useWindowDimensions();
+  //const numberOfRows = 10;
+  const effectiveNumberOfRowsPerSection =
+    numberOfRowsPerSection !== null
+      ? numberOfRowsPerSection
+      : determineNumberOfRowsAutomatically(
+          height - (StatusBar.currentHeight || 0),
+        ) / 2;
+
+  const improvedRowHeight =
+    (height * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) /
+    (effectiveNumberOfRowsPerSection * 2);
   /*const [rdbg, setRdbg] = React.useState<string[]>([]);
   const addRdbg = React.useCallback((t) => {
     console.log('-> ', t);
@@ -100,6 +137,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
       subscribeToProductIds: [productId],
       initialGroupBy,
       webSocketUri,
+      rowsPerSection: effectiveNumberOfRowsPerSection,
     });
 
   const spreadCalcIsReady = false; // orderBook.asks.length > 0 && orderBook.bids.length > 0;
@@ -119,6 +157,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
       <View style={styles.orderBookSubWrapper}>
         <View style={styles.firstColWrap}>
           <OrderbookSection
+            rowHeight={improvedRowHeight}
             keyPrefix={'a_'}
             backgroundColor={'#7c0a02'}
             normalizedData={asksData}
@@ -137,6 +176,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
         </View>
         <View style={styles.secondColWrap}>
           <OrderbookSection
+            rowHeight={improvedRowHeight}
             keyPrefix={'b_'}
             backgroundColor={'#043927'}
             normalizedData={bidsData}
