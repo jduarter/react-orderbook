@@ -1,112 +1,82 @@
-type ProductIdType = 'PI_XBTUSD';
+import type {} from 'react';
 
-type OrderbookGenericFragmentType = [number, number];
-
-type OrderbookBidType = OrderbookGenericFragmentType;
-type OrderbookAskType = OrderbookGenericFragmentType;
-
-type FeedType = 'book_ui_1';
-
-type RawUpdateMessageFloat = number;
-
-type WebSocketClientInstance = any;
-
-export interface WebSocketOrderbookSnapshotMessage<
-  PID extends string = 'PI_XBTUSD',
-> extends GenericMessageType {
-  asks: WebSocketOrderbookDataArray;
-  bids: WebSocketOrderbookDataArray;
-  feed: 'book_ui_1_snapshot';
-
-  numLevels: number;
-  product_id: PID;
-}
-
-export interface WebSocketOrderbookUpdateMessage<
-  PID extends string = 'PI_XBTUSD',
-> extends GenericMessageType {
-  asks: WebSocketOrderbookDataArray;
-  bids: WebSocketOrderbookDataArray;
-  feed: 'book_ui_1';
-
-  numLevels: number;
-  product_id: PID;
-}
-
-export interface OrderbookWSMessageType {
-  feed: FeedType;
-  product_id: ProductIdType;
-  bids: OrderbookBidType[];
-  asks: OrderbookAskType[];
-}
-
-export type OnMessageReceivedFunction<MT extends GenericMessageType> = (
-  data: MT,
+export type OnMessageReceivedFunction<MFS extends GenericMessageFromServer> = (
+  data: MFS,
 ) => void;
 
 export type OnConnectFunction = (client: WebSocketInstanceType) => void;
+export type OnDisconnectFunction = () => void;
+export type OnErrorFunction = (err: Error) => void;
+
+export type WebSocketNativeError = { isTrusted?: boolean; message: string };
 
 export interface WebSocketHandlers<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
+  MFS extends GenericMessageFromServer = GenericMessageFromServer,
 > {
-  onConnectionStatusChange: OnConnectionStatusChangeFunction<S> | null;
-  onMessageReceived: OnMessageReceivedFunction<MT> | null;
-  onConnect: OnConnectFunction | null;
+  onMessage: OnMessageReceivedFunction<MFS> | null;
+  onOpen: OnConnectFunction | null;
+  onClose: OnDisconnectFunction | null;
+  onError: OnErrorFunction | null;
 }
 
 export type UseWebSocketOptionalProps<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
-> = Partial<WebSocketHandlers<MT, S>>;
+  MFS extends GenericMessageFromServer = GenericMessageFromServer,
+> = Partial<WebSocketHandlers<MFS>>;
 
 export interface UseWebSocketProperties<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
-> extends UseWebSocketOptionalProps<MT, S> {
+  MFS extends GenericMessageFromServer = GenericMessageFromServer,
+> extends UseWebSocketOptionalProps<MFS> {
   uri: string;
+  autoReconnect?: boolean;
+  reconnectCheckIntervalMs?: number;
 }
 
-export type GenericMessageType = Record<string, any>;
-
-export type WebSocketOrderbookSizePricePair = [
-  RawUpdateMessageFloat,
-  RawUpdateMessageFloat,
-];
-
-export type WebSocketOrderbookDataArray = WebSocketOrderbookSizePricePair[];
+export type GenericMessageFromServer = Record<string, any>;
 
 export type WebSocketConnectFunction = () => Promise<boolean>;
 
-export interface OtherExtraEventCallbacks {
-  connect: WebSocketConnectFunction;
-}
+export type GenericMessageToClient = Record<string | number, any>;
 
-type OnConnectionStatusChangeFunction<S = WebSocketState> = (
-  s: Partial<S>,
-  c?: WebSocketClientInstance | null,
-) => void;
-
-type RestOfArguments<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
-> = WebSocketHandlers<MT, S> & OtherExtraEventCallbacks;
-
-type WebSocketHandlersBinderArguments<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
-  A = RestOfArguments<MT, S>,
-> = [WebSocketInstanceType, A];
+export type WebSocketSendFunction<
+  MTC extends GenericMessageToClient = GenericMessageToClient,
+> = (msgObj: MTC) => Promise<boolean>;
 
 export type BindHandlersFunction<
-  MT extends GenericMessageType = GenericMessageType,
-  S = WebSocketState,
-  A = RestOfArguments<MT, S>,
-> = (...arguments_: WebSocketHandlersBinderArguments<MT, S, A>) => void;
+  MFS extends GenericMessageFromServer = GenericMessageFromServer,
+  MTC extends GenericMessageToClient = GenericMessageToClient,
+> = (
+  o: {
+    send: WebSocketSendFunction<MTC>;
+    dispatch: Dispatch;
+  },
+  handlers: WebSocketHandlers<MFS>,
+) => Partial<WebSocketHandlers<MFS>>;
 
 export interface WebSocketState extends Record<string, any> {
-  connecting: boolean;
-  connected: boolean;
+  isConnecting: boolean;
+  isConnected: boolean;
+  isLoading: boolean;
 }
+
+export type ReducerActionTypes =
+  | 'SET_LOADING'
+  | 'SET_CONNECTED'
+  | 'SET_CONNECTING';
+
+export interface ReducerAction {
+  type: ReducerActionTypes;
+  payload: any;
+}
+
+export type Reducer = (
+  state: WebSocketState,
+  action: ReducerAction,
+) => WebSocketState;
+
+export type Dispatch = React.Dispatch<ReducerAction>;
+
+export type InitialState =
+  | React.SetStateAction<WebSocketState>
+  | WebSocketState;
 
 export type WebSocketInstanceType = any;

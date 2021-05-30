@@ -6,7 +6,8 @@
       "@atoms/*": ["src/atoms/*"],
       "@components/*": ["src/components/*"],
       "@hooks/*": ["src/hooks/*"],
-      "@screens/*": ["src/screens/*"]
+      "@screens/*": ["src/screens/*"],
+      "@utils/*": ["src/utils/*"]
     },
     "noImplicitAny": true,
     "strictNullChecks": true,

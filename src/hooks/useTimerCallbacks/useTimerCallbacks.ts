@@ -1,16 +1,13 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react';
 
-import type {
-  UseGenericTimerCallbackKind,
-  UseGenericTimerCallbackReturn,
-} from './types';
+import type { UseGenericTimerCallbackKind, TimerHandler } from './types';
 
 export const useGenericTimerCallback = <T = NodeJS.Timeout | number>(
   [setF, clearF]: UseGenericTimerCallbackKind,
   ms: number,
   cleanupAtFirstExecution: boolean,
   callback: (...args: any[]) => void,
-): UseGenericTimerCallbackReturn => {
+): TimerHandler => {
   const ref = useRef<T | undefined>();
 
   const finish = useCallback(() => {
@@ -21,7 +18,7 @@ export const useGenericTimerCallback = <T = NodeJS.Timeout | number>(
 
     console.log('[reconnectTimer] finish');
 
-    clearF(ref.current);
+    clearF(ref.current as unknown as number);
     ref.current = undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -41,7 +38,7 @@ export const useGenericTimerCallback = <T = NodeJS.Timeout | number>(
       return;
     }
 
-    ref.current = setF(runClosure, ms);
+    ref.current = setF(runClosure, ms) as unknown as T;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ms, runClosure]);
 
@@ -63,12 +60,11 @@ export const useGenericTimerCallback = <T = NodeJS.Timeout | number>(
 export const useTimeoutCallback = (
   ms: number,
   callback: (...args: any[]) => void,
-): UseGenericTimerCallbackReturn =>
+): TimerHandler =>
   useGenericTimerCallback<NodeJS.Timeout>(
     // eslint-disable-next-line no-restricted-globals
     [setTimeout, clearTimeout],
     ms,
-
     true,
     callback,
   );
@@ -76,11 +72,10 @@ export const useTimeoutCallback = (
 export const useIntervalCallback = (
   ms: number,
   callback: (...args: any[]) => void,
-): UseGenericTimerCallbackReturn =>
+): TimerHandler =>
   useGenericTimerCallback<number>(
     [setInterval, clearInterval], // eslint-disable-line no-restricted-globals
     ms,
-
     false,
     callback,
   );

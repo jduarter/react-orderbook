@@ -6,7 +6,7 @@ const useGeneratorQueue = <T>(
   initialState: T[] = [],
 ): UseGeneratorQueueReturn<T> => {
   const ref = useRef<T[]>(initialState);
-  const dispatchFromQ = useCallback((payload) => {
+  const dispatchToQ = useCallback((payload) => {
     for (const item of payload) {
       ref.current.push(item);
     }
@@ -16,10 +16,7 @@ const useGeneratorQueue = <T>(
     yield ref.current.shift();
   }, []);
 
-  return useMemo(
-    () => ({ dispatchFromQ, consumeQ }),
-    [dispatchFromQ, consumeQ],
-  );
+  return useMemo(() => ({ dispatchToQ, consumeQ }), [dispatchToQ, consumeQ]);
 };
 
 export default useGeneratorQueue;

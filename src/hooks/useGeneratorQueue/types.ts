@@ -7,6 +7,6 @@ export type UseGeneratorQueueDispatch<T> = (
 export type GetSingleUpdateFunction<T> = () => Iterable<T | undefined>;
 
 export interface UseGeneratorQueueReturn<T> {
-  dispatchFromQ: UseGeneratorQueueDispatch<T>;
+  dispatchToQ: UseGeneratorQueueDispatch<T>;
   consumeQ: GetSingleUpdateFunction<T>;
 }

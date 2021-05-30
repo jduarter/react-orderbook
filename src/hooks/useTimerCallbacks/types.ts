@@ -1,10 +1,11 @@
-export type UseGenericTimerCallbackKind =
+export type UseGenericTimerCallbackKind = [
   // eslint-disable-next-line no-restricted-globals
-  | [typeof setTimeout, typeof setInterval]
+  typeof setTimeout | typeof setInterval,
   // eslint-disable-next-line no-restricted-globals
-  | [typeof clearTimeout, typeof clearInterval];
+  typeof clearTimeout | typeof clearInterval,
+];
 
-export interface UseGenericTimerCallbackReturn {
+export interface TimerHandler {
   start: () => void;
   finish: () => void;
   isStarted: () => boolean;
