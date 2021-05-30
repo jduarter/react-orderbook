@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
 
 import { default as OrderbookRow } from './OrderbookRow';
@@ -11,7 +11,6 @@ const DEFAULT_TRANSITION_OPTIONS = ({
   keys: (item: any) => item[2],
   from: {
     backgroundColor: textColor,
-
     left: 400,
     position: 'absolute',
     opacity: 0.5,
@@ -19,6 +18,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
   enter: [
     { left: 0, position: 'relative' },
     {
+      height: -1,
       opacity: 1,
       backgroundColor,
     },
@@ -27,6 +27,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
     { backgroundColor: '#000' },
     { height: 0 },
     { backgroundColor: textColor },
+    { position: 'relative', left: 0, opacity: 1, height: -1 },
   ],
   delay: 25,
   expires: true,
@@ -37,8 +38,6 @@ const DEFAULT_TRANSITION_OPTIONS = ({
 
 type NormalizedRecord = [number, number];
 type NormalizedData = NormalizedRecord[];
-
-const ENABLE_ANIMATIONS = true;
 
 const getTotalForRow = (
   rows: NormalizedData,
@@ -67,25 +66,15 @@ const processNormalizedData = (
     return returnValue;
   });
 
-const ChildComp = ({
-  item: [price, size, _k, total],
-  textColor,
-}: {
-  item: ProcessedNormalizedRecord;
-  textColor: string;
-}) => {
-  return (
-    <OrderbookRow
-      price={price}
-      textColor={textColor}
-      val={size}
-      total={total}
-    />
-  );
-};
+const MIDDLE_MENU_RELATIVE_HEIGHT = 0.1;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = (): void => {};
+const determineNumberOfRowsAutomatically = (
+  deviceHeight: number,
+  suggestedRowHeight = 42,
+): number =>
+  Math.ceil(
+    (deviceHeight * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) / suggestedRowHeight,
+  );
 
 const OrderbookSection: React.FC<{
   backgroundColor: string;
@@ -99,37 +88,53 @@ const OrderbookSection: React.FC<{
   keyPrefix,
   totalOrderBy,
   textColor = '#c2c2c2',
+  numberOfRows = null,
 }) => {
   const data = processNormalizedData(normalizedData, keyPrefix, totalOrderBy);
-  const transitions = ENABLE_ANIMATIONS
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useTransition(
-        data,
-        DEFAULT_TRANSITION_OPTIONS({ backgroundColor, textColor }),
-      )
-    : noop;
-
-  const TC = React.useCallback(
-    (styles, item) =>
-      ENABLE_ANIMATIONS && (
-        <animated.View style={styles}>
-          {ChildComp({ textColor, item })}
-        </animated.View>
-      ),
-    [textColor],
+  const transitions = useTransition(
+    data,
+    DEFAULT_TRANSITION_OPTIONS({ backgroundColor, textColor }),
   );
+
+  const { height } = useWindowDimensions();
+
+  const effectiveNumberOfRowsPerSection =
+    numberOfRows !== null
+      ? numberOfRows
+      : determineNumberOfRowsAutomatically(height) / 2;
+
+  const improvedRowHeight =
+    (height * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) /
+    (effectiveNumberOfRowsPerSection * 2);
 
   return React.useMemo(
     () => (
       <View style={{ backgroundColor }}>
-        {ENABLE_ANIMATIONS
-          ? (transitions(TC) as React.ReactNode)
-          : data.map((item) => (
-              <ChildComp key={item[2]} item={item} textColor={textColor} />
-            ))}
+        {transitions((style, item) => {
+          const _s = {
+            ...style,
+            height: style.height === -1 ? improvedRowHeight : style.height,
+          };
+          if (_s.height <= 0) {
+            console.log('[T] item: ' + item[0] + ' -> ', _s, {
+              improvedRowHeight,
+            });
+          }
+
+          return (
+            <animated.View key={item[2]} style={_s}>
+              <OrderbookRow
+                price={item[0].toString()}
+                textColor={textColor}
+                val={item[1]}
+                total={item[3]}
+              />
+            </animated.View>
+          );
+        })}
       </View>
     ),
-    [textColor, backgroundColor, transitions, TC, data],
+    [textColor, backgroundColor, transitions],
   );
 };
 

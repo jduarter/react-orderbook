@@ -350,7 +350,6 @@ const ensureConsistencyWithDiff = (
         }
         const firstBidRow = at(newBidsArr, -1)[0];
         if (cheaperDiffAsk < firstBidRow) {
-          console.log('---> REMOVE BID: ', firstBidRow);
           newBidsArr = newBidsArr.slice(0, 1);
         } else {
           break;

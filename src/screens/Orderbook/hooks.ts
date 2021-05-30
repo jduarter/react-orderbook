@@ -191,7 +191,7 @@ export const useOrderbookConnection = ({
 
       return () => {
         console.log('[ws] closing connection from mainEffect');
-        wsDisconnect();
+        if (wsDisconnect) wsDisconnect();
       };
     },
     [wsConnect, wsDisconnect],
