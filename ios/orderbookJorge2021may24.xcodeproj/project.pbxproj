@@ -15,6 +15,7 @@
 		491132B309AB6FCC84D7E2A9 /* libPods-orderbookJorge2021may24.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0721FB4CEF19EE8153793D1F /* libPods-orderbookJorge2021may24.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		B558FE762BBC470B94CA14BE /* Monospace.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D35533745A354EDB88A771CD /* Monospace.ttf */; };
+		C026254D00AD44709F6B4890 /* RobotoMono-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BEDFFA2468D745998DD56874 /* RobotoMono-VariableFont_wght.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		A99607A4D53717886CAA7E87 /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig"; path = "Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig"; sourceTree = "<group>"; };
 		D35533745A354EDB88A771CD /* Monospace.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Monospace.ttf; path = ../src/assets/fonts/Monospace.ttf; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		BEDFFA2468D745998DD56874 /* RobotoMono-VariableFont_wght.ttf */ = {isa = PBXFileReference; name = "RobotoMono-VariableFont_wght.ttf"; path = "../src/assets/fonts/RobotoMono-VariableFont_wght.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				D35533745A354EDB88A771CD /* Monospace.ttf */,
+				BEDFFA2468D745998DD56874 /* RobotoMono-VariableFont_wght.ttf */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -256,6 +259,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				B558FE762BBC470B94CA14BE /* Monospace.ttf in Resources */,
+				C026254D00AD44709F6B4890 /* RobotoMono-VariableFont_wght.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
