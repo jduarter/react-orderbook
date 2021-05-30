@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: '10%',
     marginTop: '30%',
-    fontFamily: Platform.OS === 'ios' ? 'Monospace' : 'monospace',
+    fontFamily: 'Roboto Mono',
     color: '#c7ea46',
     fontSize: 20,
     fontWeight: 'bold',
