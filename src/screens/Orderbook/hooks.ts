@@ -176,6 +176,10 @@ export const useOrderbookConnection = ({
     [subscribeToProductIds, orderBookDispatch],
   );
 
+  const onError = React.useCallback((err) => {
+    console.log('---> ERROR:', err);
+  }, []);
+
   const {
     connect: wsConnect,
     close: wsDisconnect,
@@ -184,6 +188,7 @@ export const useOrderbookConnection = ({
     uri: webSocketUri,
     onMessage,
     onOpen,
+    onError,
     reconnectCheckIntervalMs,
     autoReconnect,
   });

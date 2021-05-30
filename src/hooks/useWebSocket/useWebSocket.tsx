@@ -27,7 +27,7 @@ const WebSocketError = getThrowableError(
 
 const useHandlers: BindHandlersFunction = (
   { send, dispatch },
-  { onMessage, onOpen, onClose },
+  { onMessage, onOpen, onClose, onError },
 ) => {
   const onOpenHandler = React.useCallback(() => {
     console.log('-------> client.onopen');
@@ -64,15 +64,26 @@ const useHandlers: BindHandlersFunction = (
 
   const onCloseHandler = React.useCallback(() => {
     console.log('*** client.onClose');
+    dispatch({ type: 'SET_CONNECTED', payload: { value: false } });
+    dispatch({ type: 'SET_CONNECTING', payload: { value: false } });
+
     if (onClose) {
       onClose();
     }
-  }, [onClose]);
+  }, [onClose, dispatch]);
 
-  const onErrorHandler = React.useCallback((error: WebSocketNativeError) => {
-    console.log('*** client.onerror:', error);
-    // {"isTrusted": false, "message": "The operation couldn’t be completed. Network is down"}
-  }, []);
+  const onErrorHandler = React.useCallback(
+    (error: WebSocketNativeError) => {
+      console.log('*** client.onerror:', error);
+
+      onCloseHandler();
+      if (onError) {
+        onError(error);
+      }
+      // {"isTrusted": false, "message": "The operation couldn’t be completed. Network is down"}
+    },
+    [onCloseHandler, onError],
+  );
 
   return React.useMemo(
     () => ({
