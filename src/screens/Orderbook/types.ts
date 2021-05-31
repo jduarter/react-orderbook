@@ -75,16 +75,13 @@ export interface PendingGroupUpdateRecord {
   updates: WSUpdatesType;
 }
 
+export type OrdersMap = Map<number, number>;
+
 export interface OrderbookStateType
-  extends OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> {
+  extends OrderbookGenericScopeDataType<OrdersMap> {
   groupBy: number;
-  grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
-  pendingGroupUpdates: PendingGroupUpdateRecord[];
+  grouped: OrderbookGenericScopeDataType<OrdersMap>;
   isLoading: boolean;
-  groupKeysUpdated: {
-    bids: Record<string, number>;
-    asks: Record<string, number>;
-  };
 }
 
 export type OrderbookReducerActionTypes =

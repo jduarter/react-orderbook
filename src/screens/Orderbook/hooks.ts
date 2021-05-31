@@ -92,7 +92,7 @@ const preprocessUpdates = (updates) => {
   // several subsequent state updates (+ renders)
   // and keep the last value for each key to prevent
   // useless processing
-  console.log('preprocess: ', updates);
+
   const res = updates.reduce(
     (acc, { updates }) => {
       return {
@@ -127,27 +127,22 @@ export const useOrderbookConnection = ({
 */
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
-      console.log('[onProcessCycle STARTS]');
-      //  InteractionManager.runAfterInteractions(() => {
       for (const updates of consumeQ(null)) {
         if (!updates || updates.length === 0) {
           console.log('(CONTINUE)');
           continue;
         }
         const updatess = preprocessUpdates(updates);
-        console.log('QQ: UPDATES:', updatess);
-        //  console.log('res: ', res);
-
+        /*
         console.log(
           '-> consumed from queue: ',
           updatess.bids.size + '/' + updatess.asks.size,
-        );
+        );*/
         orderBookDispatch({
           type: 'UPDATE_GROUPED',
           payload: { updates: [updatess] },
         });
       }
-      //  });
     }, [consumeQ, orderBookDispatch]),
   });
 
@@ -249,14 +244,8 @@ export const useOrderbookProcessing = ({
   useSafeEffect((isMounted) => {
     // eslint-disable-next-line no-restricted-globals
     const intval = setInterval(() => {
-      if (!isMounted) {
-        console.log('useOrderbookProcessing: IS NOT MOUNTED!!');
-      }
-
       if (isMounted()) {
         onProcessCycle();
-      } else {
-        console.log('useOrderbookProcessing: IS NOT MOUNTED');
       }
     }, intervalMs);
     return () => {

@@ -103,11 +103,13 @@ const AnimatedTextValue: React.FC<Props> = ({
       reset: shouldAnimateAgain,
       expires: true,
       config: {
-        mass: 0.1,
+        /*   mass: 0.1,
         tension: 360,
         friction: 10,
         precision: 0.4,
         velocity: -1,
+     */
+        duration: 100,
       },
       cancel: !shouldPlayAnim,
       pause: !shouldPlayAnim,

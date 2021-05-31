@@ -8,6 +8,7 @@ import type {
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
   WSDataPriceSizePair,
+  OrdersMap,
 } from './types';
 
 type SortByOperationTypes = -1 | 1;
@@ -91,11 +92,15 @@ export const immutableGetReversedArr = <T extends unknown = any>(
 };
 
 export const orderAndLimit = (
-  obj: OrderbookOrdersSortedObject,
+  map: OrdersMap,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
 ): WSDataPriceSizePair[] => {
-  const array = Object.entries(obj);
+  const sortedObj = Array.from(map).reduce((acc, [ck, cv]) => {
+    return { ...acc, [getNormalizedPrice(ck)]: cv };
+  }, {});
+
+  const array = Object.entries(sortedObj);
 
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
@@ -154,21 +159,28 @@ export const calculateSpread = (high: number, low: number): number => {
   return -1 * (high / low - 1) * 100;
 };
 
-export const wipeZeroRecords = (
-  input: OrderbookOrdersSortedObject,
-): OrderbookOrdersSortedObject =>
-  Object.entries(input).reduce(
+export const wipeZeroRecords = (input: OrdersMap): OrdersMap => {
+  const ret = new Map(input);
+  const arr = Array.from(input.entries());
+  for (const [currKey, currVal] of arr) {
+    if (currVal === 0) {
+      ret.delete(currKey);
+    }
+  }
+  return ret;
+};
+/* Array.from(input.entries()).reduce(
     (acc, [currKey, currVal]) =>
       currVal !== 0 ? { ...acc, [currKey]: currVal } : acc,
     {},
-  );
+  );*/
 
 export const reduceScopeWithFn = <
-  T extends OrderbookOrdersSortedObject = OrderbookOrdersSortedObject,
+  T extends OrdersMap = OrdersMap,
   FR = OrderbookGenericScopeDataType<T>,
 >(
   input: OrderbookGenericScopeDataType<T>,
-  transformer: (input: OrderbookOrdersSortedObject) => FR,
+  transformer: (input: OrdersMap) => FR,
 ): OrderbookGenericScopeDataType<FR> => ({
   bids: transformer(input.bids) as FR,
   asks: transformer(input.asks) as FR,
@@ -211,12 +223,8 @@ export const getNormalizedGroupedPrice = (
 export const customFormatNumberToFloat = (price: string): number =>
   Number.parseInt(price) / 100;
 
-export const getAffectedPricesInUpdateList = (
-  array: WSDataPriceSizePair[],
-): OrderbookNormalizedPrice[] =>
-  uniq<OrderbookNormalizedPrice>(
-    array.map(([price]: WSDataPriceSizePair) => getNormalizedPrice(price)),
-  );
+export const getAffectedPricesInUpdateList = (map: OrdersMap): number[] =>
+  Array.from(map).map(([price]: WSDataPriceSizePair) => price);
 
 export const exactPriceIsWithinGroupPrice = (
   exact: number,
@@ -229,10 +237,6 @@ export const getEstimatedMinimumSize = (
   groupPrice: number,
   groupBy: number,
 ): number => {
-  console.log(
-    'getEstimatedMinimumSize (' + groupPrice + '/' + groupBy + '): ',
-    sortedObj,
-  );
   const ret = ob2arr(sortedObj).reduce(
     (acc, [currPrice, currSize]) =>
       acc +
@@ -241,8 +245,6 @@ export const getEstimatedMinimumSize = (
         : 0),
     0,
   );
-  console.log('-> RET: ', ret);
-
   return ret;
 };
 /**/
