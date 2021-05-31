@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "orderbookJorge2021may24.app"
-               BlueprintName = "orderbookJorge2021may24"
-               ReferencedContainer = "container:orderbookJorge2021may24.xcodeproj">
+               BuildableName = "OrderbookJD.app"
+               BlueprintName = "OrderbookJD"
+               ReferencedContainer = "container:OrderbookJD.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "orderbookJorge2021may24Tests.xctest"
-               BlueprintName = "orderbookJorge2021may24Tests"
-               ReferencedContainer = "container:orderbookJorge2021may24.xcodeproj">
+               BuildableName = "OrderbookJDTests.xctest"
+               BlueprintName = "OrderbookJDTests"
+               ReferencedContainer = "container:OrderbookJD.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "orderbookJorge2021may24.app"
-            BlueprintName = "orderbookJorge2021may24"
-            ReferencedContainer = "container:orderbookJorge2021may24.xcodeproj">
+            BuildableName = "OrderbookJD.app"
+            BlueprintName = "OrderbookJD"
+            ReferencedContainer = "container:OrderbookJD.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "orderbookJorge2021may24.app"
-            BlueprintName = "orderbookJorge2021may24"
-            ReferencedContainer = "container:orderbookJorge2021may24.xcodeproj">
+            BuildableName = "OrderbookJD.app"
+            BlueprintName = "OrderbookJD"
+            ReferencedContainer = "container:OrderbookJD.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

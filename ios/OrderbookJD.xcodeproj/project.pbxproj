@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		00E356F31AD99517003FC87E /* orderbookJorge2021may24Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* orderbookJorge2021may24Tests.m */; };
+		00E356F31AD99517003FC87E /* OrderbookJDTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* OrderbookJDTests.m */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.m */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		432C8E05088A461DEEBCD7D4 /* libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 03D1AE5197B1DD98A338C6C0 /* libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a */; };
-		491132B309AB6FCC84D7E2A9 /* libPods-orderbookJorge2021may24.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0721FB4CEF19EE8153793D1F /* libPods-orderbookJorge2021may24.a */; };
+		432C8E05088A461DEEBCD7D4 /* libPods-OrderbookJD-OrderbookJDTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 03D1AE5197B1DD98A338C6C0 /* libPods-OrderbookJD-OrderbookJDTests.a */; };
+		491132B309AB6FCC84D7E2A9 /* libPods-OrderbookJD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0721FB4CEF19EE8153793D1F /* libPods-OrderbookJD.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		C026254D00AD44709F6B4890 /* RobotoMono-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BEDFFA2468D745998DD56874 /* RobotoMono-VariableFont_wght.ttf */; };
 /* End PBXBuildFile section */
@@ -23,27 +23,27 @@
 			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
-			remoteInfo = orderbookJorge2021may24;
+			remoteInfo = OrderbookJD;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		00E356EE1AD99517003FC87E /* orderbookJorge2021may24Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = orderbookJorge2021may24Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		00E356EE1AD99517003FC87E /* OrderbookJDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OrderbookJDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		00E356F21AD99517003FC87E /* orderbookJorge2021may24Tests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = orderbookJorge2021may24Tests.m; sourceTree = "<group>"; };
-		03D1AE5197B1DD98A338C6C0 /* libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0721FB4CEF19EE8153793D1F /* libPods-orderbookJorge2021may24.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-orderbookJorge2021may24.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0EF7C5AD4D121CF4081AF77C /* Pods-orderbookJorge2021may24.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-orderbookJorge2021may24.release.xcconfig"; path = "Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24.release.xcconfig"; sourceTree = "<group>"; };
-		13B07F961A680F5B00A75B9A /* orderbookJorge2021may24.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = orderbookJorge2021may24.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = orderbookJorge2021may24/AppDelegate.h; sourceTree = "<group>"; };
-		13B07FB01A68108700A75B9A /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AppDelegate.m; path = orderbookJorge2021may24/AppDelegate.m; sourceTree = "<group>"; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = orderbookJorge2021may24/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = orderbookJorge2021may24/Info.plist; sourceTree = "<group>"; };
-		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = orderbookJorge2021may24/main.m; sourceTree = "<group>"; };
-		15A0419AD7DD11E46DCECE0D /* Pods-orderbookJorge2021may24.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-orderbookJorge2021may24.debug.xcconfig"; path = "Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24.debug.xcconfig"; sourceTree = "<group>"; };
-		7B57D3DC898C12F2053B35EA /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.debug.xcconfig"; path = "Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.debug.xcconfig"; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = orderbookJorge2021may24/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		A99607A4D53717886CAA7E87 /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig"; path = "Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig"; sourceTree = "<group>"; };
+		00E356F21AD99517003FC87E /* OrderbookJDTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OrderbookJDTests.m; sourceTree = "<group>"; };
+		03D1AE5197B1DD98A338C6C0 /* libPods-OrderbookJD-OrderbookJDTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OrderbookJD-OrderbookJDTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0721FB4CEF19EE8153793D1F /* libPods-OrderbookJD.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OrderbookJD.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EF7C5AD4D121CF4081AF77C /* Pods-OrderbookJD.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OrderbookJD.release.xcconfig"; path = "Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD.release.xcconfig"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* OrderbookJD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OrderbookJD.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = OrderbookJD/AppDelegate.h; sourceTree = "<group>"; };
+		13B07FB01A68108700A75B9A /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AppDelegate.m; path = OrderbookJD/AppDelegate.m; sourceTree = "<group>"; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OrderbookJD/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OrderbookJD/Info.plist; sourceTree = "<group>"; };
+		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = OrderbookJD/main.m; sourceTree = "<group>"; };
+		15A0419AD7DD11E46DCECE0D /* Pods-OrderbookJD.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OrderbookJD.debug.xcconfig"; path = "Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD.debug.xcconfig"; sourceTree = "<group>"; };
+		7B57D3DC898C12F2053B35EA /* Pods-OrderbookJD-OrderbookJDTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OrderbookJD-OrderbookJDTests.debug.xcconfig"; path = "Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests.debug.xcconfig"; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = OrderbookJD/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A99607A4D53717886CAA7E87 /* Pods-OrderbookJD-OrderbookJDTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OrderbookJD-OrderbookJDTests.release.xcconfig"; path = "Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests.release.xcconfig"; sourceTree = "<group>"; };
 		BEDFFA2468D745998DD56874 /* RobotoMono-VariableFont_wght.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "RobotoMono-VariableFont_wght.ttf"; path = "../src/assets/fonts/RobotoMono-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -53,7 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				432C8E05088A461DEEBCD7D4 /* libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a in Frameworks */,
+				432C8E05088A461DEEBCD7D4 /* libPods-OrderbookJD-OrderbookJDTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,20 +61,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				491132B309AB6FCC84D7E2A9 /* libPods-orderbookJorge2021may24.a in Frameworks */,
+				491132B309AB6FCC84D7E2A9 /* libPods-OrderbookJD.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		00E356EF1AD99517003FC87E /* orderbookJorge2021may24Tests */ = {
+		00E356EF1AD99517003FC87E /* OrderbookJDTests */ = {
 			isa = PBXGroup;
 			children = (
-				00E356F21AD99517003FC87E /* orderbookJorge2021may24Tests.m */,
+				00E356F21AD99517003FC87E /* OrderbookJDTests.m */,
 				00E356F01AD99517003FC87E /* Supporting Files */,
 			);
-			path = orderbookJorge2021may24Tests;
+			path = OrderbookJDTests;
 			sourceTree = "<group>";
 		};
 		00E356F01AD99517003FC87E /* Supporting Files */ = {
@@ -85,7 +85,7 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		13B07FAE1A68108700A75B9A /* orderbookJorge2021may24 */ = {
+		13B07FAE1A68108700A75B9A /* OrderbookJD */ = {
 			isa = PBXGroup;
 			children = (
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
@@ -95,15 +95,15 @@
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
 			);
-			name = orderbookJorge2021may24;
+			name = OrderbookJD;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				0721FB4CEF19EE8153793D1F /* libPods-orderbookJorge2021may24.a */,
-				03D1AE5197B1DD98A338C6C0 /* libPods-orderbookJorge2021may24-orderbookJorge2021may24Tests.a */,
+				0721FB4CEF19EE8153793D1F /* libPods-OrderbookJD.a */,
+				03D1AE5197B1DD98A338C6C0 /* libPods-OrderbookJD-OrderbookJDTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -126,9 +126,9 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* orderbookJorge2021may24 */,
+				13B07FAE1A68108700A75B9A /* OrderbookJD */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
-				00E356EF1AD99517003FC87E /* orderbookJorge2021may24Tests */,
+				00E356EF1AD99517003FC87E /* OrderbookJDTests */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				97DE10759BA4904C80E486D3 /* Pods */,
@@ -142,8 +142,8 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* orderbookJorge2021may24.app */,
-				00E356EE1AD99517003FC87E /* orderbookJorge2021may24Tests.xctest */,
+				13B07F961A680F5B00A75B9A /* OrderbookJD.app */,
+				00E356EE1AD99517003FC87E /* OrderbookJDTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -151,10 +151,10 @@
 		97DE10759BA4904C80E486D3 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				15A0419AD7DD11E46DCECE0D /* Pods-orderbookJorge2021may24.debug.xcconfig */,
-				0EF7C5AD4D121CF4081AF77C /* Pods-orderbookJorge2021may24.release.xcconfig */,
-				7B57D3DC898C12F2053B35EA /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.debug.xcconfig */,
-				A99607A4D53717886CAA7E87 /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig */,
+				15A0419AD7DD11E46DCECE0D /* Pods-OrderbookJD.debug.xcconfig */,
+				0EF7C5AD4D121CF4081AF77C /* Pods-OrderbookJD.release.xcconfig */,
+				7B57D3DC898C12F2053B35EA /* Pods-OrderbookJD-OrderbookJDTests.debug.xcconfig */,
+				A99607A4D53717886CAA7E87 /* Pods-OrderbookJD-OrderbookJDTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -162,9 +162,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		00E356ED1AD99517003FC87E /* orderbookJorge2021may24Tests */ = {
+		00E356ED1AD99517003FC87E /* OrderbookJDTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "orderbookJorge2021may24Tests" */;
+			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "OrderbookJDTests" */;
 			buildPhases = (
 				A9EAE42505E3F5C9763130D8 /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
@@ -178,14 +178,14 @@
 			dependencies = (
 				00E356F51AD99517003FC87E /* PBXTargetDependency */,
 			);
-			name = orderbookJorge2021may24Tests;
-			productName = orderbookJorge2021may24Tests;
-			productReference = 00E356EE1AD99517003FC87E /* orderbookJorge2021may24Tests.xctest */;
+			name = OrderbookJDTests;
+			productName = OrderbookJDTests;
+			productReference = 00E356EE1AD99517003FC87E /* OrderbookJDTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		13B07F861A680F5B00A75B9A /* orderbookJorge2021may24 */ = {
+		13B07F861A680F5B00A75B9A /* OrderbookJD */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "orderbookJorge2021may24" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OrderbookJD" */;
 			buildPhases = (
 				C2D20E47C8E47F2F8085C1EC /* [CP] Check Pods Manifest.lock */,
 				FD10A7F022414F080027D42C /* Start Packager */,
@@ -200,9 +200,9 @@
 			);
 			dependencies = (
 			);
-			name = orderbookJorge2021may24;
-			productName = orderbookJorge2021may24;
-			productReference = 13B07F961A680F5B00A75B9A /* orderbookJorge2021may24.app */;
+			name = OrderbookJD;
+			productName = OrderbookJD;
+			productReference = 13B07F961A680F5B00A75B9A /* OrderbookJD.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -222,7 +222,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "orderbookJorge2021may24" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OrderbookJD" */;
 			compatibilityVersion = "Xcode 12.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -235,8 +235,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* orderbookJorge2021may24 */,
-				00E356ED1AD99517003FC87E /* orderbookJorge2021may24Tests */,
+				13B07F861A680F5B00A75B9A /* OrderbookJD */,
+				00E356ED1AD99517003FC87E /* OrderbookJDTests */,
 			);
 		};
 /* End PBXProject section */
@@ -282,15 +282,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		9EC0A118B192CF1F2F9F7268 /* [CP] Copy Pods Resources */ = {
@@ -299,15 +299,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		A699599A599E8A4C1FD1760E /* [CP] Copy Pods Resources */ = {
@@ -316,15 +316,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD-OrderbookJDTests/Pods-OrderbookJD-OrderbookJDTests-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		A9EAE42505E3F5C9763130D8 /* [CP] Check Pods Manifest.lock */ = {
@@ -342,7 +342,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-OrderbookJD-OrderbookJDTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -355,15 +355,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-orderbookJorge2021may24/Pods-orderbookJorge2021may24-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OrderbookJD/Pods-OrderbookJD-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C2D20E47C8E47F2F8085C1EC /* [CP] Check Pods Manifest.lock */ = {
@@ -381,7 +381,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-orderbookJorge2021may24-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-OrderbookJD-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -414,7 +414,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00E356F31AD99517003FC87E /* orderbookJorge2021may24Tests.m in Sources */,
+				00E356F31AD99517003FC87E /* OrderbookJDTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -432,7 +432,7 @@
 /* Begin PBXTargetDependency section */
 		00E356F51AD99517003FC87E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 13B07F861A680F5B00A75B9A /* orderbookJorge2021may24 */;
+			target = 13B07F861A680F5B00A75B9A /* OrderbookJD */;
 			targetProxy = 00E356F41AD99517003FC87E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -440,7 +440,7 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7B57D3DC898C12F2053B35EA /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.debug.xcconfig */;
+			baseConfigurationReference = 7B57D3DC898C12F2053B35EA /* Pods-OrderbookJD-OrderbookJDTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
@@ -450,7 +450,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				INFOPLIST_FILE = orderbookJorge2021may24Tests/Info.plist;
+				INFOPLIST_FILE = OrderbookJDTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -467,20 +467,20 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/orderbookJorge2021may24.app/orderbookJorge2021may24";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OrderbookJD.app/OrderbookJD";
 			};
 			name = Debug;
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A99607A4D53717886CAA7E87 /* Pods-orderbookJorge2021may24-orderbookJorge2021may24Tests.release.xcconfig */;
+			baseConfigurationReference = A99607A4D53717886CAA7E87 /* Pods-OrderbookJD-OrderbookJDTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = J7UKCN8HTD;
-				INFOPLIST_FILE = orderbookJorge2021may24Tests/Info.plist;
+				INFOPLIST_FILE = OrderbookJDTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -497,13 +497,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/orderbookJorge2021may24.app/orderbookJorge2021may24";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OrderbookJD.app/OrderbookJD";
 			};
 			name = Release;
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 15A0419AD7DD11E46DCECE0D /* Pods-orderbookJorge2021may24.debug.xcconfig */;
+			baseConfigurationReference = 15A0419AD7DD11E46DCECE0D /* Pods-OrderbookJD.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -511,18 +511,19 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 23SCZ3Q7PA;
 				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = orderbookJorge2021may24/Info.plist;
+				INFOPLIST_FILE = OrderbookJD/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.jorgeduarte.orderbookJorge2021may24;
-				PRODUCT_NAME = orderbookJorge2021may24;
+				PRODUCT_NAME = OrderbookJD;
 				PROVISIONING_PROFILE_SPECIFIER = testorderbookpp1;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -532,26 +533,28 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0EF7C5AD4D121CF4081AF77C /* Pods-orderbookJorge2021may24.release.xcconfig */;
+			baseConfigurationReference = 0EF7C5AD4D121CF4081AF77C /* Pods-OrderbookJD.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 23SCZ3Q7PA;
-				INFOPLIST_FILE = orderbookJorge2021may24/Info.plist;
+				INFOPLIST_FILE = OrderbookJD/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.jorgeduarte.orderbookJorge2021may24;
-				PRODUCT_NAME = orderbookJorge2021may24;
-				PROVISIONING_PROFILE_SPECIFIER = testorderbookpp1;
+				PRODUCT_NAME = OrderbookJD;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -683,7 +686,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "orderbookJorge2021may24Tests" */ = {
+		00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "OrderbookJDTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				00E356F61AD99517003FC87E /* Debug */,
@@ -692,7 +695,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "orderbookJorge2021may24" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OrderbookJD" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -701,7 +704,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "orderbookJorge2021may24" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OrderbookJD" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
