@@ -15,6 +15,8 @@ import type {
   WebSocketNativeError,
 } from './types';
 
+import type { ThrowableErrorConstructorArguments } from '@utils/getThrowableError';
+
 const voidFunction = ((): void => undefined) as any;
 
 const WebSocketError = getThrowableError(
@@ -23,6 +25,19 @@ const WebSocketError = getThrowableError(
     userMessage,
     originalError: details?.originalError || undefined,
   }),
+);
+
+const WebSocketJSONError = getThrowableError<
+  'WebSocketJSONError',
+  ThrowableErrorConstructorArguments & [string, { data: any }]
+>(
+  'WebSocketJSONError',
+  (userMessage: string, details?: { originalError?: Error; data?: any }) => ({
+    userMessage,
+    originalError: details?.originalError || undefined,
+    data: details?.data || undefined,
+  }),
+  WebSocketError,
 );
 
 const useHandlers: BindHandlersFunction = (
@@ -48,12 +63,32 @@ const useHandlers: BindHandlersFunction = (
       }
 
       try {
-        const decoded = JSON.parse(data);
+        let decoded;
+        try {
+          decoded = JSON.parse(data);
+        } catch (err: any) {
+          throw new WebSocketJSONError(
+            'onMessageReceive: could not decode JSON-parsed data!',
+            { originalError: err, data },
+          );
+        }
         onMessage(decoded);
-      } catch (err: unknown) {
-        throw new WebSocketError(
-          'onMessageReceive: could not decode JSON-parsed data!',
-        );
+      } catch (err: any) {
+        console.log({
+          err,
+          e1: err instanceof WebSocketJSONError,
+          e2: err instanceof WebSocketError,
+          e3: err.constructor.name,
+          e4: err.name,
+        });
+        if (err instanceof WebSocketJSONError) {
+          throw err;
+        } else {
+          throw new WebSocketError(
+            'onMessageReceive: unexpected error, probably due exception raised in onMessage() handler.',
+            { originalError: err },
+          );
+        }
       }
     },
     [onMessage],
@@ -223,7 +258,7 @@ const useWebSocket = <
     ref.current = new WebSocket(uri) as WebSocketInstanceType;
 
     if (ref.current) {
-      ref.current.onopen = handlers.onOpen || null;
+      ref.current.onopen = (handlers.onOpen as () => void) || null;
       ref.current.onmessage = handlers.onMessage || null;
       ref.current.onclose = handlers.onClose || null;
       ref.current.onerror = handlers.onError || null;

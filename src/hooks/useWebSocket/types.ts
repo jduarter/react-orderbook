@@ -10,7 +10,14 @@ export interface WebSocketNativeError {
   message: string;
 }
 
-export type OnConnectFunction = () => void;
+export type GenericMessageFromServer = Record<string, any>;
+export type GenericMessageToClient = Record<string | number, any>;
+
+export type OnConnectFunction = <
+  MTC extends GenericMessageToClient = GenericMessageToClient,
+>(params: {
+  send: WebSocketSendFunction<MTC>;
+}) => void;
 export type OnDisconnectFunction = () => void;
 export type OnErrorFunction = (err: WebSocketNativeError) => void;
 
@@ -35,11 +42,7 @@ export interface UseWebSocketProperties<
   reconnectCheckIntervalMs?: number;
 }
 
-export type GenericMessageFromServer = Record<string, any>;
-
 export type WebSocketConnectFunction = () => Promise<boolean>;
-
-export type GenericMessageToClient = Record<string | number, any>;
 
 export type WebSocketSendFunction<
   MTC extends GenericMessageToClient = GenericMessageToClient,
@@ -79,6 +82,6 @@ export type Reducer = (
 
 export type Dispatch = React.Dispatch<ReducerAction>;
 
-export type InitialState = (() => WebSocketState) | WebSocketState;
+export type InitialState = () => WebSocketState;
 
 export type WebSocketInstanceType = any;
