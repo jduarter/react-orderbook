@@ -169,11 +169,6 @@ export const wipeZeroRecords = (input: OrdersMap): OrdersMap => {
   }
   return ret;
 };
-/* Array.from(input.entries()).reduce(
-    (acc, [currKey, currVal]) =>
-      currVal !== 0 ? { ...acc, [currKey]: currVal } : acc,
-    {},
-  );*/
 
 export const reduceScopeWithFn = <
   T extends OrdersMap = OrdersMap,
@@ -247,4 +242,3 @@ export const getEstimatedMinimumSize = (
   );
   return ret;
 };
-/**/

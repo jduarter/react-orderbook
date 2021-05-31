@@ -43,12 +43,7 @@ export const reduceKeyPairToState = <T extends Map<number, number> = OrdersMap>(
 
   return ret;
 };
-/* data.reduce(
-    (acc, [price, oSize]) =>
-      immutableObjReplacingKey(acc, getNormalizedPrice(price), oSize),
-    initialState,
-  );
-*/
+
 export const mutateForGrouping = (
   updates: OrdersMap,
   groupBy: number,
@@ -58,16 +53,12 @@ export const mutateForGrouping = (
   if (updates.size === 0) {
     return [initialState, inputLastKnownExactValues];
   }
-  // console.log('mutateForGrouping: ', initialState);
+
   const r1acc = new Map(initialState);
   const r1lastKnownExactValues = new Map(inputLastKnownExactValues);
 
   for (const [price, v] of updates) {
-    //  const { acc, lastKnownExactValues } = accR;
-
-    //   const normalizedExactPrice = getNormalizedPrice(price);
     const groupedPrice = getGroupedPrice(price, groupBy);
-    //    const usePrice = getNormalizedPrice(groupedPrice);
 
     const oldSizeForExact = r1lastKnownExactValues.get(price);
 
@@ -127,28 +118,12 @@ const reduceUpdatesToScopedState = (
   asks: reduceKeyPairToState(update.asks, initialState.asks),
 });
 
-const getUpdatedActivityTimes = (
-  data: WSDataPriceSizePair[],
-  initialGroupKeysUpdated: OrderbookOrdersSortedObject,
-  initialState: OrderbookOrdersSortedObject,
-) =>
-  getAffectedPricesInUpdateList(data).reduce((acc, normalizedPrice) => {
-    const last = data.filter(
-      (d) => d[0] === convertSpecialObjKeyToFloat(normalizedPrice),
-    )[0][1];
-
-    return last !== initialState[normalizedPrice]
-      ? { ...acc, [normalizedPrice]: Date.now() }
-      : acc;
-  }, initialGroupKeysUpdated);
-
 const reduceUpdatesToScopedStateForGrouped = (
   updates: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
 ) => {
-  //console.log('reduceUpdatesToScopedStateForGrouped');
   const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
     updates,
     groupBy,
@@ -156,19 +131,11 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState,
   );
 
-  /*console.log('mutateScopeForGrouping result: ', {
-    newMainState,
-    groupedMutatedData,
-  });*/
-
   const returnValue = reduceUpdatesToScopedState(
     groupedMutatedData,
     initialState,
   );
-  /*console.log('** reduceUpdatesToScopedStateForGrouped result: ', {
-    newMainState,
-    returnValue,
-  });*/
+
   return {
     newMainState,
     grouped: returnValue,
@@ -178,9 +145,9 @@ const reduceUpdatesToScopedStateForGrouped = (
 /**/
 
 const applyMinimumThresholdsToGroups = (
-  groups: Map<number, number>, // OrderbookOrdersSortedObject,
+  groups: Map<number, number>,
   groupBy: number,
-  updates: Map<number, number>, //WSDataPriceSizePair[],
+  updates: Map<number, number>,
 ): OrdersMap => {
   if (updates.size === 0) {
     return groups;
@@ -254,8 +221,6 @@ const getGroupMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<{ created: string[]; removed: string[] }> => {
-  // console.log({ before, after });
-
   const a = reduceScopeWithFn<OrdersMap, number[]>(
     before,
     getAffectedPricesInUpdateList,
@@ -280,9 +245,6 @@ const getGroupMembersDiff = (
 
   return diff;
 };
-
-const convertSpecialObjKeyToFloat = (x: string) =>
-  parseFloat(x) / Math.pow(10, 2);
 
 const mapToSortedArr = (m: Map<number, number>) => {
   const sortedObj = Array.from(m).reduce((acc, [ck, cv]) => {
@@ -347,7 +309,7 @@ const ensureConsistencyWithDiff = (
 };
 
 const reducePendingGroupUpdatesToState = (
-  pendingGroupUpdates: Map<number, number>[], //PendingGroupUpdateRecord[],
+  pendingGroupUpdates: Map<number, number>[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
   const res = Array.from(pendingGroupUpdates).reduce(
@@ -425,16 +387,11 @@ export const orderBookReducer = (
       break;
 
     case 'UPDATE_GROUPED':
-      //const t1 = Date.now();
       const ret = {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
-      /*const t2 = Date.now();
-      console.log(
-        '  + processing took: ',
-        ((t2 - t1) / 1000).toPrecision(4) + ' secs',
-      );*/
+
       return ret;
       break;
 
