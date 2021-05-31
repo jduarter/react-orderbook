@@ -30,13 +30,10 @@ const useHandlers: BindHandlersFunction = (
   { onMessage, onOpen, onClose, onError },
 ) => {
   const onOpenHandler = React.useCallback(() => {
-    console.log('-------> client.onopen');
-
     if (onOpen) {
-      console.log('---> call onOpen ');
       onOpen({ send });
     }
-    console.log('--> send dispatch');
+
     dispatch({ type: 'SET_CONNECTED', payload: { value: true } });
   }, [send, onOpen, dispatch]);
 
@@ -63,7 +60,6 @@ const useHandlers: BindHandlersFunction = (
   );
 
   const onCloseHandler = React.useCallback(() => {
-    console.log('*** client.onClose');
     dispatch({ type: 'SET_CONNECTED', payload: { value: false } });
     dispatch({ type: 'SET_CONNECTING', payload: { value: false } });
 
@@ -100,6 +96,7 @@ const INITIAL_STATE = {
   isLoading: true,
   isConnected: false,
   isConnecting: false,
+  shouldReconnectNow: false,
 };
 
 type WebSocketStateActions = 'SET_LOADING' | 'SET_CONNECTED' | 'SET_CONNECTING';
@@ -134,11 +131,11 @@ const webSocketStateReducer = (
 };
 
 export const useWebSocketReducer = (
-  initialState: InitialState = INITIAL_STATE,
+  initialState: () => InitialState = INITIAL_STATE,
 ): [WebSocketState, Dispatch] =>
   React.useReducer<Reducer>(
     webSocketStateReducer,
-    initialState as WebSocketState,
+    React.useMemo(() => initialState(), []) as WebSocketState,
   );
 
 const useWebSocket = <
@@ -147,6 +144,7 @@ const useWebSocket = <
   props: UseWebSocketProperties<MFS>,
 ): WebSocketInstanceType => {
   const ref = React.useRef<WebSocket>(null);
+  const ownRef = React.useRef(null);
 
   const {
     uri,
@@ -178,20 +176,38 @@ const useWebSocket = <
     }
   }, []);
 
+  const handleReconnect = React.useCallback((): void => {
+    console.log('handleReconnect autoReconnect?', { autoReconnect });
+    if (autoReconnect) {
+      console.log('handleReconnect 1 ', { isConnecting: state.isConnecting });
+      if (state.isConnecting === false) {
+        console.log('handleReconnect 2');
+        ownRef.current.connect();
+      }
+    }
+  }, [autoReconnect, state.isConnecting]);
+
+  const reconnectTimer = useIntervalCallback(
+    reconnectCheckIntervalMs,
+    handleReconnect,
+  );
+
   const onLocalClose = React.useCallback(() => {
-    if (!reconnectTimer.isStarted()) {
-      console.log('call reconnectTimer!');
+    console.log('-> onLocalClose');
+    if (autoReconnect && !reconnectTimer.isStarted()) {
+      console.log('-> start reconnectTimer');
       reconnectTimer.start();
     }
+    console.log('-> going to call onClose');
     onClose();
-  }, [reconnectTimer, onClose]);
+  }, [onClose, reconnectTimer, autoReconnect]);
 
   const onLocalOpen = React.useCallback(() => {
-    if (reconnectTimer.isStarted()) {
+    if (autoReconnect && reconnectTimer.isStarted()) {
       reconnectTimer.finish();
     }
     onOpen({ send });
-  }, [reconnectTimer, onOpen, send]);
+  }, [reconnectTimer, autoReconnect, onOpen, send]);
 
   const handlers = useHandlers(
     { send, dispatch },
@@ -241,27 +257,17 @@ const useWebSocket = <
     };
   }, []);
 
-  const handleReconnect = React.useCallback((): void => {
-    if (autoReconnect) {
-      if (state.isConnecting === false) {
-        dispatch({ type: 'SET_CONNECTING', payload: { value: true } });
-        connect();
-      }
-    }
-  }, [autoReconnect, connect, dispatch, state.isConnecting]);
-
-  const reconnectTimer = useIntervalCallback(
-    reconnectCheckIntervalMs,
-    handleReconnect,
-  );
+  React.useEffect(() => {
+    ownRef.current = { connect, send };
+  }, [connect, send]);
 
   return React.useMemo(
     () => ({
-      connect,
-      send,
+      send: ownRef.current ? ownRef.current.send : send,
+      connect: ownRef.current ? ownRef.current.connect : connect,
       state,
     }),
-    [connect, send, state],
+    [state, send, connect],
   );
 };
 
