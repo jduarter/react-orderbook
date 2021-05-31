@@ -13,7 +13,7 @@ const useGeneratorQueue = <T>(
     // console.log('[dispatch received] Current items: ', ref.current.length);
   }, []);
 
-  const consumeQ = useCallback(function* (limit = 1) {
+  const consumeQ = useCallback(function* (limit: number | null = 1) {
     if (ref.current.length === 0) {
       console.log(' ++ called consumeQ and length is 0');
       return;
