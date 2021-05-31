@@ -31,7 +31,6 @@ export const reduceKeyPairToState = <T extends Map<number, number> = OrdersMap>(
   data: T,
   initialState: OrdersMap,
 ): OrdersMap => {
-  //console.log({ initialState });
   const ret = new Map(initialState);
   for (const [price, oSize] of data) {
     if (oSize === 0) {
@@ -40,7 +39,6 @@ export const reduceKeyPairToState = <T extends Map<number, number> = OrdersMap>(
       ret.set(price, oSize);
     }
   }
-
   return ret;
 };
 
@@ -54,29 +52,28 @@ export const mutateForGrouping = (
     return [initialState, inputLastKnownExactValues];
   }
 
-  const r1acc = new Map(initialState);
-  const r1lastKnownExactValues = new Map(inputLastKnownExactValues);
+  const acc = new Map(initialState);
+  const lastKnownExactValues = new Map(inputLastKnownExactValues);
 
   for (const [price, v] of updates) {
     const groupedPrice = getGroupedPrice(price, groupBy);
 
-    const oldSizeForExact = r1lastKnownExactValues.get(price);
+    const oldSizeForExact = lastKnownExactValues.get(price);
 
     const exactDiff =
       oldSizeForExact === undefined ? v : -1 * ((oldSizeForExact || 0) - v);
 
-    const oldGroupSize = r1acc.get(groupedPrice) || 0;
+    const oldGroupSize = acc.get(groupedPrice) || 0;
     const sumB = oldGroupSize + exactDiff;
 
     if (oldGroupSize > 0 && exactDiff !== 0 && sumB >= 0) {
-      r1acc.set(groupedPrice, sumB);
-      r1lastKnownExactValues.set(price, v);
+      acc.set(groupedPrice, sumB);
     }
 
-    r1lastKnownExactValues.set(price, v);
+    lastKnownExactValues.set(price, v);
   }
 
-  return [r1acc, r1lastKnownExactValues];
+  return [acc, lastKnownExactValues];
 };
 
 const mutateScopeForGrouping = (
@@ -111,7 +108,7 @@ const mutateScopeForGrouping = (
 };
 
 const reduceUpdatesToScopedState = (
-  update: OrderbookGenericScopeDataType<OrdersMap>, //OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
+  update: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<OrdersMap> => ({
   bids: reduceKeyPairToState(update.bids, initialState.bids),
@@ -119,10 +116,10 @@ const reduceUpdatesToScopedState = (
 });
 
 const reduceUpdatesToScopedStateForGrouped = (
-  updates: OrderbookGenericScopeDataType<WSDataPriceSizePair[]>,
-  initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  updates: OrderbookGenericScopeDataType<OrdersMap>,
+  initialState: OrderbookGenericScopeDataType<OrdersMap>,
   groupBy: number,
-  oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
 ) => {
   const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
     updates,
@@ -142,12 +139,10 @@ const reduceUpdatesToScopedStateForGrouped = (
   };
 };
 
-/**/
-
 const applyMinimumThresholdsToGroups = (
-  groups: Map<number, number>,
+  groups: OrdersMap,
   groupBy: number,
-  updates: Map<number, number>,
+  updates: OrdersMap,
 ): OrdersMap => {
   if (updates.size === 0) {
     return groups;
@@ -164,7 +159,7 @@ const applyMinimumThresholdsToGroups = (
   const result = new Map();
 
   for (const [groupPrice, calcSumSizeForUpdates] of groupMins) {
-    const minimumSizeForGroup = groups.get(groupPrice);
+    const minimumSizeForGroup = groups.get(groupPrice) || 0;
 
     const newGroupSize =
       minimumSizeForGroup > calcSumSizeForUpdates
@@ -179,23 +174,16 @@ const applyMinimumThresholdsToGroups = (
   return result;
 };
 
-const sortedObjValueSymDiff = (a: number[], b: number[]): number[] => {
-  return a
-    .filter((x) => !b.includes(x))
-    .concat(b.filter((x) => !a.includes(x)));
-};
+const sortedObjValueSymDiff = (a: number[], b: number[]): number[] =>
+  a.filter((x) => !b.includes(x)).concat(b.filter((x) => !a.includes(x)));
 
 const calculateDiff = (
   before: number[],
   after: number[],
-): { created: number[]; removed: number[] } => {
-  const ret = {
-    created: after.filter((x) => !before.includes(x)),
-    removed: before.filter((x) => !after.includes(x)),
-  };
-
-  return ret;
-};
+): { created: number[]; removed: number[] } => ({
+  created: after.filter((x) => !before.includes(x)),
+  removed: before.filter((x) => !after.includes(x)),
+});
 
 type AllScopePropertyNames = 'bids' | 'asks';
 
@@ -220,7 +208,7 @@ const reduceTwoScopesWithFn = <
 const getGroupMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
-): OrderbookGenericScopeDataType<{ created: string[]; removed: string[] }> => {
+): OrderbookGenericScopeDataType<{ created: number[]; removed: number[] }> => {
   const a = reduceScopeWithFn<OrdersMap, number[]>(
     before,
     getAffectedPricesInUpdateList,
@@ -231,22 +219,20 @@ const getGroupMembersDiff = (
     getAffectedPricesInUpdateList,
   );
 
-  const changedKeys = reduceTwoScopesWithFn<OrdersMap, number[], number[]>(
-    a,
-    b,
-    sortedObjValueSymDiff,
+  const changedKeys = reduceTwoScopesWithFn<
+    number[],
+    number[],
+    OrderbookGenericScopeDataType<number[]>
+  >(a, b, sortedObjValueSymDiff);
+
+  const patchedBefore = reduceScopeWithFn(before, (m) =>
+    Array.from(m).map(([price]) => price),
   );
 
-  const _b = reduceScopeWithFn(before, (m) => {
-    return Array.from(m).map(([price]) => price);
-  });
-
-  const diff = reduceTwoScopesWithFn(_b, changedKeys, calculateDiff); //calculateDiff(cmp1, ret);
-
-  return diff;
+  return reduceTwoScopesWithFn(patchedBefore, changedKeys, calculateDiff);
 };
 
-const mapToSortedArr = (m: Map<number, number>) => {
+const mapToSortedArr = (m: OrdersMap): Array<number, number> => {
   const sortedObj = Array.from(m).reduce((acc, [ck, cv]) => {
     return { ...acc, [ck]: cv };
   }, {});
@@ -254,9 +240,9 @@ const mapToSortedArr = (m: Map<number, number>) => {
 };
 
 const ensureConsistencyWithDiff = (
-  grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
+  grouped: OrderbookGenericScopeDataType<OrdersMap>,
   acc: OrderbookStateType,
-): OrderbookGenericScopeDataType<OrderbookOrdersSortedObject> => {
+): OrderbookGenericScopeDataType<OrdersMap> => {
   const newGrouped = { ...acc.grouped };
 
   const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
@@ -309,7 +295,7 @@ const ensureConsistencyWithDiff = (
 };
 
 const reducePendingGroupUpdatesToState = (
-  pendingGroupUpdates: Map<number, number>[],
+  pendingGroupUpdates: OrderbookGenericScopeDataType<OrdersMap>[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
   const res = Array.from(pendingGroupUpdates).reduce(
@@ -387,12 +373,10 @@ export const orderBookReducer = (
       break;
 
     case 'UPDATE_GROUPED':
-      const ret = {
+      return {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
-
-      return ret;
       break;
 
     case 'SET_GROUP_BY':
