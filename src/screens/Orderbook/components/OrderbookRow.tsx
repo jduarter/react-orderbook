@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 
 import AnimatedTextValue from './AnimatedTextValue';
 import {
@@ -63,7 +63,10 @@ const styles = StyleSheet.create({
   orderBookMainText: {
     fontSize: 17,
     fontWeight: '400',
-    fontFamily: 'Roboto Mono',
+    fontFamily:
+      Platform.OS === 'android'
+        ? 'RobotoMono-VariableFont_wght'
+        : 'Roboto Mono',
     color: '#fff',
   },
   orderBookMainTextTotal: {
@@ -72,7 +75,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#fff',
     textAlign: 'right',
-    fontFamily: 'Roboto Mono',
+    fontFamily:
+      Platform.OS === 'android'
+        ? 'RobotoMono-VariableFont_wght'
+        : 'Roboto Mono',
   },
   orderBookRowWrap: {
     width: '100%',

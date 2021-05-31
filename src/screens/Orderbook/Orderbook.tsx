@@ -5,6 +5,7 @@ import {
   Text,
   View,
   StatusBar,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 
@@ -95,7 +96,9 @@ const OrderbookComponent: FC<OrderbookProps> = ({
           {/*spreadCalcIsReady && (
             <SpreadWidget bids={orderBook.bids} asks={orderBook.asks} />
           )*/}
-          <Text style={styles.groupText}>Group: {groupBy}</Text>
+          <Text style={styles.groupText}>
+            Group: <Text style={styles.groupCounter}>{groupBy}</Text>
+          </Text>
           <GroupByButtonGroup
             groupBy={groupBy}
             orderBookDispatch={orderBookDispatch}
@@ -147,4 +150,12 @@ const styles = StyleSheet.create({
   },
   secondColWrap: { height: '45%', overflow: 'hidden' },
   flex1: { flex: 1 },
+  groupCounter: {
+    paddingLeft: 10,
+    fontSize: 16,
+    fontFamily:
+      Platform.OS === 'android'
+        ? 'RobotoMono-VariableFont_wght'
+        : 'Roboto Mono',
+  },
 });

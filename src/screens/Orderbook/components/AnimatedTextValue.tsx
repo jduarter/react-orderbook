@@ -111,7 +111,7 @@ const AnimatedTextValue: React.FC<Props> = ({
       },
       cancel: !shouldPlayAnim,
       pause: !shouldPlayAnim,
-      key: (item) => item,
+      key: (item: unknown) => item,
       from: { color: '#888', fontWeight: '300' },
       enter: { color: '#fff' },
       update: [

@@ -26,6 +26,9 @@ const DEFAULT_TRANSITION_OPTIONS = ({
 type NormalizedRecord = [number, number];
 type NormalizedData = NormalizedRecord[];
 
+type ProcessedNormalizedRecord = [...NormalizedRecord, string, number];
+type ProcessedNormalizedData = ProcessedNormalizedRecord[];
+
 const getTotalForRow = (
   rows: NormalizedData,
   index: number,
@@ -37,10 +40,6 @@ const getTotalForRow = (
       ((orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0),
     0,
   );
-
-type ProcessedNormalizedRecord = [...NormalizedRecord, string, number];
-type ProcessedNormalizedData = ProcessedNormalizedRecord[];
-
 const processNormalizedData = (
   normalizedData: NormalizedData,
   keyPrefix: string,
