@@ -82,7 +82,9 @@ export const immutableObjReplacingKey = <
 ): O =>
   v <= 0 ? immutableObjWithoutKeyIfExists<O>(obj, key) : { ...obj, [key]: v };
 
-export const immutableGetReversedArr = <T extends unknown = any>(
+export const immutableGetReversedArr = <
+  T extends [unknown, unknown] = [number, number],
+>(
   array: T[],
 ): T[] => {
   const copy = [...array];
@@ -94,17 +96,19 @@ export const orderAndLimit = (
   map: OrdersMap,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
-): OrdersMap => {
+): [number, number][] => {
   const sortedObj = Array.from(map).reduce((acc, [ck, cv]) => {
     return { ...acc, [getNormalizedPrice(ck)]: cv };
   }, {});
 
-  const array = Object.entries(sortedObj);
+  const array = Object.entries<number>(sortedObj);
 
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
 
-  return immutableGetReversedArr(sorted.map(([k, v]) => [Number(k), v]));
+  return immutableGetReversedArr<[number, number]>(
+    sorted.map(([k, v]) => [Number(k), v]),
+  );
 };
 
 export const getGroupByFactor = (
@@ -179,29 +183,14 @@ export const reduceScopeWithFn = <
 export const ob2arr = (
   input: OrderbookOrdersSortedObject,
   initialState = [],
-): WSDataPriceSizePair[] =>
+): [number, number][] =>
   Object.entries(input).reduce(
-    (acc: WSDataPriceSizePair[], [currentK, currentV]) => [
+    (acc: [number, number][], [currentK, currentV]) => [
       ...acc,
       [customFormatNumberToFloat(currentK), currentV],
     ],
     initialState,
   );
-
-export const arr2obj = (
-  input: WSDataPriceSizePair[],
-  initialState = {},
-): OrderbookOrdersSortedObject =>
-  input.reduce(
-    (acc: OrderbookOrdersSortedObject, [price, val]: WSDataPriceSizePair) => {
-      return { ...acc, [getNormalizedPrice(price)]: val };
-    },
-    initialState,
-  );
-
-export const uniq = <T extends unknown = any>(array: T[]): T[] => [
-  ...new Set(array),
-];
 
 export const getNormalizedGroupedPrice = (
   price: number,
@@ -214,7 +203,7 @@ export const customFormatNumberToFloat = (price: string): number =>
   Number.parseInt(price) / 100;
 
 export const getAffectedPricesInUpdateList = (map: OrdersMap): number[] =>
-  Array.from(map).map(([price]: WSDataPriceSizePair) => price);
+  Array.from(map).map(([price]) => price);
 
 export const exactPriceIsWithinGroupPrice = (
   exact: number,

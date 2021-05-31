@@ -3,7 +3,6 @@
 import at from 'array.prototype.at';
 
 import {
-  getNormalizedPrice,
   getGroupedPrice,
   reduceScopeWithFn,
   wipeZeroRecords,
@@ -11,12 +10,10 @@ import {
 } from './utils';
 
 import type {
-  OrderbookOrdersSortedObject,
   OrderbookGenericScopeDataType,
   OrderbookStateType,
   OrdersMap,
   OrderbookReducerAction,
-  WSDataPriceSizePair,
 } from './types';
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
@@ -232,11 +229,14 @@ const getGroupMembersDiff = (
   return reduceTwoScopesWithFn(patchedBefore, changedKeys, calculateDiff);
 };
 
-const mapToSortedArr = (m: OrdersMap): Array<number, number> => {
+const mapToSortedArr = (m: OrdersMap): [number, number][] => {
   const sortedObj = Array.from(m).reduce((acc, [ck, cv]) => {
     return { ...acc, [ck]: cv };
   }, {});
-  return Object.entries(sortedObj).map((x) => [Number(x[0]), x[1]]);
+  return Object.entries(sortedObj).map((x) => [Number(x[0]), x[1]]) as [
+    number,
+    number,
+  ][];
 };
 
 const ensureConsistencyWithDiff = (
