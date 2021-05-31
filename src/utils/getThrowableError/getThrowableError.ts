@@ -11,8 +11,18 @@ export class ThrowableError<N> extends Error {
   // @ts-ignore
   name: N;
 
-  originalError?: Error;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  message: string;
 }
+
+type OmitFromThrowableErrorForExtends = 'captureStackTrace' | 'stackTraceLimit';
+
+type ExtendFromType<N, A extends [] = any> = Omit<
+  typeof ThrowableError,
+  OmitFromThrowableErrorForExtends
+> &
+  ThrowableErrorConstructor<A, ThrowableError<N>>;
 
 export const getThrowableError = <
   N extends string = string,
@@ -21,20 +31,19 @@ export const getThrowableError = <
 >(
   name: N,
   fn: (...args: A) => CGR,
+  extendFrom: ExtendFromType<any> = ThrowableError,
 ): ThrowableErrorConstructor<A, ThrowableError<N>> => {
-  const e = new ThrowableError();
+  const e = new extendFrom();
   const Err = Object.create(null);
   Err.name = name;
   Err.stack = e.stack;
 
-  const ErrConstructor = function _Constructor(
+  const ErrConstructor = function (
     this: ThrowableError<N>,
     ...args: A
   ): ThrowableError<N> {
-    Object.setPrototypeOf(this, Object.create(ThrowableError.prototype));
     Error.call(this);
-
-    this.name = name;
+    Object.defineProperty(this, 'name', { value: name });
 
     const cc = fn(...args);
     for (const ck in cc) {
@@ -52,8 +61,16 @@ export const getThrowableError = <
     return this;
   };
 
-  ErrConstructor.name = name;
-
+  Object.setPrototypeOf(ErrConstructor, Object.getPrototypeOf(extendFrom));
+  Object.defineProperty(ErrConstructor, 'name', { value: name });
+  ErrConstructor.prototype = Object.create(extendFrom.prototype, {
+    constructor: {
+      value: extendFrom,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    },
+  });
   return ErrConstructor as ThrowableErrorConstructor<A, ThrowableError<N>> &
     typeof ErrConstructor;
 };
