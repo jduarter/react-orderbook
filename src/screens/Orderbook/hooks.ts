@@ -16,6 +16,8 @@ import type {
   UseOrderbookConnectionProperties,
   UseOrderbookProcessingProperties,
   OrderbookControllerHookReturn,
+  OrderbookGenericScopeDataType,
+  OrdersMap,
 } from './types';
 import type { WebSocketState } from '@hooks/useWebSocket';
 
@@ -78,21 +80,23 @@ export const useOrderbookController = ({
 const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
   useGeneratorQueue<PendingGroupUpdateRecord>(initial);
 
-const preprocessUpdates = (updates) => {
+const preprocessUpdates = (
+  updates: PendingGroupUpdateRecord[],
+): OrderbookGenericScopeDataType<OrdersMap> => {
   // batch all updates in a single one to prevent
   // several subsequent state updates (+ renders)
   // and keep the last value for each key to prevent
   // useless processing
 
   const res = updates.reduce(
-    (acc, { updates }) => {
+    (acc, { updates }: PendingGroupUpdateRecord) => {
       return {
         ...acc,
         asks: new Map([...acc.asks, ...updates.asks]),
         bids: new Map([...acc.bids, ...updates.bids]),
       };
     },
-    { asks: [], bids: [] },
+    { asks: new Map(), bids: new Map() },
   );
 
   return res;
