@@ -36,9 +36,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: '10%',
     marginTop: '30%',
-    fontFamily: 'Roboto Mono',
+    fontFamily:
+      Platform.OS === 'android'
+        ? 'RobotoMono-VariableFont_wght'
+        : 'Roboto Mono',
     color: '#c7ea46',
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '200',
   },
 });
