@@ -80,9 +80,6 @@ export interface OrderbookStateType
   groupBy: number;
   grouped: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>;
   pendingGroupUpdates: PendingGroupUpdateRecord[];
-  options: {
-    disableTwoWayProcessing: boolean;
-  };
   isLoading: boolean;
   groupKeysUpdated: {
     bids: Record<string, number>;

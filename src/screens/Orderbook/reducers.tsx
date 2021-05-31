@@ -271,13 +271,10 @@ const sortedObjValueSymDiff = (
 const calculateDiff = (
   before: string[],
   after: string[],
-): { created: string[]; removed: string[] } => {
-  // console.log('calculateDiff: ', { before, after });
-  return {
-    created: after.filter((x) => !before.includes(x)), // after.filter((x) => !before.includes(x)),
-    removed: before.filter((x) => !after.includes(x)),
-  };
-};
+): { created: string[]; removed: string[] } => ({
+  created: after.filter((x) => !before.includes(x)),
+  removed: before.filter((x) => !after.includes(x)),
+});
 
 type AllScopePropertyNames = 'bids' | 'asks';
 
@@ -392,48 +389,45 @@ const reducePendingGroupUpdatesToState = (
 ): OrderbookStateType => {
   const initialGroupKeysUpdated = { asks: {}, bids: {} };
 
-  const res = pendingGroupUpdates.reduce(
-    (acc: OrderbookStateType, { updates }) => {
-      const groupedWithMinimumThresholdsApplied = {
-        bids: applyMinimumThresholdsToGroups(
-          acc.grouped.bids,
-          state.groupBy,
-          updates.bids,
-        ),
-        asks: applyMinimumThresholdsToGroups(
-          acc.grouped.asks,
-          state.groupBy,
-          updates.asks,
-        ),
-      };
+  const res = pendingGroupUpdates.reduce((acc: OrderbookStateType, updates) => {
+    const groupedWithMinimumThresholdsApplied = {
+      bids: applyMinimumThresholdsToGroups(
+        acc.grouped.bids,
+        state.groupBy,
+        updates.bids,
+      ),
+      asks: applyMinimumThresholdsToGroups(
+        acc.grouped.asks,
+        state.groupBy,
+        updates.asks,
+      ),
+    };
 
-      const { grouped, newMainState, groupKeysUpdated } =
-        reduceUpdatesToScopedStateForGrouped(
-          updates,
-          groupedWithMinimumThresholdsApplied,
-          state.groupBy,
-          acc,
-          {
-            asks: {
-              ...initialGroupKeysUpdated.asks,
-              ...acc.groupKeysUpdated.asks,
-            },
-            bids: {
-              ...initialGroupKeysUpdated.bids,
-              ...acc.groupKeysUpdated.bids,
-            },
+    const { grouped, newMainState, groupKeysUpdated } =
+      reduceUpdatesToScopedStateForGrouped(
+        updates,
+        groupedWithMinimumThresholdsApplied,
+        state.groupBy,
+        acc,
+        {
+          asks: {
+            ...initialGroupKeysUpdated.asks,
+            ...acc.groupKeysUpdated.asks,
           },
-        );
+          bids: {
+            ...initialGroupKeysUpdated.bids,
+            ...acc.groupKeysUpdated.bids,
+          },
+        },
+      );
 
-      return {
-        ...acc,
-        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
-        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
-        groupKeysUpdated,
-      };
-    },
-    state,
-  );
+    return {
+      ...acc,
+      ...reduceScopeWithFn(newMainState, wipeZeroRecords),
+      grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+      groupKeysUpdated,
+    };
+  }, state);
 
   // the "ensureConsistencyWithDiff" is to make sure some
   // rows are properly wiped (the API doesnt have a "snapshot" action,

@@ -1,114 +1,135 @@
 import * as React from 'react';
 import type { StyleProp, TextProps } from 'react-native';
-import { useSpring, animated } from '@react-spring/native';
 
-const getRgbaFromHex = (hex: string, a = 0) => {
+import { useTransition, animated } from '@react-spring/native';
+import type { SpringValue } from '@react-spring/native';
+
+const EFFECT_TO_STR_COMPARISON_LENGTH = 2;
+
+type Props = React.PropsWithChildren<{
+  backgroundColor: string;
+  style?: Partial<StyleProp<TextProps>>;
+  isLeaving: boolean;
+}>;
+
+const getRgbaFromHex = (hex: string, a = 0, multiplyColorWithFactor = 0.03) => {
   const z = Array.from(hex)
     .slice(1)
     .reduce(
-      (result, value, index, sourceArray) =>
-        index % 2 === 0
-          ? [...result, sourceArray.slice(index, index + 2).join('')]
-          : result,
+      (acc: string[], value, idx, srcArr): string[] =>
+        idx % 2 === 0 ? [...acc, srcArr.slice(idx, idx + 2).join('')] : acc,
       [],
     )
     .flat()
-    .map((x) => parseInt((a != 1 ? 0.03 : 1) * parseInt(x, 16)));
+    .map((x) =>
+      (
+        (a !== 1 && multiplyColorWithFactor !== 1
+          ? multiplyColorWithFactor
+          : 1) * parseInt(x, 16)
+      ).toFixed(0),
+    );
 
   const ret = 'rgba(' + z[0] + ',' + z[1] + ',' + z[2] + ',' + a + ')';
 
   return ret;
 };
 
-const DEFAULT_ANIMATION_OPTIONS = ({
-  textColor,
-  highlightingTextColor,
-  backgroundColor,
-}: {
-  highlightingTextColor: string;
-  textColor: string;
-}) => ({
-  from: {
-    fontWeight: '600',
-    color: textColor,
-    ...(backgroundColor
+const postProcessStyle = (
+  s: Record<string, SpringValue<any>>,
+): StyleProp<any> => {
+  return {
+    ...s,
+    ...(s.fontWeight && s.fontWeight.get
       ? {
-          backgroundColor: getRgbaFromHex(backgroundColor, 1),
+          fontWeight: (
+            Math.floor(parseFloat(s.fontWeight.get() as string) / 100) * 100
+          ).toString(),
         }
       : {}),
-  },
-  config: {
-    duration: 250,
-    mass: 1,
-    tension: 180,
-    friction: 12,
-  },
-  to: [
-    {
-      ...(backgroundColor
-        ? {
-            backgroundColor: getRgbaFromHex(backgroundColor, 0.2),
-          }
-        : {}),
-      fontWeight: '500',
-      color: highlightingTextColor,
-    },
-    {
-      color: '#666',
-    },
-    { fontWeight: '300', color: highlightingTextColor },
-    { color: textColor, backgroundColor },
-  ],
-  leave: { color: '#000', fontWeight: '300' },
-});
+  };
+};
 
-type Props = React.PropsWithChildren<{
-  highlightingTextColor: string;
-  textColor: string;
-  style?: Partial<StyleProp<TextProps>>;
-}>;
+const ensure0 = (v: undefined | false | number): number => (!v ? 0 : v);
 
 const AnimatedTextValue: React.FC<Props> = ({
-  highlightingTextColor,
-  textColor,
   children,
+  isLeaving,
   style,
   backgroundColor,
 }) => {
-  const [styles, api] = useSpring(() =>
-    DEFAULT_ANIMATION_OPTIONS({
-      highlightingTextColor,
-      textColor,
-      backgroundColor,
-    }),
+  const currentPrintedValue = children as string;
+  const lastC = React.useRef<{ lastModification: number; children: string }>();
+
+  const textPartiallyChange =
+    !lastC.current ||
+    (lastC.current &&
+      currentPrintedValue.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
+      lastC.current.children.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
+      lastC.current.children.slice(EFFECT_TO_STR_COMPARISON_LENGTH) !==
+        currentPrintedValue.slice(EFFECT_TO_STR_COMPARISON_LENGTH));
+
+  const shouldAnimateAgain = React.useMemo(
+    () =>
+      !isLeaving &&
+      textPartiallyChange &&
+      (ensure0(lastC.current?.lastModification) === 0 ||
+        Date.now() - 5000 > ensure0(lastC.current?.lastModification)),
+    [isLeaving, textPartiallyChange],
   );
 
   React.useEffect(() => {
-    return () => {
-      api?.stop();
-    };
-  }, [api]);
+    if (shouldAnimateAgain) {
+      lastC.current = {
+        lastModification: Date.now(),
+        children: children as string,
+      };
+    } else {
+      lastC.current = {
+        ...(lastC.current ? lastC.current : { lastModification: Date.now() }),
+        children: children as string,
+      };
+    }
+  }, [children, shouldAnimateAgain, textPartiallyChange]);
 
-  const _s = {
-    ...(style
-      ? {
-          ...style,
-          ...styles,
-        }
-      : styles),
-    paddingHorizontal: 0,
-    paddingBottom: 2,
-  };
-
-  if (_s.fontWeight) {
-    _s.fontWeight = (
-      parseInt(parseFloat(_s.fontWeight.get()) / 100) * 100
-    ).toString();
-  }
-
-  return (
-    <animated.Text style={_s as StyleProp<TextProps>}>{children}</animated.Text>
+  const transitionConfig = React.useMemo(
+    () => ({
+      duration: 150,
+      delay: 0,
+      reset: shouldAnimateAgain,
+      expires: true,
+      cancel: isLeaving,
+      key: (item) => item,
+      from: { color: '#888', fontWeight: '300' },
+      enter: { color: '#fff' },
+      update: [
+        {
+          ...(backgroundColor
+            ? {
+                backgroundColor: getRgbaFromHex(backgroundColor, 0.3),
+                fontWeight: '500',
+              }
+            : {}),
+        },
+        {
+          ...(backgroundColor
+            ? {
+                backgroundColor,
+              }
+            : {}),
+        },
+      ],
+      leave: { display: 'none' },
+    }),
+    [backgroundColor, isLeaving, shouldAnimateAgain],
   );
+
+  const transitions = useTransition(shouldAnimateAgain, transitionConfig);
+
+  return transitions((tStyle) => (
+    <animated.Text style={[style, postProcessStyle(tStyle)]}>
+      {children}
+    </animated.Text>
+  ));
 };
 
 const MemoizedAnimatedTextValue = React.memo(AnimatedTextValue);

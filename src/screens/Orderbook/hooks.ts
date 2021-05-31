@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { InteractionManager } from 'react-native';
 
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
@@ -22,13 +23,11 @@ import type { WebSocketState } from '@hooks/useWebSocket';
 import { orderAndLimit } from './utils';
 
 export const useOrderbookController = ({
-  disableTwoWayProcessing = true,
   subscribeToProductIds,
   initialGroupBy = 100,
   webSocketUri,
   rowsPerSection = 8,
 }: {
-  disableTwoWayProcessing: boolean;
   subscribeToProductIds: string[];
   initialGroupBy: number;
   webSocketUri: string;
@@ -46,10 +45,6 @@ export const useOrderbookController = ({
     () => ({
       ...INITIAL_ORDERBOOK_STATE,
       groupBy: initialGroupBy,
-      options: {
-        ...INITIAL_ORDERBOOK_STATE.options,
-        disableTwoWayProcessing,
-      },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -68,15 +63,6 @@ export const useOrderbookController = ({
     'desc',
   );
   const bidsData = orderAndLimit(orderBook.grouped.bids, rowsPerSection, 'asc');
-  /*
-  console.log(
-    'ASKS (' + Object.keys(orderBook.grouped.asks).length + '): ',
-    Object.keys(orderBook.grouped.asks),
-  );
-  console.log(
-    'BIDS (' + Object.keys(orderBook.grouped.bids).length + '): ',
-    Object.keys(orderBook.grouped.bids),
-  );*/
 
   return React.useMemo(
     () => ({
@@ -121,29 +107,59 @@ export const useOrderbookConnection = ({
 */
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
-      for (const update of consumeQ()) {
-        if (!update) {
-          continue;
-        }
+      InteractionManager.runAfterInteractions(() => {
+        for (const updates of consumeQ(null)) {
+          if (!updates || updates.length === 0) {
+            console.log('(CONTINUE)');
+            continue;
+          }
+          // batch all updates in a single one to prevent
+          // several subsequent state updates (+ renders)
 
-        orderBookDispatch({
-          type: 'UPDATE_GROUPED',
-          payload: { updates: [update] },
-        });
-      }
+          const res = updates
+            .map(({ updates }) => updates)
+            .reduce(
+              (acc, curr) => {
+                return {
+                  ...acc,
+                  asks: [...acc.asks, ...curr.asks],
+                  bids: [...acc.bids, ...curr.bids],
+                };
+              },
+              { asks: [], bids: [] },
+            );
+
+          //  console.log('res: ', res);
+
+          console.log(
+            '-> consumed from queue: ',
+            res.bids.length + '/' + res.asks.length,
+          );
+          orderBookDispatch({
+            type: 'UPDATE_GROUPED',
+            payload: { updates: [res] },
+          });
+        }
+      });
     }, []),
   });
 
   const onMessage = React.useCallback(
     (decoded: OrderbookWSMessageType) => {
       if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
-        console.log('Orderbook: Websocket info: ', decoded);
+        //    console.log('Orderbook: Websocket info: ', decoded);
       } else {
         if (!decoded?.event) {
           if (decoded?.feed === 'book_ui_1') {
-            dispatchToQ([{ kind: 'u', updates: decoded }]);
+            //  console.log('-> dispatchToQ');
+            InteractionManager.runAfterInteractions(() => {
+              dispatchToQ([{ kind: 'u', updates: decoded }]);
+            });
           } else if (decoded?.feed === 'book_ui_1_snapshot') {
-            dispatchToQ([{ kind: 's', updates: decoded }]);
+            //     console.log('-> dispatchToQ');
+            InteractionManager.runAfterInteractions(() => {
+              dispatchToQ([{ kind: 's', updates: decoded }]);
+            });
           } else {
             console.warn(
               'Orderbook: Unknown message received from WebSocket: ',
@@ -225,15 +241,21 @@ export const useOrderbookReducer = (
 
 export const useOrderbookProcessing = ({
   onProcessCycle,
-  intervalMs = 50,
+  intervalMs = 100,
 }: UseOrderbookProcessingProperties): void => {
   useSafeEffect((isMounted) => {
-    console.log('useOrderbookProcessing safe effect called');
     // eslint-disable-next-line no-restricted-globals
-    const intval = setInterval(
-      () => isMounted() && onProcessCycle(),
-      intervalMs,
-    );
+    const intval = setInterval(() => {
+      if (!isMounted) {
+        console.log('useOrderbookProcessing: IS NOT MOUNTED!!');
+      }
+
+      if (isMounted()) {
+        onProcessCycle();
+      } else {
+        console.log('useOrderbookProcessing: IS NOT MOUNTED');
+      }
+    }, intervalMs);
     return () => {
       // eslint-disable-next-line no-restricted-globals
       if (intval) clearInterval(intval);

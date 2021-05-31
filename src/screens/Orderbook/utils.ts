@@ -126,19 +126,22 @@ export const getGroupByFactor = (
 export const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
   (): void => {
-    const f = getGroupByFactor(groupBy, v);
+    setImmediate(() => {
+      console.log('BUTTON PRESSED');
+      const f = getGroupByFactor(groupBy, v);
 
-    if (f > 0) {
-      orderBookDispatch({
-        type: 'SET_GROUP_BY',
-        payload: {
-          value:
-            v === -1
-              ? groupBy / getGroupByFactor(groupBy, v)
-              : groupBy * getGroupByFactor(groupBy, v),
-        },
-      });
-    }
+      if (f > 0) {
+        orderBookDispatch({
+          type: 'SET_GROUP_BY',
+          payload: {
+            value:
+              v === -1
+                ? groupBy / getGroupByFactor(groupBy, v)
+                : groupBy * getGroupByFactor(groupBy, v),
+          },
+        });
+      }
+    });
   };
 
 export const calculateSpread = (high: number, low: number): number => {

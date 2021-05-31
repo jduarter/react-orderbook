@@ -1,39 +1,23 @@
 import * as React from 'react';
 import { View } from 'react-native';
-import { useTransition, animated } from '@react-spring/native';
+import { useTransition, animated, config } from '@react-spring/native';
 
 import { default as OrderbookRow } from './OrderbookRow';
 
 const DEFAULT_TRANSITION_OPTIONS = ({
   backgroundColor = '#fff',
-  textColor = '#000',
+  rowHeight: number,
 }) => ({
   keys: (item: any) => item[2],
   from: {
-    backgroundColor: textColor,
-    left: 400,
-    position: 'absolute',
-    opacity: 0.5,
+    backgroundColor: '#fff',
+    height: 0,
   },
-  enter: [
-    { left: 0, position: 'relative' },
-    {
-      height: -1,
-      opacity: 1,
-      backgroundColor,
-    },
-  ],
-  leave: [
-    { backgroundColor: '#000' },
-    { height: 0 },
-    { backgroundColor: textColor },
-    { position: 'relative', left: 0, opacity: 1, height: -1 },
-  ],
-  delay: 25,
+  enter: [{ backgroundColor: '#fff' }, { backgroundColor, height: rowHeight }],
+  leave: [{ height: 0, backgroundColor: '#000' }], //[{ position: 'absolute', height: 0 }, { display: 'none' }],
   expires: true,
-  immediate: true,
   reset: false,
-  config: { duration: 200, mass: 1, tension: 180, friction: 12 },
+  config: { ...config.wobbly },
 });
 
 type NormalizedRecord = [number, number];
@@ -78,42 +62,47 @@ const OrderbookSection: React.FC<{
   normalizedData,
   keyPrefix,
   totalOrderBy,
-  textColor = '#c2c2c2',
   rowHeight = 42,
 }) => {
-  const data = processNormalizedData(normalizedData, keyPrefix, totalOrderBy);
-  const transitions = useTransition(
-    data,
-    DEFAULT_TRANSITION_OPTIONS({ backgroundColor, textColor }),
+  const data = React.useMemo(
+    () => processNormalizedData(normalizedData, keyPrefix, totalOrderBy),
+    [keyPrefix, normalizedData, totalOrderBy],
   );
+  const transData = React.useMemo(
+    () =>
+      DEFAULT_TRANSITION_OPTIONS({
+        backgroundColor,
+        rowHeight: Math.floor(rowHeight),
+      }),
+    [backgroundColor, rowHeight],
+  );
+
+  const transitions = useTransition(data, transData);
+
+  React.useEffect(() => {
+    return () => {
+      console.log('[OrderbookSection] destroys');
+    };
+  }, []);
 
   const cb = React.useCallback(
     (style, item) => {
+      const shouldStopChildrenAnimation =
+        style.height?.get && style.height.get() !== rowHeight;
+
       return (
-        <animated.View
-          key={item[2]}
-          style={
-            style.height
-              ? {
-                  ...style,
-                  height:
-                    style.height.get() === -1
-                      ? style.height.set(rowHeight)
-                      : style.height,
-                }
-              : style
-          }>
+        <animated.View key={item[2]} style={style}>
           <OrderbookRow
             price={item[0].toString()}
-            textColor={textColor}
             val={item[1]}
             total={item[3]}
             backgroundColor={backgroundColor}
+            isLeaving={shouldStopChildrenAnimation}
           />
         </animated.View>
       );
     },
-    [rowHeight, textColor],
+    [rowHeight, backgroundColor],
   );
 
   return React.useMemo(
