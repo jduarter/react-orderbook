@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Text } from 'react-native';
 import type { StyleProp, TextProps } from 'react-native';
 
-import { useTransition, animated, useSpringRef } from '@react-spring/native';
+import { useTransition, animated } from '@react-spring/native';
 import type { SpringValue } from '@react-spring/native';
 
 const EFFECT_TO_STR_COMPARISON_LENGTH = 2;
@@ -96,14 +96,19 @@ const AnimatedTextValue: React.FC<Props> = ({
     }
   }, [children, shouldAnimateAgain, textPartiallyChange]);
 
-  // const springRef = useSpringRef();
-
   const transitionConfig = React.useMemo(
     () => ({
-      duration: 150,
+      //duration: 150,
       delay: 0,
       reset: shouldAnimateAgain,
       expires: true,
+      config: {
+        mass: 0.1,
+        tension: 360,
+        friction: 10,
+        precision: 0.4,
+        velocity: -1,
+      },
       cancel: !shouldPlayAnim,
       pause: !shouldPlayAnim,
       key: (item) => item,
@@ -136,13 +141,6 @@ const AnimatedTextValue: React.FC<Props> = ({
     shouldPlayAnim ? transitionConfig : {},
   );
 
-  /* React.useEffect(() => {
-    if (isLeaving && springRef.current) {
-      console.log('-> STOP SPRING', springRef.current);
-      //   springRef.current.stop(true);
-    }
-  }, [isLeaving, springRef]);
-*/
   return shouldPlayAnim ? (
     transitions((tStyle) => (
       <animated.Text style={[style, postProcessStyle(tStyle)]}>

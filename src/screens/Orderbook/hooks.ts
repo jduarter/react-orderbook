@@ -20,7 +20,7 @@ import type {
 } from './types';
 import type { WebSocketState } from '@hooks/useWebSocket';
 
-import { orderAndLimit } from './utils';
+import { orderAndLimit, reduceScopeWithFn } from './utils';
 
 export const useOrderbookController = ({
   subscribeToProductIds,
@@ -87,6 +87,26 @@ export const useOrderbookController = ({
 const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
   useGeneratorQueue<PendingGroupUpdateRecord>(initial);
 
+const preprocessUpdates = (updates) => {
+  // batch all updates in a single one to prevent
+  // several subsequent state updates (+ renders)
+  // and keep the last value for each key to prevent
+  // useless processing
+  console.log('preprocess: ', updates);
+  const res = updates.reduce(
+    (acc, { updates }) => {
+      return {
+        ...acc,
+        asks: new Map([...acc.asks, ...updates.asks]),
+        bids: new Map([...acc.bids, ...updates.bids]),
+      };
+    },
+    { asks: [], bids: [] },
+  );
+
+  return res;
+};
+
 export const useOrderbookConnection = ({
   orderBookDispatch,
   subscribeToProductIds,
@@ -114,29 +134,17 @@ export const useOrderbookConnection = ({
           console.log('(CONTINUE)');
           continue;
         }
-        // batch all updates in a single one to prevent
-        // several subsequent state updates (+ renders)
-
-        const res = updates.reduce(
-          (acc, { updates }) => {
-            return {
-              ...acc,
-              asks: [...acc.asks, ...updates.asks],
-              bids: [...acc.bids, ...updates.bids],
-            };
-          },
-          { asks: [], bids: [] },
-        );
-
+        const updatess = preprocessUpdates(updates);
+        console.log('QQ: UPDATES:', updatess);
         //  console.log('res: ', res);
 
         console.log(
           '-> consumed from queue: ',
-          res.bids.length + '/' + res.asks.length,
+          updatess.bids.size + '/' + updatess.asks.size,
         );
         orderBookDispatch({
           type: 'UPDATE_GROUPED',
-          payload: { updates: [res] },
+          payload: { updates: [updatess] },
         });
       }
       //  });
@@ -150,13 +158,11 @@ export const useOrderbookConnection = ({
       } else {
         if (!decoded?.event) {
           if (decoded?.feed === 'book_ui_1') {
-            //  console.log('-> dispatchToQ');
-
-            dispatchToQ([{ kind: 'u', updates: decoded }]);
+            const decodedMap = reduceScopeWithFn(decoded, (kv) => new Map(kv));
+            dispatchToQ([{ kind: 'u', updates: decodedMap }]);
           } else if (decoded?.feed === 'book_ui_1_snapshot') {
-            //     console.log('-> dispatchToQ');
-
-            dispatchToQ([{ kind: 's', updates: decoded }]);
+            const decodedMap = reduceScopeWithFn(decoded, (kv) => new Map(kv));
+            dispatchToQ([{ kind: 's', updates: decodedMap }]);
           } else {
             console.warn(
               'Orderbook: Unknown message received from WebSocket: ',

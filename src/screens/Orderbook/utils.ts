@@ -126,8 +126,11 @@ export const getGroupByFactor = (
 export const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
   (): void => {
+    // eslint-disable-next-line no-restricted-globals
     setImmediate(() => {
-      const f = getGroupByFactor(groupBy, v);
+      const f =
+        (v === 1 || (v === -1 && groupBy !== 1)) &&
+        getGroupByFactor(groupBy, v);
 
       if (f > 0) {
         orderBookDispatch({

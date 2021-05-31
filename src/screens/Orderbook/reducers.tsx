@@ -56,7 +56,7 @@ export const mutateForGrouping = (
 
   const initialAcc = initialState;
 
-  const r1 = updates.reduce(
+  const r1 = Array.from(updates).reduce(
     (accR, [price, v]) => {
       const { acc, lastKnownExactValues } = accR;
 
@@ -64,26 +64,15 @@ export const mutateForGrouping = (
       const groupedPrice = getGroupedPrice(price, groupBy);
       const usePrice = getNormalizedPrice(groupedPrice);
 
-      const oldExactPriceSizeIsKnown =
-        normalizedExactPrice in lastKnownExactValues;
+      const oldSizeForExact = lastKnownExactValues[normalizedExactPrice];
 
-      const oldSizeForExact = oldExactPriceSizeIsKnown
-        ? lastKnownExactValues[normalizedExactPrice]
-        : undefined;
-
-      const exactDiff = !oldExactPriceSizeIsKnown
-        ? v
-        : -1 * ((oldSizeForExact || 0) - v);
+      const exactDiff =
+        oldSizeForExact === undefined ? v : -1 * ((oldSizeForExact || 0) - v);
 
       const oldGroupSize = acc[usePrice] || 0;
       const sumB = oldGroupSize + exactDiff;
 
-      if (
-        oldGroupSize > 0 &&
-        exactDiff !== 0 &&
-        typeof sumB !== 'undefined' &&
-        sumB >= 0
-      ) {
+      if (oldGroupSize > 0 && exactDiff !== 0 && sumB >= 0) {
         return {
           acc: { ...acc, [usePrice]: sumB },
           lastKnownExactValues: {
@@ -178,23 +167,9 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState,
   );
 
-  /*  const groupKeysUpdated = {
-    asks: getUpdatedActivityTimes(
-      groupedMutatedData.asks,
-      initialGroupKeysUpdated.asks,
-      initialState.asks,
-    ),
-    bids: getUpdatedActivityTimes(
-      groupedMutatedData.bids,
-      initialGroupKeysUpdated.bids,
-      initialState.bids,
-    ),
-  };*/
-
   return {
     newMainState,
     grouped: returnValue,
-    // groupKeysUpdated,
   };
 };
 
@@ -203,13 +178,13 @@ const reduceUpdatesToScopedStateForGrouped = (
 const applyMinimumThresholdsToGroups = (
   groups: OrderbookOrdersSortedObject,
   groupBy: number,
-  updates: WSDataPriceSizePair[],
+  updates: Map<number, number>, //WSDataPriceSizePair[],
 ) => {
-  if (updates.length === 0) {
+  if (updates.size === 0) {
     return groups;
   }
 
-  const groupMins = updates.reduce(
+  const groupMins = Array.from(updates).reduce(
     (acc, [exactPriceInFloat, absoluteSizeInUpdate]: WSDataPriceSizePair) => {
       const groupedPrice = getGroupedPrice(exactPriceInFloat, groupBy);
       const normalizedGroupPrice = getNormalizedPrice(groupedPrice);
@@ -227,12 +202,6 @@ const applyMinimumThresholdsToGroups = (
       //  const groupedPrice = convertSpecialObjKeyToFloat(normalizedGroupedPrice);
 
       const minimumSizeForGroup = groups[normalizedGroupedPrice];
-
-      /* const minimumSizeForGroup = getEstimatedMinimumSize(
-        groups,
-        groupedPrice,
-        groupBy,
-      );*/
 
       const newGroupSize =
         minimumSizeForGroup > calcSumSizeForUpdates
@@ -397,57 +366,50 @@ const reducePendingGroupUpdatesToState = (
 ): OrderbookStateType => {
   //  const initialGroupKeysUpdated = { asks: {}, bids: {} };
 
-  const res = pendingGroupUpdates.reduce((acc: OrderbookStateType, updates) => {
-    const t1 = Date.now();
-    const groupedWithMinimumThresholdsApplied = {
-      bids: applyMinimumThresholdsToGroups(
-        acc.grouped.bids,
-        state.groupBy,
-        updates.bids,
-      ),
-      asks: applyMinimumThresholdsToGroups(
-        acc.grouped.asks,
-        state.groupBy,
-        updates.asks,
-      ),
-    };
-    const t2 = Date.now();
-    const { grouped, newMainState /* groupKeysUpdated*/ } =
-      reduceUpdatesToScopedStateForGrouped(
-        updates,
-        groupedWithMinimumThresholdsApplied,
-        state.groupBy,
-        acc,
-        /* {
-          asks: {
-            //    ...initialGroupKeysUpdated.asks,
-            ...acc.groupKeysUpdated.asks,
-          },
-          bids: {
-            //         ...initialGroupKeysUpdated.bids,
-            ...acc.groupKeysUpdated.bids,
-          },
-        },*/
+  const res = Array.from(pendingGroupUpdates).reduce(
+    (acc: OrderbookStateType, updates) => {
+      const t1 = Date.now();
+      const groupedWithMinimumThresholdsApplied = {
+        bids: applyMinimumThresholdsToGroups(
+          acc.grouped.bids,
+          state.groupBy,
+          updates.bids,
+        ),
+        asks: applyMinimumThresholdsToGroups(
+          acc.grouped.asks,
+          state.groupBy,
+          updates.asks,
+        ),
+      };
+      const t2 = Date.now();
+      const { grouped, newMainState /* groupKeysUpdated*/ } =
+        reduceUpdatesToScopedStateForGrouped(
+          updates,
+          groupedWithMinimumThresholdsApplied,
+          state.groupBy,
+          acc,
+        );
+      const t3 = Date.now();
+      const ret = {
+        ...acc,
+        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
+        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+        //   groupKeysUpdated,
+      };
+      const t4 = Date.now();
+      console.log(
+        'PGU UPDATE total: ',
+        ((t4 - t1) / 1000).toPrecision(4) + ' secs',
+        {
+          x: ((t2 - t1) / 1000).toPrecision(4),
+          y: ((t3 - t2) / 1000).toPrecision(4),
+          z: ((t4 - t3) / 1000).toPrecision(4),
+        },
       );
-    const t3 = Date.now();
-    const ret = {
-      ...acc,
-      ...reduceScopeWithFn(newMainState, wipeZeroRecords),
-      grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
-      //   groupKeysUpdated,
-    };
-    const t4 = Date.now();
-    console.log(
-      'PGU UPDATE total: ',
-      ((t4 - t1) / 1000).toPrecision(4) + ' secs',
-      {
-        x: ((t2 - t1) / 1000).toPrecision(4),
-        y: ((t3 - t2) / 1000).toPrecision(4),
-        z: ((t4 - t3) / 1000).toPrecision(4),
-      },
-    );
-    return ret;
-  }, state);
+      return ret;
+    },
+    state,
+  );
 
   // the "ensureConsistencyWithDiff" is to make sure some
   // rows are properly wiped (the API doesnt have a "snapshot" action,
