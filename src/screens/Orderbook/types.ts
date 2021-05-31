@@ -14,10 +14,8 @@ export interface OrderbookGenericScopeDataType<T> {
   asks: T;
 }
 
-export type WSDataPriceSizePair = [number, number];
-
-type OrderbookBidsType = WSDataPriceSizePair[];
-type OrderbookAsksType = WSDataPriceSizePair[];
+type OrderbookBidsType = OrdersMap;
+type OrderbookAsksType = OrdersMap;
 
 export interface UseOrderbookConnectionProperties {
   orderBookDispatch: OrderbookDispatch;
@@ -66,9 +64,7 @@ type OrderbookDataUpdateActions =
   | OrderbookActionUpdate
   | OrderbookActionSnapshot;
 
-export type WSUpdatesType = OrderbookGenericScopeDataType<
-  WSDataPriceSizePair[]
->;
+export type WSUpdatesType = OrderbookGenericScopeDataType<OrdersMap>;
 
 export interface PendingGroupUpdateRecord {
   kind: OrderbookDataUpdateActions;
@@ -108,7 +104,7 @@ export type GenericMutatingFunctionType = ((
 
 export type OrderbookReducerCalculateGroupedPartialState = Pick<
   OrderbookStateType,
-  'pendingGroupUpdates' | 'bids' | 'asks' | 'grouped'
+  'bids' | 'asks' | 'grouped'
 >;
 
 export interface OrderbookProps {

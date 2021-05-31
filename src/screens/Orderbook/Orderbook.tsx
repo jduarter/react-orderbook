@@ -18,7 +18,6 @@ import type { OrderbookProps } from './types';
 import { useOrderbookController } from './hooks';
 
 const MIDDLE_MENU_RELATIVE_HEIGHT = 0.125;
-const ROW_VERTICAL_PADDING = 10;
 const ROW_VERTICAL_MARGIN = 2;
 
 const FONT_SIZE = 18;
@@ -41,7 +40,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
   numberOfRowsPerSection = null,
 }) => {
   const { height } = useWindowDimensions();
-  //const numberOfRows = 10;
+
   const effectiveNumberOfRowsPerSection = React.useMemo(
     () =>
       numberOfRowsPerSection !== null
@@ -110,6 +109,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
               backgroundColor={'#043927'}
               normalizedData={bidsData}
               totalOrderBy={'desc'}
+              groupBy={groupBy}
             />
           )}
         </View>

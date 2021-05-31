@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { InteractionManager } from 'react-native';
 
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
@@ -13,7 +12,6 @@ import type {
   OrderbookReducerInitialState,
   OrderbookReducer,
   PendingGroupUpdateRecord,
-  WSDataPriceSizePair,
   OrderbookWSMessageType,
   UseOrderbookConnectionProperties,
   UseOrderbookProcessingProperties,
@@ -133,11 +131,7 @@ export const useOrderbookConnection = ({
           continue;
         }
         const updatess = preprocessUpdates(updates);
-        /*
-        console.log(
-          '-> consumed from queue: ',
-          updatess.bids.size + '/' + updatess.asks.size,
-        );*/
+
         orderBookDispatch({
           type: 'UPDATE_GROUPED',
           payload: { updates: [updatess] },
