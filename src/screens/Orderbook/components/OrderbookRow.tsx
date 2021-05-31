@@ -31,12 +31,12 @@ const OrderbookRow: React.FC<{
     ),
     [price],
   );
-
+  /*
   React.useEffect(() => {
     return () => {
       console.log('[OrderbookRow] destroys');
     };
-  }, []);
+  }, []);*/
   /*     <AnimatedTextValue
         highlightingTextColor={highlightingTextColor}
         textColor={textColor}
@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '400',
     fontFamily: 'Roboto Mono',
+    color: '#fff',
   },
   orderBookMainTextTotal: {
     width: '40%',

@@ -127,7 +127,6 @@ export const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
   (): void => {
     setImmediate(() => {
-      console.log('BUTTON PRESSED');
       const f = getGroupByFactor(groupBy, v);
 
       if (f > 0) {
@@ -226,8 +225,12 @@ export const getEstimatedMinimumSize = (
   sortedObj: OrderbookOrdersSortedObject,
   groupPrice: number,
   groupBy: number,
-): number =>
-  ob2arr(sortedObj).reduce(
+): number => {
+  console.log(
+    'getEstimatedMinimumSize (' + groupPrice + '/' + groupBy + '): ',
+    sortedObj,
+  );
+  const ret = ob2arr(sortedObj).reduce(
     (acc, [currPrice, currSize]) =>
       acc +
       (exactPriceIsWithinGroupPrice(currPrice, groupPrice, groupBy)
@@ -235,3 +238,8 @@ export const getEstimatedMinimumSize = (
         : 0),
     0,
   );
+  console.log('-> RET: ', ret);
+
+  return ret;
+};
+/**/

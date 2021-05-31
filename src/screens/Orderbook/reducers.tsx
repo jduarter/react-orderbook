@@ -12,6 +12,7 @@ import {
   getAffectedPricesInUpdateList,
   getEstimatedMinimumSize,
   arr2obj,
+  exactPriceIsWithinGroupPrice,
 } from './utils';
 
 import type {
@@ -30,7 +31,6 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   grouped: { bids: {}, asks: {} },
   pendingGroupUpdates: [],
   groupKeysUpdated: { bids: {}, asks: {} },
-  options: { disableTwoWayProcessing: false },
   isLoading: true,
 };
 
@@ -165,9 +165,6 @@ const reduceUpdatesToScopedStateForGrouped = (
   initialState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrderbookOrdersSortedObject>,
-  initialGroupKeysUpdated: OrderbookGenericScopeDataType<
-    Record<string, number>
-  >,
 ) => {
   const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
     updates,
@@ -181,7 +178,7 @@ const reduceUpdatesToScopedStateForGrouped = (
     initialState,
   );
 
-  const groupKeysUpdated = {
+  /*  const groupKeysUpdated = {
     asks: getUpdatedActivityTimes(
       groupedMutatedData.asks,
       initialGroupKeysUpdated.asks,
@@ -192,14 +189,16 @@ const reduceUpdatesToScopedStateForGrouped = (
       initialGroupKeysUpdated.bids,
       initialState.bids,
     ),
-  };
+  };*/
 
   return {
     newMainState,
     grouped: returnValue,
-    groupKeysUpdated,
+    // groupKeysUpdated,
   };
 };
+
+/**/
 
 const applyMinimumThresholdsToGroups = (
   groups: OrderbookOrdersSortedObject,
@@ -225,13 +224,16 @@ const applyMinimumThresholdsToGroups = (
 
   const r1 = Object.entries(groupMins).reduce(
     (acc, [normalizedGroupedPrice, calcSumSizeForUpdates]) => {
-      const groupedPrice = convertSpecialObjKeyToFloat(normalizedGroupedPrice);
+      //  const groupedPrice = convertSpecialObjKeyToFloat(normalizedGroupedPrice);
 
-      const minimumSizeForGroup = getEstimatedMinimumSize(
+      const minimumSizeForGroup = groups[normalizedGroupedPrice];
+
+      /* const minimumSizeForGroup = getEstimatedMinimumSize(
         groups,
         groupedPrice,
         groupBy,
-      );
+      );*/
+
       const newGroupSize =
         minimumSizeForGroup > calcSumSizeForUpdates
           ? minimumSizeForGroup
@@ -248,6 +250,8 @@ const applyMinimumThresholdsToGroups = (
     },
     {},
   );
+
+  // console.log('applyMinimumThresholdsToGroups: ', r1);
 
   return r1;
 };
@@ -278,7 +282,11 @@ const calculateDiff = (
 
 type AllScopePropertyNames = 'bids' | 'asks';
 
-const reduceTwoScopesWithFn = <T, FR, TP = OrderbookGenericScopeDataType<T>>(
+const reduceTwoScopesWithFn = <
+  T,
+  FR,
+  TP extends OrderbookGenericScopeDataType<T> = OrderbookGenericScopeDataType<T>,
+>(
   a: TP,
   b: TP,
   fn: (aa: T, bb: T) => FR,
@@ -387,9 +395,10 @@ const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: PendingGroupUpdateRecord[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
-  const initialGroupKeysUpdated = { asks: {}, bids: {} };
+  //  const initialGroupKeysUpdated = { asks: {}, bids: {} };
 
   const res = pendingGroupUpdates.reduce((acc: OrderbookStateType, updates) => {
+    const t1 = Date.now();
     const groupedWithMinimumThresholdsApplied = {
       bids: applyMinimumThresholdsToGroups(
         acc.grouped.bids,
@@ -402,8 +411,8 @@ const reducePendingGroupUpdatesToState = (
         updates.asks,
       ),
     };
-
-    const { grouped, newMainState, groupKeysUpdated } =
+    const t2 = Date.now();
+    const { grouped, newMainState /* groupKeysUpdated*/ } =
       reduceUpdatesToScopedStateForGrouped(
         updates,
         groupedWithMinimumThresholdsApplied,
@@ -411,22 +420,33 @@ const reducePendingGroupUpdatesToState = (
         acc,
         {
           asks: {
-            ...initialGroupKeysUpdated.asks,
+            //    ...initialGroupKeysUpdated.asks,
             ...acc.groupKeysUpdated.asks,
           },
           bids: {
-            ...initialGroupKeysUpdated.bids,
+            //         ...initialGroupKeysUpdated.bids,
             ...acc.groupKeysUpdated.bids,
           },
         },
       );
-
-    return {
+    const t3 = Date.now();
+    const ret = {
       ...acc,
       ...reduceScopeWithFn(newMainState, wipeZeroRecords),
       grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
-      groupKeysUpdated,
+      //   groupKeysUpdated,
     };
+    const t4 = Date.now();
+    console.log(
+      'PGU UPDATE total: ',
+      ((t4 - t1) / 1000).toPrecision(4) + ' secs',
+      {
+        x: ((t2 - t1) / 1000).toPrecision(4),
+        y: ((t3 - t2) / 1000).toPrecision(4),
+        z: ((t4 - t3) / 1000).toPrecision(4),
+      },
+    );
+    return ret;
   }, state);
 
   // the "ensureConsistencyWithDiff" is to make sure some
@@ -471,10 +491,17 @@ export const orderBookReducer = (
       break;
 
     case 'UPDATE_GROUPED':
-      return {
+      const t1 = Date.now();
+      const ret = {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
+      const t2 = Date.now();
+      console.log(
+        '  + processing took: ',
+        ((t2 - t1) / 1000).toPrecision(4) + ' secs',
+      );
+      return ret;
       break;
 
     case 'SET_GROUP_BY':

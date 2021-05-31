@@ -107,41 +107,40 @@ export const useOrderbookConnection = ({
 */
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
-      InteractionManager.runAfterInteractions(() => {
-        for (const updates of consumeQ(null)) {
-          if (!updates || updates.length === 0) {
-            console.log('(CONTINUE)');
-            continue;
-          }
-          // batch all updates in a single one to prevent
-          // several subsequent state updates (+ renders)
-
-          const res = updates
-            .map(({ updates }) => updates)
-            .reduce(
-              (acc, curr) => {
-                return {
-                  ...acc,
-                  asks: [...acc.asks, ...curr.asks],
-                  bids: [...acc.bids, ...curr.bids],
-                };
-              },
-              { asks: [], bids: [] },
-            );
-
-          //  console.log('res: ', res);
-
-          console.log(
-            '-> consumed from queue: ',
-            res.bids.length + '/' + res.asks.length,
-          );
-          orderBookDispatch({
-            type: 'UPDATE_GROUPED',
-            payload: { updates: [res] },
-          });
+      console.log('[onProcessCycle STARTS]');
+      //  InteractionManager.runAfterInteractions(() => {
+      for (const updates of consumeQ(null)) {
+        if (!updates || updates.length === 0) {
+          console.log('(CONTINUE)');
+          continue;
         }
-      });
-    }, []),
+        // batch all updates in a single one to prevent
+        // several subsequent state updates (+ renders)
+
+        const res = updates.reduce(
+          (acc, { updates }) => {
+            return {
+              ...acc,
+              asks: [...acc.asks, ...updates.asks],
+              bids: [...acc.bids, ...updates.bids],
+            };
+          },
+          { asks: [], bids: [] },
+        );
+
+        //  console.log('res: ', res);
+
+        console.log(
+          '-> consumed from queue: ',
+          res.bids.length + '/' + res.asks.length,
+        );
+        orderBookDispatch({
+          type: 'UPDATE_GROUPED',
+          payload: { updates: [res] },
+        });
+      }
+      //  });
+    }, [consumeQ, orderBookDispatch]),
   });
 
   const onMessage = React.useCallback(
@@ -152,14 +151,12 @@ export const useOrderbookConnection = ({
         if (!decoded?.event) {
           if (decoded?.feed === 'book_ui_1') {
             //  console.log('-> dispatchToQ');
-            InteractionManager.runAfterInteractions(() => {
-              dispatchToQ([{ kind: 'u', updates: decoded }]);
-            });
+
+            dispatchToQ([{ kind: 'u', updates: decoded }]);
           } else if (decoded?.feed === 'book_ui_1_snapshot') {
             //     console.log('-> dispatchToQ');
-            InteractionManager.runAfterInteractions(() => {
-              dispatchToQ([{ kind: 's', updates: decoded }]);
-            });
+
+            dispatchToQ([{ kind: 's', updates: decoded }]);
           } else {
             console.warn(
               'Orderbook: Unknown message received from WebSocket: ',
@@ -241,7 +238,7 @@ export const useOrderbookReducer = (
 
 export const useOrderbookProcessing = ({
   onProcessCycle,
-  intervalMs = 100,
+  intervalMs = 150,
 }: UseOrderbookProcessingProperties): void => {
   useSafeEffect((isMounted) => {
     // eslint-disable-next-line no-restricted-globals

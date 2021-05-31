@@ -15,13 +15,14 @@ const useGeneratorQueue = <T>(
 
   const consumeQ = useCallback(function* (limit = 1) {
     if (ref.current.length === 0) {
+      console.log(' ++ called consumeQ and length is 0');
       return;
     }
 
-    if (limit === 1) {
-      yield [ref.current.shift()];
-    } else if (limit === null) {
+    if (limit === null) {
       yield ref.current.splice(-ref.current.length).reverse();
+    } else {
+      yield ref.current.splice(limit);
     }
   }, []);
 

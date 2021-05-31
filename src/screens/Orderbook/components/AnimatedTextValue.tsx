@@ -1,7 +1,8 @@
 import * as React from 'react';
+import { Text } from 'react-native';
 import type { StyleProp, TextProps } from 'react-native';
 
-import { useTransition, animated } from '@react-spring/native';
+import { useTransition, animated, useSpringRef } from '@react-spring/native';
 import type { SpringValue } from '@react-spring/native';
 
 const EFFECT_TO_STR_COMPARISON_LENGTH = 2;
@@ -56,25 +57,29 @@ const AnimatedTextValue: React.FC<Props> = ({
   isLeaving,
   style,
   backgroundColor,
+  disableAnimation = false,
 }) => {
+  const shouldPlayAnim = !disableAnimation && !isLeaving;
+  // console.log({ shouldPlayAnim, disableAnimation, isLeaving });
   const currentPrintedValue = children as string;
   const lastC = React.useRef<{ lastModification: number; children: string }>();
 
   const textPartiallyChange =
-    !lastC.current ||
-    (lastC.current &&
-      currentPrintedValue.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
-      lastC.current.children.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
-      lastC.current.children.slice(EFFECT_TO_STR_COMPARISON_LENGTH) !==
-        currentPrintedValue.slice(EFFECT_TO_STR_COMPARISON_LENGTH));
+    shouldPlayAnim &&
+    (!lastC.current ||
+      (lastC.current &&
+        currentPrintedValue.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
+        lastC.current.children.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
+        lastC.current.children.slice(EFFECT_TO_STR_COMPARISON_LENGTH) !==
+          currentPrintedValue.slice(EFFECT_TO_STR_COMPARISON_LENGTH)));
 
   const shouldAnimateAgain = React.useMemo(
     () =>
-      !isLeaving &&
+      shouldPlayAnim &&
       textPartiallyChange &&
       (ensure0(lastC.current?.lastModification) === 0 ||
         Date.now() - 5000 > ensure0(lastC.current?.lastModification)),
-    [isLeaving, textPartiallyChange],
+    [shouldPlayAnim, textPartiallyChange],
   );
 
   React.useEffect(() => {
@@ -91,13 +96,16 @@ const AnimatedTextValue: React.FC<Props> = ({
     }
   }, [children, shouldAnimateAgain, textPartiallyChange]);
 
+  // const springRef = useSpringRef();
+
   const transitionConfig = React.useMemo(
     () => ({
       duration: 150,
       delay: 0,
       reset: shouldAnimateAgain,
       expires: true,
-      cancel: isLeaving,
+      cancel: !shouldPlayAnim,
+      pause: !shouldPlayAnim,
       key: (item) => item,
       from: { color: '#888', fontWeight: '300' },
       enter: { color: '#fff' },
@@ -120,16 +128,30 @@ const AnimatedTextValue: React.FC<Props> = ({
       ],
       leave: { display: 'none' },
     }),
-    [backgroundColor, isLeaving, shouldAnimateAgain],
+    [backgroundColor, shouldPlayAnim, shouldAnimateAgain],
   );
 
-  const transitions = useTransition(shouldAnimateAgain, transitionConfig);
+  const transitions = useTransition(
+    shouldAnimateAgain,
+    shouldPlayAnim ? transitionConfig : {},
+  );
 
-  return transitions((tStyle) => (
-    <animated.Text style={[style, postProcessStyle(tStyle)]}>
-      {children}
-    </animated.Text>
-  ));
+  /* React.useEffect(() => {
+    if (isLeaving && springRef.current) {
+      console.log('-> STOP SPRING', springRef.current);
+      //   springRef.current.stop(true);
+    }
+  }, [isLeaving, springRef]);
+*/
+  return shouldPlayAnim ? (
+    transitions((tStyle) => (
+      <animated.Text style={[style, postProcessStyle(tStyle)]}>
+        {children}
+      </animated.Text>
+    ))
+  ) : (
+    <Text style={style}>{children}</Text>
+  );
 };
 
 const MemoizedAnimatedTextValue = React.memo(AnimatedTextValue);

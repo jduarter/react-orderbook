@@ -6,7 +6,10 @@ import { default as OrderbookRow } from './OrderbookRow';
 
 const DEFAULT_TRANSITION_OPTIONS = ({
   backgroundColor = '#fff',
-  rowHeight: number,
+  rowHeight,
+}: {
+  rowHeight: number;
+  backgroundColor: string;
 }) => ({
   keys: (item: any) => item[2],
   from: {
@@ -42,42 +45,58 @@ const processNormalizedData = (
   normalizedData: NormalizedData,
   keyPrefix: string,
   totalOrderBy: 'asc' | 'desc',
+  groupBy: number,
 ): ProcessedNormalizedData =>
   normalizedData.map<ProcessedNormalizedRecord>((e, index) => {
     const k = keyPrefix + '_' + e[0];
     const t = getTotalForRow(normalizedData, index, totalOrderBy);
-    const returnValue: ProcessedNormalizedRecord = [e[0], e[1], k, t];
+
+    const returnValue: ProcessedNormalizedRecord = [
+      (
+        (totalOrderBy === 'asc' ? groupBy * Math.pow(10, 2) : 0) + e[0]
+      ).toString(),
+      e[1],
+      k,
+      t,
+    ];
     return returnValue;
   });
+
+const DISABLE_ANIMATIONS = false;
 
 const OrderbookSection: React.FC<{
   backgroundColor: string;
   normalizedData: NormalizedData;
   keyPrefix: string;
+  groupBy: number;
   totalOrderBy: 'asc' | 'desc';
   textColor?: string;
   rowHeight?: number;
 }> = ({
   backgroundColor,
   normalizedData,
+  groupBy,
   keyPrefix,
   totalOrderBy,
   rowHeight = 42,
 }) => {
   const data = React.useMemo(
-    () => processNormalizedData(normalizedData, keyPrefix, totalOrderBy),
+    () =>
+      processNormalizedData(normalizedData, keyPrefix, totalOrderBy, groupBy),
     [keyPrefix, normalizedData, totalOrderBy],
   );
-  const transData = React.useMemo(
-    () =>
-      DEFAULT_TRANSITION_OPTIONS({
-        backgroundColor,
-        rowHeight: Math.floor(rowHeight),
-      }),
-    [backgroundColor, rowHeight],
-  );
+  const transData =
+    !DISABLE_ANIMATIONS &&
+    React.useMemo(
+      () =>
+        DEFAULT_TRANSITION_OPTIONS({
+          backgroundColor,
+          rowHeight: Math.floor(rowHeight),
+        }),
+      [backgroundColor, rowHeight],
+    );
 
-  const transitions = useTransition(data, transData);
+  const transitions = !DISABLE_ANIMATIONS && useTransition(data, transData);
 
   React.useEffect(() => {
     return () => {
@@ -85,29 +104,51 @@ const OrderbookSection: React.FC<{
     };
   }, []);
 
-  const cb = React.useCallback(
-    (style, item) => {
-      const shouldStopChildrenAnimation =
-        style.height?.get && style.height.get() !== rowHeight;
+  const cb =
+    !DISABLE_ANIMATIONS &&
+    React.useCallback(
+      (style, item) => {
+        const shouldStopChildrenAnimation =
+          style.height?.get && style.height.get() !== Math.floor(rowHeight);
 
-      return (
-        <animated.View key={item[2]} style={style}>
-          <OrderbookRow
-            price={item[0].toString()}
-            val={item[1]}
-            total={item[3]}
-            backgroundColor={backgroundColor}
-            isLeaving={shouldStopChildrenAnimation}
-          />
-        </animated.View>
-      );
-    },
-    [rowHeight, backgroundColor],
-  );
+        return (
+          <animated.View key={item[2]} style={style}>
+            <OrderbookRow
+              price={item[0].toString()}
+              val={item[1]}
+              total={item[3]}
+              backgroundColor={backgroundColor}
+              isLeaving={shouldStopChildrenAnimation}
+            />
+          </animated.View>
+        );
+      },
+      [rowHeight, backgroundColor],
+    );
+
+  const mapper = !DISABLE_ANIMATIONS
+    ? transitions
+    : (_data) =>
+        _data.map((item) => {
+          return (
+            <OrderbookRow
+              key={item[2]}
+              price={p}
+              val={item[1]}
+              total={item[3]}
+              backgroundColor={backgroundColor}
+              isLeaving={true}
+            />
+          );
+        });
 
   return React.useMemo(
-    () => <View style={{ backgroundColor }}>{transitions(cb)}</View>,
-    [backgroundColor, transitions, cb],
+    () => (
+      <View style={{ backgroundColor }}>
+        {mapper(!DISABLE_ANIMATIONS ? cb : data)}
+      </View>
+    ),
+    [backgroundColor, data, mapper, cb],
   );
 };
 

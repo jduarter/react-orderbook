@@ -81,13 +81,16 @@ const OrderbookComponent: FC<OrderbookProps> = ({
 
       <View style={styles.orderBookSubWrapper}>
         <View style={styles.firstColWrap}>
-          <OrderbookSection
-            rowHeight={improvedRowHeight}
-            keyPrefix={'a_'}
-            backgroundColor={'#7c0a02'}
-            normalizedData={asksData}
-            totalOrderBy={'asc'}
-          />
+          {asksData.length > 0 && (
+            <OrderbookSection
+              rowHeight={improvedRowHeight}
+              keyPrefix={'a_'}
+              backgroundColor={'#7c0a02'}
+              normalizedData={asksData}
+              totalOrderBy={'asc'}
+              groupBy={groupBy}
+            />
+          )}
         </View>
         <View style={styles.orderBookSummaryWrap}>
           {/*spreadCalcIsReady && (
@@ -100,13 +103,15 @@ const OrderbookComponent: FC<OrderbookProps> = ({
           />
         </View>
         <View style={styles.secondColWrap}>
-          <OrderbookSection
-            rowHeight={improvedRowHeight}
-            keyPrefix={'b_'}
-            backgroundColor={'#043927'}
-            normalizedData={bidsData}
-            totalOrderBy={'desc'}
-          />
+          {bidsData.length > 0 && (
+            <OrderbookSection
+              rowHeight={improvedRowHeight}
+              keyPrefix={'b_'}
+              backgroundColor={'#043927'}
+              normalizedData={bidsData}
+              totalOrderBy={'desc'}
+            />
+          )}
         </View>
       </View>
       <LoadingOverlay visible={isLoading} />
