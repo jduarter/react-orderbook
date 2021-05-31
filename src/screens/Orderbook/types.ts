@@ -1,4 +1,7 @@
-import type { GenericMessageFromServer } from '../../hooks/useWebSocket';
+import type {
+  GenericMessageFromServer,
+  WebSocketState,
+} from '../../hooks/useWebSocket';
 
 export type OrderbookGroupedPrice = number;
 export type OrderbookNormalizedPrice = string;
@@ -122,3 +125,13 @@ export type OrderbookReducer = (
   state: OrderbookStateType,
   action: OrderbookReducerAction,
 ) => OrderbookStateType;
+
+export interface OrderbookControllerHookReturn {
+  orderBookDispatch: OrderbookDispatch;
+  bidsData: [number, number][];
+  asksData: [number, number][];
+  isLoading: boolean;
+  groupBy: number;
+  rowsPerSection?: number;
+  wsState: WebSocketState;
+}

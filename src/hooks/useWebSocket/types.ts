@@ -4,11 +4,15 @@ export type OnMessageReceivedFunction<MFS extends GenericMessageFromServer> = (
   data: MFS,
 ) => void;
 
-export type OnConnectFunction = (client: WebSocketInstanceType) => void;
-export type OnDisconnectFunction = () => void;
-export type OnErrorFunction = (err: Error) => void;
+export interface WebSocketNativeError {
+  name?: string;
+  isTrusted?: boolean;
+  message: string;
+}
 
-export type WebSocketNativeError = { isTrusted?: boolean; message: string };
+export type OnConnectFunction = () => void;
+export type OnDisconnectFunction = () => void;
+export type OnErrorFunction = (err: WebSocketNativeError) => void;
 
 export interface WebSocketHandlers<
   MFS extends GenericMessageFromServer = GenericMessageFromServer,
@@ -75,8 +79,6 @@ export type Reducer = (
 
 export type Dispatch = React.Dispatch<ReducerAction>;
 
-export type InitialState =
-  | React.SetStateAction<WebSocketState>
-  | WebSocketState;
+export type InitialState = (() => WebSocketState) | WebSocketState;
 
 export type WebSocketInstanceType = any;

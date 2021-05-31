@@ -92,12 +92,12 @@ const useHandlers: BindHandlersFunction = (
   );
 };
 
-const INITIAL_STATE = {
+const INITIAL_STATE = () => ({
   isLoading: true,
   isConnected: false,
   isConnecting: false,
   shouldReconnectNow: false,
-};
+});
 
 type WebSocketStateActions = 'SET_LOADING' | 'SET_CONNECTED' | 'SET_CONNECTING';
 
@@ -131,10 +131,11 @@ const webSocketStateReducer = (
 };
 
 export const useWebSocketReducer = (
-  initialState: () => InitialState = INITIAL_STATE,
+  initialState: InitialState = INITIAL_STATE,
 ): [WebSocketState, Dispatch] =>
   React.useReducer<Reducer>(
     webSocketStateReducer,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     React.useMemo(() => initialState(), []) as WebSocketState,
   );
 
@@ -143,8 +144,12 @@ const useWebSocket = <
 >(
   props: UseWebSocketProperties<MFS>,
 ): WebSocketInstanceType => {
-  const ref = React.useRef<WebSocket>(null);
-  const ownRef = React.useRef(null);
+  const ref = React.useRef<WebSocket | null>(null);
+  const ownRef =
+    React.useRef<{
+      connect: () => Promise<boolean>;
+      send: (obj: any) => Promise<boolean>;
+    } | null>(null);
 
   const {
     uri,
@@ -156,7 +161,7 @@ const useWebSocket = <
     reconnectCheckIntervalMs = 5000,
   } = props;
 
-  const [state, dispatch] = useWebSocketReducer(() => INITIAL_STATE);
+  const [state, dispatch] = useWebSocketReducer(INITIAL_STATE);
 
   const send = React.useCallback(async (obj: any): Promise<boolean> => {
     console.log('[WS] send: ', obj);
@@ -177,13 +182,8 @@ const useWebSocket = <
   }, []);
 
   const handleReconnect = React.useCallback((): void => {
-    console.log('handleReconnect autoReconnect?', { autoReconnect });
-    if (autoReconnect) {
-      console.log('handleReconnect 1 ', { isConnecting: state.isConnecting });
-      if (state.isConnecting === false) {
-        console.log('handleReconnect 2');
-        ownRef.current.connect();
-      }
+    if (autoReconnect && state.isConnecting === false && ownRef.current) {
+      ownRef.current.connect();
     }
   }, [autoReconnect, state.isConnecting]);
 
@@ -193,12 +193,10 @@ const useWebSocket = <
   );
 
   const onLocalClose = React.useCallback(() => {
-    console.log('-> onLocalClose');
     if (autoReconnect && !reconnectTimer.isStarted()) {
-      console.log('-> start reconnectTimer');
       reconnectTimer.start();
     }
-    console.log('-> going to call onClose');
+
     onClose();
   }, [onClose, reconnectTimer, autoReconnect]);
 
@@ -220,15 +218,15 @@ const useWebSocket = <
   );
 
   const connect = React.useCallback(async (): Promise<boolean> => {
-    console.log('CONNECT!!!!!! -> ', uri);
     dispatch({ type: 'SET_CONNECTED', payload: { value: true } });
+
     ref.current = new WebSocket(uri) as WebSocketInstanceType;
-    console.log('[WS] defining handlers');
+
     if (ref.current) {
-      ref.current.onopen = handlers.onOpen;
-      ref.current.onmessage = handlers.onMessage;
-      ref.current.onclose = handlers.onClose;
-      ref.current.onerror = handlers.onError;
+      ref.current.onopen = handlers.onOpen || null;
+      ref.current.onmessage = handlers.onMessage || null;
+      ref.current.onclose = handlers.onClose || null;
+      ref.current.onerror = handlers.onError || null;
 
       return true;
     } else {
@@ -247,12 +245,13 @@ const useWebSocket = <
     return () => {
       console.log('[WS] closing connection');
       if (ref.current) {
-        ref.current.close();
+        if (ref.current.close) {
+          ref.current.close();
+        }
         ref.current.onopen = null;
         ref.current.onerror = null;
         ref.current.onmessage = null;
         ref.current.onclose = null;
-        ref.current = undefined;
       }
     };
   }, []);
@@ -263,8 +262,8 @@ const useWebSocket = <
 
   return React.useMemo(
     () => ({
-      send: ownRef.current ? ownRef.current.send : send,
-      connect: ownRef.current ? ownRef.current.connect : connect,
+      send: ownRef.current ? ownRef.current?.send : send,
+      connect: ownRef.current ? ownRef.current?.connect : connect,
       state,
     }),
     [state, send, connect],

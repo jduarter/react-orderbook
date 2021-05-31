@@ -15,21 +15,11 @@ import type {
   OrderbookWSMessageType,
   UseOrderbookConnectionProperties,
   UseOrderbookProcessingProperties,
-  OrdersMap,
+  OrderbookControllerHookReturn,
 } from './types';
 import type { WebSocketState } from '@hooks/useWebSocket';
 
 import { orderAndLimit, reduceScopeWithFn } from './utils';
-
-interface OrderbookControllerHookReturn {
-  orderBookDispatch: OrderbookDispatch;
-  bidsData: OrdersMap;
-  asksData: OrdersMap;
-  isLoading: boolean;
-  groupBy: number;
-  rowsPerSection?: number;
-  wsState: WebSocketState;
-}
 
 export const useOrderbookController = ({
   subscribeToProductIds,
