@@ -418,7 +418,7 @@ const reducePendingGroupUpdatesToState = (
         groupedWithMinimumThresholdsApplied,
         state.groupBy,
         acc,
-        {
+        /* {
           asks: {
             //    ...initialGroupKeysUpdated.asks,
             ...acc.groupKeysUpdated.asks,
@@ -427,7 +427,7 @@ const reducePendingGroupUpdatesToState = (
             //         ...initialGroupKeysUpdated.bids,
             ...acc.groupKeysUpdated.bids,
           },
-        },
+        },*/
       );
     const t3 = Date.now();
     const ret = {
