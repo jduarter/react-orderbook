@@ -7,6 +7,7 @@ import {
   StatusBar,
   Platform,
   useWindowDimensions,
+  PixelRatio,
 } from 'react-native';
 
 import { default as OrderbookSection } from './components/OrderbookSection';
@@ -18,7 +19,7 @@ import type { OrderbookProps } from './types';
 
 import { useOrderbookController } from './hooks';
 
-const MIDDLE_MENU_RELATIVE_HEIGHT = 0.125;
+const MIDDLE_MENU_RELATIVE_HEIGHT = 0.15;
 const ROW_VERTICAL_MARGIN = 2;
 
 const FONT_SIZE = 18;
@@ -44,20 +45,27 @@ const OrderbookComponent: FC<OrderbookProps> = ({
 
   const effectiveNumberOfRowsPerSection = React.useMemo(
     () =>
-      numberOfRowsPerSection !== null
-        ? numberOfRowsPerSection
-        : determineNumberOfRowsAutomatically(
-            height - (StatusBar.currentHeight || 0),
-          ) / 2,
+      Math.floor(
+        numberOfRowsPerSection !== null
+          ? numberOfRowsPerSection
+          : determineNumberOfRowsAutomatically(
+              height - (StatusBar.currentHeight || 0),
+              SUGGESTED_ROW_HEIGHT,
+            ) / 2,
+      ),
     [numberOfRowsPerSection, height],
   );
 
   const improvedRowHeight = React.useMemo(
     () =>
-      (height * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) /
-      (effectiveNumberOfRowsPerSection * 2),
+      Math.floor(
+        (height * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) /
+          (effectiveNumberOfRowsPerSection * 2),
+      ),
     [effectiveNumberOfRowsPerSection, height],
   );
+
+  const containersHeight = improvedRowHeight * effectiveNumberOfRowsPerSection;
 
   const { asksData, bidsData, isLoading, orderBookDispatch, groupBy, wsState } =
     useOrderbookController({
@@ -80,7 +88,11 @@ const OrderbookComponent: FC<OrderbookProps> = ({
       )}
 
       <View style={styles.orderBookSubWrapper}>
-        <View style={styles.firstColWrap}>
+        <View
+          style={[
+            styles.firstColWrap,
+            { height: containersHeight, overflow: 'hidden' },
+          ]}>
           {asksData.length > 0 && (
             <OrderbookSection
               rowHeight={improvedRowHeight}
@@ -104,7 +116,11 @@ const OrderbookComponent: FC<OrderbookProps> = ({
             orderBookDispatch={orderBookDispatch}
           />
         </View>
-        <View style={styles.secondColWrap}>
+        <View
+          style={[
+            styles.secondColWrap,
+            { height: containersHeight, overflow: 'hidden' },
+          ]}>
           {bidsData.length > 0 && (
             <OrderbookSection
               rowHeight={improvedRowHeight}
@@ -127,7 +143,6 @@ export default OrderbookComponent;
 const styles = StyleSheet.create({
   orderBookSummaryWrap: {
     justifyContent: 'center',
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     height: '10%',

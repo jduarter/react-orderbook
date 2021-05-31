@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   },
   orderBookRowWrap: {
     width: '100%',
-
     padding: 8,
     margin: 2,
     flexDirection: 'row',
