@@ -7,7 +7,6 @@ import type {
   OrderbookOrdersSortedObject,
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
-  WSDataPriceSizePair,
   OrdersMap,
 } from './types';
 
@@ -95,7 +94,7 @@ export const orderAndLimit = (
   map: OrdersMap,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
-): WSDataPriceSizePair[] => {
+): OrdersMap => {
   const sortedObj = Array.from(map).reduce((acc, [ck, cv]) => {
     return { ...acc, [getNormalizedPrice(ck)]: cv };
   }, {});
@@ -105,11 +104,7 @@ export const orderAndLimit = (
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
 
-  const r1 = sorted.map(
-    ([key, size]): WSDataPriceSizePair => [Number(key), size],
-  );
-
-  return immutableGetReversedArr(r1);
+  return immutableGetReversedArr(sorted.map(([k, v]) => [Number(k), v]));
 };
 
 export const getGroupByFactor = (

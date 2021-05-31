@@ -15,10 +15,21 @@ import type {
   OrderbookWSMessageType,
   UseOrderbookConnectionProperties,
   UseOrderbookProcessingProperties,
+  OrdersMap,
 } from './types';
 import type { WebSocketState } from '@hooks/useWebSocket';
 
 import { orderAndLimit, reduceScopeWithFn } from './utils';
+
+interface OrderbookControllerHookReturn {
+  orderBookDispatch: OrderbookDispatch;
+  bidsData: OrdersMap;
+  asksData: OrdersMap;
+  isLoading: boolean;
+  groupBy: number;
+  rowsPerSection?: number;
+  wsState: WebSocketState;
+}
 
 export const useOrderbookController = ({
   subscribeToProductIds,
@@ -30,15 +41,7 @@ export const useOrderbookController = ({
   initialGroupBy: number;
   webSocketUri: string;
   rowsPerSection: number;
-}): {
-  orderBookDispatch: OrderbookDispatch;
-  bidsData: WSDataPriceSizePair[];
-  asksData: WSDataPriceSizePair[];
-  isLoading: boolean;
-  groupBy: number;
-  rowsPerSection?: number;
-  wsState: WebSocketState;
-} => {
+}): OrderbookControllerHookReturn => {
   const lazyInitialState: OrderbookStateType = React.useMemo(
     () => ({
       ...INITIAL_ORDERBOOK_STATE,

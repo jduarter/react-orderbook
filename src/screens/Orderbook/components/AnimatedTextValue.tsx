@@ -11,12 +11,15 @@ type Props = React.PropsWithChildren<{
   backgroundColor: string;
   style?: Partial<StyleProp<TextProps>>;
   isLeaving: boolean;
+  disableAnimation?: boolean;
 }>;
 
 const getRgbaFromHex = (hex: string, a = 0, multiplyColorWithFactor = 0.03) => {
   const z = Array.from(hex)
     .slice(1)
     .reduce(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       (acc: string[], value, idx, srcArr): string[] =>
         idx % 2 === 0 ? [...acc, srcArr.slice(idx, idx + 2).join('')] : acc,
       [],
@@ -50,8 +53,6 @@ const postProcessStyle = (
   };
 };
 
-const ensure0 = (v: undefined | false | number): number => (!v ? 0 : v);
-
 const AnimatedTextValue: React.FC<Props> = ({
   children,
   isLeaving,
@@ -60,9 +61,12 @@ const AnimatedTextValue: React.FC<Props> = ({
   disableAnimation = false,
 }) => {
   const shouldPlayAnim = !disableAnimation && !isLeaving;
-  // console.log({ shouldPlayAnim, disableAnimation, isLeaving });
+
   const currentPrintedValue = children as string;
-  const lastC = React.useRef<{ lastModification: number; children: string }>();
+  const lastC = React.useRef<{ lastModification: number; children: string }>({
+    lastModification: 0,
+    children: '',
+  });
 
   const textPartiallyChange =
     shouldPlayAnim &&
@@ -77,8 +81,8 @@ const AnimatedTextValue: React.FC<Props> = ({
     () =>
       shouldPlayAnim &&
       textPartiallyChange &&
-      (ensure0(lastC.current?.lastModification) === 0 ||
-        Date.now() - 5000 > ensure0(lastC.current?.lastModification)),
+      (lastC.current.lastModification === 0 ||
+        Date.now() - 5000 > lastC.current.lastModification),
     [shouldPlayAnim, textPartiallyChange],
   );
 
@@ -103,12 +107,6 @@ const AnimatedTextValue: React.FC<Props> = ({
       reset: shouldAnimateAgain,
       expires: true,
       config: {
-        /*   mass: 0.1,
-        tension: 360,
-        friction: 10,
-        precision: 0.4,
-        velocity: -1,
-     */
         duration: 100,
       },
       cancel: !shouldPlayAnim,
@@ -150,7 +148,7 @@ const AnimatedTextValue: React.FC<Props> = ({
       </animated.Text>
     ))
   ) : (
-    <Text style={style}>{children}</Text>
+    <Text style={style as StyleProp<any>}>{children}</Text>
   );
 };
 

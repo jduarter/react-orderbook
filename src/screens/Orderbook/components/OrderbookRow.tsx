@@ -9,50 +9,33 @@ import {
 } from '../utils';
 import type { OrderbookNormalizedPrice } from '../types';
 
-const OrderbookRow: React.FC<{
+interface Props {
   price: OrderbookNormalizedPrice;
   val: number;
   total: number;
   isLeaving: boolean;
   backgroundColor: string;
-}> = ({ price, val, backgroundColor, isLeaving, total }) => {
-  //  console.log('[OrderbookRow] renders');
-  const n1 = formatNumber(val, 0);
+}
 
+const OrderbookRow: React.FC<Props> = ({
+  price,
+  val,
+  backgroundColor,
+  isLeaving,
+  total,
+}) => {
+  /*dynamically adjust decimals in the parent component (@todo)*/
   const priceComponent = React.useMemo(
     () => (
       <Text style={styles.priceText}>
         {getPrintPriceForNormalizedPrice(
           price,
-          /*dynamically adjust decimals in the parent component (@todo)*/
           customFormatNumberToFloat(price) > 1000 ? 0 : 2,
         )}
       </Text>
     ),
     [price],
   );
-  /*
-  React.useEffect(() => {
-    return () => {
-      console.log('[OrderbookRow] destroys');
-    };
-  }, []);*/
-  /*     <AnimatedTextValue
-        highlightingTextColor={highlightingTextColor}
-        textColor={textColor}
-        style={styles.orderBookMainTextTotal}>
-        {formatNumber(total, 0)}
-      </AnimatedTextValue>
-      <Text style={styles.orderBookMainText}>{n1}</Text>
-
-            <AnimatedTextValue
-        kI={price}
-        backgroundColor={backgroundColor}
-        style={styles.orderBookMainText}
-        isLeaving={isLeaving}>
-        {n1}
-      </AnimatedTextValue>
-      */
 
   return (
     <View style={styles.orderBookRowWrap}>
@@ -61,7 +44,7 @@ const OrderbookRow: React.FC<{
         backgroundColor={backgroundColor}
         style={styles.orderBookMainText}
         isLeaving={isLeaving}>
-        {n1}
+        {formatNumber(val, 0)}
       </AnimatedTextValue>
 
       <Text style={styles.orderBookMainTextTotal}>

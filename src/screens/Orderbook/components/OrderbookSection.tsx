@@ -17,7 +17,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
     height: 0,
   },
   enter: [{ backgroundColor: '#fff' }, { backgroundColor, height: rowHeight }],
-  leave: [{ height: 0, backgroundColor: '#000' }], //[{ position: 'absolute', height: 0 }, { display: 'none' }],
+  leave: [{ height: 0, backgroundColor: '#000' }],
   expires: true,
   reset: false,
   config: { ...config.wobbly },
@@ -48,21 +48,15 @@ const processNormalizedData = (
   groupBy: number,
 ): ProcessedNormalizedData =>
   normalizedData.map<ProcessedNormalizedRecord>((e, index) => {
+    const p = (
+      (totalOrderBy === 'asc' ? groupBy * Math.pow(10, 2) : 0) + e[0]
+    ).toString();
     const k = keyPrefix + '_' + e[0];
     const t = getTotalForRow(normalizedData, index, totalOrderBy);
 
-    const returnValue: ProcessedNormalizedRecord = [
-      (
-        (totalOrderBy === 'asc' ? groupBy * Math.pow(10, 2) : 0) + e[0]
-      ).toString(),
-      e[1],
-      k,
-      t,
-    ];
+    const returnValue: ProcessedNormalizedRecord = [p, e[1], k, t];
     return returnValue;
   });
-
-const DISABLE_ANIMATIONS = false;
 
 const OrderbookSection: React.FC<{
   backgroundColor: string;
@@ -83,49 +77,41 @@ const OrderbookSection: React.FC<{
   const data = React.useMemo(
     () =>
       processNormalizedData(normalizedData, keyPrefix, totalOrderBy, groupBy),
-    [keyPrefix, normalizedData, totalOrderBy],
+    [keyPrefix, normalizedData, groupBy, totalOrderBy],
   );
-  const transData =
-    !DISABLE_ANIMATIONS &&
-    React.useMemo(
-      () =>
-        DEFAULT_TRANSITION_OPTIONS({
-          backgroundColor,
-          rowHeight: Math.floor(rowHeight),
-        }),
-      [backgroundColor, rowHeight],
-    );
+  const transData = React.useMemo(
+    () =>
+      DEFAULT_TRANSITION_OPTIONS({
+        backgroundColor,
+        rowHeight: Math.floor(rowHeight),
+      }),
+    [backgroundColor, rowHeight],
+  );
 
-  const transitions = !DISABLE_ANIMATIONS && useTransition(data, transData);
+  const transitions = useTransition(data, transData);
 
-  React.useEffect(() => {
-    return () => {
-      console.log('[OrderbookSection] destroys');
-    };
-  }, []);
+  const cb = React.useCallback(
+    (style, item) => {
+      const shouldStopChildrenAnimation =
+        style.height?.get && style.height.get() !== Math.floor(rowHeight);
 
-  const cb =
-    !DISABLE_ANIMATIONS &&
-    React.useCallback(
-      (style, item) => {
-        const shouldStopChildrenAnimation =
-          style.height?.get && style.height.get() !== Math.floor(rowHeight);
+      return (
+        <animated.View key={item[2]} style={style}>
+          <OrderbookRow
+            price={item[0]}
+            val={item[1]}
+            total={item[3]}
+            backgroundColor={backgroundColor}
+            isLeaving={shouldStopChildrenAnimation}
+          />
+        </animated.View>
+      );
+    },
+    [rowHeight, backgroundColor],
+  );
 
-        return (
-          <animated.View key={item[2]} style={style}>
-            <OrderbookRow
-              price={item[0].toString()}
-              val={item[1]}
-              total={item[3]}
-              backgroundColor={backgroundColor}
-              isLeaving={shouldStopChildrenAnimation}
-            />
-          </animated.View>
-        );
-      },
-      [rowHeight, backgroundColor],
-    );
-
+  /*
+   This is useful to test the component with no animations.
   const mapper = !DISABLE_ANIMATIONS
     ? transitions
     : (_data) =>
@@ -141,14 +127,11 @@ const OrderbookSection: React.FC<{
             />
           );
         });
+        */
 
   return React.useMemo(
-    () => (
-      <View style={{ backgroundColor }}>
-        {mapper(!DISABLE_ANIMATIONS ? cb : data)}
-      </View>
-    ),
-    [backgroundColor, data, mapper, cb],
+    () => <View style={{ backgroundColor }}>{transitions(cb)}</View>,
+    [backgroundColor, transitions, cb],
   );
 };
 
