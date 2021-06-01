@@ -5,13 +5,19 @@ import type { StyleProp, TextProps } from 'react-native';
 import { useTransition, animated } from '@react-spring/native';
 import type { SpringValue } from '@react-spring/native';
 
-const EFFECT_TO_STR_COMPARISON_LENGTH = 2;
+const EFFECT_TO_STR_COMPARISON_LENGTH = 3;
 
 type Props = React.PropsWithChildren<{
-  backgroundColor: string;
   style?: Partial<StyleProp<TextProps>>;
-  isLeaving: boolean;
-  disableAnimation?: boolean;
+  opts:
+    | undefined
+    | Partial<{
+        animation: Partial<{
+          shouldPlay: boolean;
+          maxFrequencyMs: number;
+          backgroundColor: string;
+        }>;
+      }>;
 }>;
 
 const getRgbaFromHex = (hex: string, a = 0, multiplyColorWithFactor = 0.03) => {
@@ -53,37 +59,57 @@ const postProcessStyle = (
   };
 };
 
-const AnimatedTextValue: React.FC<Props> = ({
-  children,
-  isLeaving,
-  style,
-  backgroundColor,
-  disableAnimation = false,
-}) => {
-  const shouldPlayAnim = !disableAnimation && !isLeaving;
+const compareWithLastValue = ({
+  last,
+  current,
+  startsWithLength = EFFECT_TO_STR_COMPARISON_LENGTH,
+}: {
+  last: string;
+  current: string;
+  startsWithLength?: number;
+}): boolean =>
+  !!(
+    !last ||
+    (last &&
+      current.length >= startsWithLength &&
+      last.length >= startsWithLength &&
+      last.slice(startsWithLength) !== current.slice(startsWithLength))
+  );
 
-  const currentPrintedValue = children as string;
-  const lastC = React.useRef<{ lastModification: number; children: string }>({
+interface AnimTrackTimeRef {
+  lastModification: number;
+  children: string;
+}
+interface UseLocalTransitionsType {
+  backgroundColor?: string;
+  children: string;
+  maxFrequencyMs: number;
+  shouldPlay: boolean;
+}
+
+const useLocalTransitions = ({
+  backgroundColor,
+  children,
+  maxFrequencyMs,
+  shouldPlay,
+}: UseLocalTransitionsType) => {
+  const lastC = React.useRef<AnimTrackTimeRef>({
     lastModification: 0,
     children: '',
   });
 
-  const textPartiallyChange =
-    shouldPlayAnim &&
-    (!lastC.current ||
-      (lastC.current &&
-        currentPrintedValue.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
-        lastC.current.children.length >= EFFECT_TO_STR_COMPARISON_LENGTH &&
-        lastC.current.children.slice(EFFECT_TO_STR_COMPARISON_LENGTH) !==
-          currentPrintedValue.slice(EFFECT_TO_STR_COMPARISON_LENGTH)));
+  const textPartiallyChange = compareWithLastValue({
+    last: lastC.current.children,
+    current: children,
+  });
 
   const shouldAnimateAgain = React.useMemo(
     () =>
-      shouldPlayAnim &&
+      shouldPlay &&
       textPartiallyChange &&
       (lastC.current.lastModification === 0 ||
-        Date.now() - 5000 > lastC.current.lastModification),
-    [shouldPlayAnim, textPartiallyChange],
+        Date.now() - maxFrequencyMs > lastC.current.lastModification),
+    [shouldPlay, maxFrequencyMs, textPartiallyChange],
   );
 
   React.useEffect(() => {
@@ -94,23 +120,22 @@ const AnimatedTextValue: React.FC<Props> = ({
       };
     } else {
       lastC.current = {
-        ...(lastC.current ? lastC.current : { lastModification: Date.now() }),
+        ...(lastC.current ? lastC.current : {}),
         children: children as string,
-      };
+      } as AnimTrackTimeRef;
     }
   }, [children, shouldAnimateAgain, textPartiallyChange]);
 
-  const transitionConfig = React.useMemo(
+  const config = React.useMemo(
     () => ({
-      //duration: 150,
       delay: 0,
       reset: shouldAnimateAgain,
       expires: true,
       config: {
         duration: 100,
       },
-      cancel: !shouldPlayAnim,
-      pause: !shouldPlayAnim,
+      cancel: !shouldPlay,
+      pause: !shouldPlay,
       key: (item: unknown) => item,
       from: { color: '#888', fontWeight: '300' },
       enter: { color: '#fff' },
@@ -133,13 +158,44 @@ const AnimatedTextValue: React.FC<Props> = ({
       ],
       leave: { display: 'none' },
     }),
-    [backgroundColor, shouldPlayAnim, shouldAnimateAgain],
+    [backgroundColor, shouldPlay, shouldAnimateAgain],
   );
 
   const transitions = useTransition(
     shouldAnimateAgain,
-    shouldPlayAnim ? transitionConfig : {},
+    shouldPlay ? config : {},
   );
+
+  return [transitions];
+};
+
+const DEFAULT_OPTIONS = {
+  animation: { shouldPlay: true, maxFrequencyMs: 5000 },
+};
+
+const AnimatedTextValue: React.FC<Props> = ({
+  children,
+  style,
+  opts = undefined,
+}) => {
+  const _opts = {
+    animation: {
+      ...DEFAULT_OPTIONS.animation,
+      ...((opts?.animation && opts.animation) || {}),
+    },
+  };
+  const shouldPlayAnim = _opts.animation.shouldPlay;
+
+  const [transitions] = useLocalTransitions({
+    children: children as string,
+    maxFrequencyMs: _opts.animation.maxFrequencyMs,
+    shouldPlay: shouldPlayAnim,
+    ...(_opts.animation.backgroundColor
+      ? {
+          backgroundColor: _opts.animation.backgroundColor,
+        }
+      : {}),
+  });
 
   return shouldPlayAnim ? (
     transitions((tStyle) => (

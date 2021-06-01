@@ -24,7 +24,8 @@ const OrderbookRow: React.FC<Props> = ({
   isLeaving,
   total,
 }) => {
-  /*dynamically adjust decimals in the parent component (@todo)*/
+  /* @todo dynamically adjust decimals in the parent component */
+
   const priceComponent = React.useMemo(
     () => (
       <Text style={styles.priceText}>
@@ -40,10 +41,13 @@ const OrderbookRow: React.FC<Props> = ({
   return (
     <View style={styles.orderBookRowWrap}>
       {priceComponent}
+
       <AnimatedTextValue
-        backgroundColor={backgroundColor}
         style={styles.orderBookMainText}
-        isLeaving={isLeaving}>
+        opts={React.useMemo(
+          () => ({ animation: { shouldPlay: !isLeaving, backgroundColor } }),
+          [isLeaving, backgroundColor],
+        )}>
         {formatNumber(val, 0)}
       </AnimatedTextValue>
 

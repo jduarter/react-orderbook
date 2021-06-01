@@ -1,10 +1,8 @@
 import commaNumber from 'comma-number';
 
 import type {
-  GenericMutatingFunctionType,
   OrderbookGroupedPrice,
   OrderbookNormalizedPrice,
-  OrderbookOrdersSortedObject,
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
   OrdersMap,
@@ -48,39 +46,6 @@ export const getNormalizedPrice = (
   input: number,
   decimals = 2,
 ): OrderbookNormalizedPrice => (Math.pow(10, decimals) * input).toString();
-
-export const wrapWithLogName =
-  (
-    mutatingKeyFunction: GenericMutatingFunctionType,
-    dbgInfo: string,
-  ): GenericMutatingFunctionType =>
-  (a: unknown, b: any, c: number) =>
-    mutatingKeyFunction(a, b, c, dbgInfo);
-
-export const immutableObjectWithoutKey = <O extends Record<string, any>>(
-  obj: O,
-  key: string,
-): O => {
-  const objCopy: O = { ...obj };
-  // eslint-disable-next-line security/detect-object-injection
-  delete objCopy[key];
-  return objCopy;
-};
-
-export const immutableObjWithoutKeyIfExists = <O extends Record<string, any>>(
-  obj: O,
-  key: string,
-): O => (key in obj === false ? obj : immutableObjectWithoutKey(obj, key));
-
-export const immutableObjReplacingKey = <
-  V,
-  O extends Record<string, V> = Record<string, V>,
->(
-  obj: O,
-  key: string,
-  v: number,
-): O =>
-  v <= 0 ? immutableObjWithoutKeyIfExists<O>(obj, key) : { ...obj, [key]: v };
 
 export const immutableGetReversedArr = <
   T extends [unknown, unknown] = [number, number],
@@ -180,18 +145,6 @@ export const reduceScopeWithFn = <
   asks: transformer(input.asks) as FR,
 });
 
-export const ob2arr = (
-  input: OrderbookOrdersSortedObject,
-  initialState = [],
-): [number, number][] =>
-  Object.entries(input).reduce(
-    (acc: [number, number][], [currentK, currentV]) => [
-      ...acc,
-      [customFormatNumberToFloat(currentK), currentV],
-    ],
-    initialState,
-  );
-
 export const getNormalizedGroupedPrice = (
   price: number,
   groupBy: number,
@@ -210,19 +163,3 @@ export const exactPriceIsWithinGroupPrice = (
   groupPrice: number,
   groupBy: number,
 ): boolean => exact >= groupPrice && exact < groupPrice + groupBy;
-
-export const getEstimatedMinimumSize = (
-  sortedObj: OrderbookOrdersSortedObject,
-  groupPrice: number,
-  groupBy: number,
-): number => {
-  const ret = ob2arr(sortedObj).reduce(
-    (acc, [currPrice, currSize]) =>
-      acc +
-      (exactPriceIsWithinGroupPrice(currPrice, groupPrice, groupBy)
-        ? currSize
-        : 0),
-    0,
-  );
-  return ret;
-};

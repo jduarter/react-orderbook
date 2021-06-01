@@ -140,7 +140,7 @@ export const useOrderbookConnection = ({
   const onMessage = React.useCallback(
     (decoded: OrderbookWSMessageType) => {
       if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
-        //    console.log('Orderbook: Websocket info: ', decoded);
+        console.log('Orderbook: Websocket info: ', decoded);
       } else {
         if (!decoded?.event) {
           if (decoded?.feed === 'book_ui_1') {
