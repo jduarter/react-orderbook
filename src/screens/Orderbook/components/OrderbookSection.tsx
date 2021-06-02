@@ -26,7 +26,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
 type NormalizedRecord = [number, number];
 type NormalizedData = NormalizedRecord[];
 
-type ProcessedNormalizedRecord = [...NormalizedRecord, string, number];
+type ProcessedNormalizedRecord = [string, number, string, number];
 type ProcessedNormalizedData = ProcessedNormalizedRecord[];
 
 const getTotalForRow = (

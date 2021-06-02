@@ -45,7 +45,13 @@ const OrderbookRow: React.FC<Props> = ({
       <AnimatedTextValue
         style={styles.orderBookMainText}
         opts={React.useMemo(
-          () => ({ animation: { shouldPlay: !isLeaving, backgroundColor } }),
+          () => ({
+            animation: {
+              shouldPlay: !isLeaving,
+              backgroundColor,
+              maxFrequencyMs: 5000,
+            },
+          }),
           [isLeaving, backgroundColor],
         )}>
         {formatNumber(val, 0)}

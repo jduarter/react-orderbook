@@ -80,16 +80,15 @@ const OrderbookComponent: FC<OrderbookProps> = ({
 
   return (
     <View style={styles.flex1}>
-      {true ||
-        (!isLoading && wsState.isConnected === false && (
-          <ErrorScreen
-            errorType={
-              /*  connectionStatus.connectedToInternet === false
+      {!isLoading && wsState.isConnected === false && (
+        <ErrorScreen
+          errorType={
+            /*  connectionStatus.connectedToInternet === false
               ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
               : */ ERROR_TITLES[ERROR_TYPES.SERVICE_IS_UNAVAILABLE]
-            }
-          />
-        ))}
+          }
+        />
+      )}
 
       <View style={styles.orderBookSubWrapper}>
         <View
