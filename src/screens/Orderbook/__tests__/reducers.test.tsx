@@ -43,15 +43,15 @@ interface TestcaseRecord<RT = Record<number | string, any>> {
 
 const TESTCASE_1: ThisTestcaseRecord = {
   name: 'testcase 1',
-  args: [[[38488.5, 540]], {}], // { data: [[38488.5, 540]], initialState: {} },
-  expectsResult: { 3848850: 540 },
+  args: [new Map([[38488.5, 540]]), []],
+  expectsResult: new Map([[38488.5, 540]]),
 };
 
 const TESTCASE_2: ThisTestcaseRecord = {
   name: 'testcase 2',
-  args: [[[38400, 540]], {}],
+  args: [new Map([[38400, 540]]), []],
 
-  expectsResult: { 3840000: 540 },
+  expectsResult: new Map([[38400, 540]]),
 };
 
 const TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_1 = {
@@ -352,6 +352,14 @@ const TEST_MUTATEFORGROUPING_RESULT_8 = [
   [39200, 1266933],
 ];
 
+const sobj2map = (o: Record<string, number>) => {
+  const ou = new Map(
+    Object.entries(o).map(([p, s]) => [Number(p) / Math.pow(10, 2), s]),
+  );
+
+  return ou;
+};
+
 const TESTCASES = [TESTCASE_1, TESTCASE_2];
 
 describe('screens(Orderbook): hook(reduceKeyPairToState): tests', () => {
@@ -371,119 +379,84 @@ describe('screens(Orderbook): hook(reduceKeyPairToState): tests', () => {
   }
 });
 
+const MUTATEFORGROUPING_TEST_SUITE = [
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_1,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_1,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_1,
+    TEST_MUTATEFORGROUPING_RESULT_1,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_2,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_2,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_2,
+    TEST_MUTATEFORGROUPING_RESULT_2,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_3,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_3,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_3,
+    TEST_MUTATEFORGROUPING_RESULT_3,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_4,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_4,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_4,
+    TEST_MUTATEFORGROUPING_RESULT_4,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_5,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_5,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_5,
+    TEST_MUTATEFORGROUPING_RESULT_5,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_6,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_6,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_6,
+    TEST_MUTATEFORGROUPING_RESULT_6,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_7,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_7,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_7,
+    TEST_MUTATEFORGROUPING_RESULT_7,
+  ],
+  [
+    TEST_MUTATEFORGROUPING_UPDATES_8,
+    100,
+    TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_8,
+    TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_8,
+    TEST_MUTATEFORGROUPING_RESULT_8,
+  ],
+];
+
 describe('(Orderbook): fn(mutateForGrouping): tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  console.log('test 1');
-  it('test 1', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_1,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_1,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_1,
-    );
+  for (const testIdx of MUTATEFORGROUPING_TEST_SUITE.keys()) {
+    const [updates, groupBy, initialExactState, initialGroupState, result] =
+      // eslint-disable-next-line security/detect-object-injection
+      MUTATEFORGROUPING_TEST_SUITE[testIdx];
 
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_1,
-    );
-  });
+    it('test index=' + testIdx, async () => {
+      const [groupsNewAbsoluteValues] = mutateForGrouping(
+        updates,
+        groupBy,
+        sobj2map(initialExactState),
+        sobj2map(initialGroupState),
+      );
 
-  console.log('test 2');
-  it('test 2', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_2,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_2,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_2,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_2,
-    );
-  });
-
-  console.log('test 3');
-  it('test 3 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_3,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_3,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_3,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_3,
-    );
-  });
-
-  console.log('test 4');
-  it('test 4 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_4,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_4,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_4,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_4,
-    );
-  });
-
-  console.log('test 5');
-  it('test 5 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_5,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_5,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_5,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_5,
-    );
-  });
-
-  console.log('test 6');
-
-  it('test 6 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_6,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_6,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_6,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_6,
-    );
-  });
-
-  it('test 7 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_7,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_7,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_7,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_7,
-    );
-  });
-
-  it('test 8 ', async () => {
-    const [groupsNewAbsoluteValues, mainNewAbsoluteValues] = mutateForGrouping(
-      TEST_MUTATEFORGROUPING_UPDATES_8,
-      100,
-      TEST_MUTATEFORGROUPING_INITIAL_EXACTSTATE_8,
-      TEST_MUTATEFORGROUPING_INITIAL_GROUPSTATE_8,
-    );
-
-    return expect(groupsNewAbsoluteValues).toEqual(
-      TEST_MUTATEFORGROUPING_RESULT_8,
-    );
-  });
+      return expect(groupsNewAbsoluteValues).toEqual(new Map(result));
+    });
+  }
 });
