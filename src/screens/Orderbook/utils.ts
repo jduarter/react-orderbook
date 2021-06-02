@@ -80,16 +80,18 @@ export const getGroupByFactor = (
   groupBy: GroupByOptionType,
   op: SortByOperationTypes,
 ): number => {
-  if (op === 1) {
-    const index = AVAILABLE_FACTORS.indexOf(groupBy);
-    if (index >= 0 && index - 1 <= AVAILABLE_FACTORS.length) {
-      // eslint-disable-next-line security/detect-object-injection
-      return AVAILABLE_FACTORS[index + 1] / AVAILABLE_FACTORS[index];
-    }
-    return 0;
-  } else {
-    return groupBy % 2 === 0 ? 2 : 2.5;
+  console.log({ groupBy, op });
+  const currentIndex = AVAILABLE_FACTORS.indexOf(groupBy);
+  if (currentIndex + op >= 0 && currentIndex + op <= AVAILABLE_FACTORS.length) {
+    const nextStateVal = AVAILABLE_FACTORS[currentIndex + op];
+    // eslint-disable-next-line security/detect-object-injection
+    const currentStateVal = AVAILABLE_FACTORS[currentIndex];
+
+    return op === -1
+      ? currentStateVal / nextStateVal
+      : nextStateVal / currentStateVal; // / nextStateVal;
   }
+  return 0;
 };
 
 export const getGroupByButtonPressEventHandler =
@@ -97,9 +99,7 @@ export const getGroupByButtonPressEventHandler =
   (): void => {
     // eslint-disable-next-line no-restricted-globals
     setImmediate(() => {
-      const f =
-        (v === 1 || (v === -1 && groupBy !== 1)) &&
-        getGroupByFactor(groupBy, v);
+      const f = getGroupByFactor(groupBy, v);
 
       if (f > 0) {
         orderBookDispatch({
