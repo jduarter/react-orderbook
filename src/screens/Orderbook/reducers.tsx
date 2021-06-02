@@ -294,14 +294,26 @@ const ensureConsistencyWithDiff = (
   return newGrouped;
 };
 
+// warning: it only returns the 'bids' and 'asks' properties of the scope obj.
+const scopeElementsWithoutZeroRecords = (
+  sc: Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'>,
+): Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'> =>
+  applyFnToScope<
+    OrdersMap,
+    OrdersMap,
+    Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'>
+  >(sc, wipeZeroRecords);
+
 const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: OrderbookGenericScopeDataType<OrdersMap>[],
   state: OrderbookStateType,
 ): OrderbookStateType => {
   const res = Array.from(pendingGroupUpdates).reduce(
     (acc: OrderbookStateType, updates) => {
+      const { bids, asks, grouped, ...restOfAcc } = acc;
+
       const groupedWithMinimumThresholdsApplied = applyFnToScope(
-        acc.grouped,
+        grouped,
         (sc, k) =>
           applyMinimumThresholdsToGroups(sc, state.groupBy, updates[k]),
       );
@@ -310,14 +322,14 @@ const reducePendingGroupUpdatesToState = (
         updates,
         groupedWithMinimumThresholdsApplied,
         state.groupBy,
-        acc,
+        scope(bids, asks),
       );
 
       return {
-        ...acc,
-        ...applyFnToScope(scope(newState.bids, newState.asks), wipeZeroRecords),
+        ...restOfAcc,
+        ...scopeElementsWithoutZeroRecords(newState),
         grouped: applyFnToScope(
-          scope(newState.grouped.bids, newState.grouped.asks),
+          scopeElementsWithoutZeroRecords(newState.grouped),
           wipeZeroRecords,
         ),
       };
