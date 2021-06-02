@@ -51,15 +51,24 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-
+        
     - if: matrix.language == 'javascript'
-      name: Autobuild
-      uses: github/codeql-action/autobuild@v1
-      
-    - if: matrix.language == 'java'
+      name: Install dependencies using npm
       run: |
         npm install
-        npm test
+      
+    - name: Run npm run typescript
+      run: |
+        npm run typescript
+        
+    - name: Run npm test
+      run: |
+        npm test      
+        
+    - if: matrix.language == 'java'
+      name: Build android App
+      run: |
+        npm install
         (cd android/; ./gradlew assembleRelease)
         
     - name: Perform CodeQL Analysis
