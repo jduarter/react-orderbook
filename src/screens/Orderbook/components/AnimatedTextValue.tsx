@@ -7,18 +7,32 @@ import type { SpringValue } from '@react-spring/native';
 
 const EFFECT_TO_STR_COMPARISON_LENGTH = 3;
 
+interface AnimationOptions {
+  shouldPlay: boolean;
+  maxFrequencyMs: number;
+  backgroundColor: string;
+}
+
+interface PropsOptions {
+  animation: AnimationOptions;
+}
+
 type Props = React.PropsWithChildren<{
   style?: Partial<StyleProp<TextProps>>;
-  opts:
-    | undefined
-    | Partial<{
-        animation: Partial<{
-          shouldPlay: boolean;
-          maxFrequencyMs: number;
-          backgroundColor: string;
-        }>;
-      }>;
+  opts: undefined | Partial<PropsOptions>;
 }>;
+
+interface AnimTrackTimeRef {
+  lastModification: number;
+  children: string;
+}
+
+interface UseLocalTransitionsType {
+  backgroundColor?: string;
+  children: string;
+  maxFrequencyMs: number;
+  shouldPlay: boolean;
+}
 
 const getRgbaFromHex = (hex: string, a = 0, multiplyColorWithFactor = 0.03) => {
   const z = Array.from(hex)
@@ -76,17 +90,6 @@ const compareWithLastValue = ({
       last.slice(startsWithLength) !== current.slice(startsWithLength))
   );
 
-interface AnimTrackTimeRef {
-  lastModification: number;
-  children: string;
-}
-interface UseLocalTransitionsType {
-  backgroundColor?: string;
-  children: string;
-  maxFrequencyMs: number;
-  shouldPlay: boolean;
-}
-
 const useLocalTransitions = ({
   backgroundColor,
   children,
@@ -103,14 +106,11 @@ const useLocalTransitions = ({
     current: children,
   });
 
-  const shouldAnimateAgain = React.useMemo(
-    () =>
-      shouldPlay &&
-      textPartiallyChange &&
-      (lastC.current.lastModification === 0 ||
-        Date.now() - maxFrequencyMs > lastC.current.lastModification),
-    [shouldPlay, maxFrequencyMs, textPartiallyChange],
-  );
+  const shouldAnimateAgain =
+    shouldPlay &&
+    textPartiallyChange &&
+    (lastC.current.lastModification === 0 ||
+      Date.now() - maxFrequencyMs > lastC.current.lastModification);
 
   React.useEffect(() => {
     if (shouldAnimateAgain) {
@@ -184,20 +184,21 @@ const AnimatedTextValue: React.FC<Props> = ({
       ...((opts?.animation && opts.animation) || {}),
     },
   };
-  const shouldPlayAnim = _opts.animation.shouldPlay;
+
+  const { animation } = _opts;
 
   const [transitions] = useLocalTransitions({
     children: children as string,
-    maxFrequencyMs: _opts.animation.maxFrequencyMs,
-    shouldPlay: shouldPlayAnim,
-    ...(_opts.animation.backgroundColor
+    maxFrequencyMs: animation.maxFrequencyMs,
+    shouldPlay: animation.shouldPlay,
+    ...(animation.backgroundColor
       ? {
-          backgroundColor: _opts.animation.backgroundColor,
+          backgroundColor: animation.backgroundColor,
         }
       : {}),
   });
 
-  return shouldPlayAnim ? (
+  return _opts.animation.shouldPlay ? (
     transitions((tStyle) => (
       <animated.Text style={[style, postProcessStyle(tStyle)]}>
         {children}

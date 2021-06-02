@@ -4,7 +4,7 @@ import at from 'array.prototype.at';
 
 import {
   getGroupedPrice,
-  reduceScopeWithFn,
+  applyFnToScope,
   wipeZeroRecords,
   getAffectedPricesInUpdateList,
 } from './utils';
@@ -16,11 +16,18 @@ import type {
   OrderbookReducerAction,
 } from './types';
 
+const scope = <T extends OrdersMap = OrdersMap>(
+  bids: T,
+  asks: T,
+): OrderbookGenericScopeDataType<T> => ({
+  bids,
+  asks,
+});
+
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
+  ...scope(new Map(), new Map()),
   groupBy: 100,
-  bids: new Map(),
-  asks: new Map(),
-  grouped: { bids: new Map(), asks: new Map() },
+  grouped: scope(new Map(), new Map()),
   isLoading: true,
 };
 
@@ -61,6 +68,7 @@ export const mutateForGrouping = (
       oldSizeForExact === undefined ? v : -1 * ((oldSizeForExact || 0) - v);
 
     const oldGroupSize = acc.get(groupedPrice) || 0;
+
     const sumB = oldGroupSize + exactDiff;
 
     if (oldGroupSize > 0 && exactDiff !== 0 && sumB >= 0) {
@@ -78,8 +86,7 @@ const mutateScopeForGrouping = (
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
-): {
-  newMainState: OrderbookGenericScopeDataType<OrdersMap>;
+): OrderbookGenericScopeDataType<OrdersMap> & {
   groupedMutatedData: OrderbookGenericScopeDataType<OrdersMap>;
 } => {
   const [bids, mainBids] = mutateForGrouping(
@@ -96,21 +103,16 @@ const mutateScopeForGrouping = (
   );
 
   return {
-    newMainState: { bids: mainBids, asks: mainAsks },
-    groupedMutatedData: {
-      bids,
-      asks,
-    },
+    ...scope(mainBids, mainAsks),
+    groupedMutatedData: scope(bids, asks),
   };
 };
 
 const reduceUpdatesToScopedState = (
   update: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
-): OrderbookGenericScopeDataType<OrdersMap> => ({
-  bids: reduceKeyPairToState(update.bids, initialState.bids),
-  asks: reduceKeyPairToState(update.asks, initialState.asks),
-});
+): OrderbookGenericScopeDataType<OrdersMap> =>
+  applyFnToScope(initialState, (sc, k) => reduceKeyPairToState(update[k], sc));
 
 const reduceUpdatesToScopedStateForGrouped = (
   updates: OrderbookGenericScopeDataType<OrdersMap>,
@@ -118,21 +120,16 @@ const reduceUpdatesToScopedStateForGrouped = (
   groupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
 ) => {
-  const { newMainState, groupedMutatedData } = mutateScopeForGrouping(
+  const { groupedMutatedData, ...newState } = mutateScopeForGrouping(
     updates,
     groupBy,
     oldExactRootState,
     initialState,
   );
 
-  const returnValue = reduceUpdatesToScopedState(
-    groupedMutatedData,
-    initialState,
-  );
-
   return {
-    newMainState,
-    grouped: returnValue,
+    ...newState,
+    grouped: reduceUpdatesToScopedState(groupedMutatedData, initialState),
   };
 };
 
@@ -202,16 +199,19 @@ const reduceTwoScopesWithFn = <
     {},
   ) as OrderbookGenericScopeDataType<FR>;
 
+const extractPricesFromMap = (m: OrdersMap): number[] =>
+  Array.from(m).map(([price]) => price);
+
 const getGroupMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<{ created: number[]; removed: number[] }> => {
-  const a = reduceScopeWithFn<OrdersMap, number[]>(
+  const a = applyFnToScope<OrdersMap, number[]>(
     before,
     getAffectedPricesInUpdateList,
   );
 
-  const b = reduceScopeWithFn<OrdersMap, number[]>(
+  const b = applyFnToScope<OrdersMap, number[]>(
     after,
     getAffectedPricesInUpdateList,
   );
@@ -222,11 +222,11 @@ const getGroupMembersDiff = (
     OrderbookGenericScopeDataType<number[]>
   >(a, b, sortedObjValueSymDiff);
 
-  const patchedBefore = reduceScopeWithFn(before, (m) =>
-    Array.from(m).map(([price]) => price),
+  return reduceTwoScopesWithFn(
+    applyFnToScope(before, extractPricesFromMap),
+    changedKeys,
+    calculateDiff,
   );
-
-  return reduceTwoScopesWithFn(patchedBefore, changedKeys, calculateDiff);
 };
 
 const mapToSortedArr = (m: OrdersMap): [number, number][] => {
@@ -300,34 +300,27 @@ const reducePendingGroupUpdatesToState = (
 ): OrderbookStateType => {
   const res = Array.from(pendingGroupUpdates).reduce(
     (acc: OrderbookStateType, updates) => {
-      //    const t1 = Date.now();
-      const groupedWithMinimumThresholdsApplied = {
-        bids: applyMinimumThresholdsToGroups(
-          acc.grouped.bids,
-          state.groupBy,
-          updates.bids,
-        ),
-        asks: applyMinimumThresholdsToGroups(
-          acc.grouped.asks,
-          state.groupBy,
-          updates.asks,
-        ),
-      };
+      const groupedWithMinimumThresholdsApplied = applyFnToScope(
+        acc.grouped,
+        (sc, k) =>
+          applyMinimumThresholdsToGroups(sc, state.groupBy, updates[k]),
+      );
 
-      const { grouped, newMainState } = reduceUpdatesToScopedStateForGrouped(
+      const newState = reduceUpdatesToScopedStateForGrouped(
         updates,
         groupedWithMinimumThresholdsApplied,
         state.groupBy,
         acc,
       );
 
-      const ret = {
+      return {
         ...acc,
-        ...reduceScopeWithFn(newMainState, wipeZeroRecords),
-        grouped: reduceScopeWithFn(grouped, wipeZeroRecords),
+        ...applyFnToScope(scope(newState.bids, newState.asks), wipeZeroRecords),
+        grouped: applyFnToScope(
+          scope(newState.grouped.bids, newState.grouped.asks),
+          wipeZeroRecords,
+        ),
       };
-
-      return ret;
     },
     state,
   );
@@ -344,29 +337,20 @@ const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
   groupBy: number,
 ): OrderbookStateType => {
-  const { newMainState, grouped } = reduceUpdatesToScopedStateForGrouped(
-    {
-      bids: state.bids,
-      asks: state.asks,
-    },
+  const grouped = reduceUpdatesToScopedStateForGrouped(
+    scope(new Map(), new Map()),
     { ...INITIAL_ORDERBOOK_STATE.grouped },
     groupBy,
-    { bids: new Map(), asks: new Map() },
-  );
-  return {
-    ...state,
-    ...newMainState,
-    groupBy,
-    grouped,
-    isLoading: true,
-  };
+    scope(state.bids, state.asks),
+  ).grouped;
+
+  return { ...state, groupBy, grouped };
 };
 
 export const orderBookReducer = (
   state: OrderbookStateType,
   action: OrderbookReducerAction,
 ): OrderbookStateType => {
-  // console.log('[ *!* ] Executing action: <' + action.type + '>', state);
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload.value };

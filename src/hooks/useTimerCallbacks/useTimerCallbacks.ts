@@ -12,11 +12,10 @@ export const useGenericTimerCallback = <T = NodeJS.Timeout | number>(
 
   const finish = useCallback(() => {
     console.log('[reconnectTimer] finish');
+
     if (!ref.current) {
       return;
     }
-
-    console.log('[reconnectTimer] finish');
 
     clearF(ref.current as unknown as number);
     ref.current = undefined;

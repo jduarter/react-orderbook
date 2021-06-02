@@ -8,6 +8,7 @@ const DEFAULT_QUEUE_MAX_SIZE = 1024;
 interface GeneratorQueueOptions {
   queueMaxSize: number;
   throwErrorOnMaxSizeReach: boolean;
+  kind: 'FIFO';
 }
 
 const GeneratorQueueError = getThrowableError(
@@ -23,6 +24,7 @@ const useGeneratorQueue = <T>(
   opts: GeneratorQueueOptions = {
     queueMaxSize: DEFAULT_QUEUE_MAX_SIZE,
     throwErrorOnMaxSizeReach: true,
+    kind: 'FIFO',
   },
 ): UseGeneratorQueueReturn<T> => {
   const ref = useRef<T[]>(initialState);
@@ -36,6 +38,7 @@ const useGeneratorQueue = <T>(
           );
         }
       }
+
       return currCount;
     },
     [opts.queueMaxSize, opts.throwErrorOnMaxSizeReach],
@@ -43,14 +46,13 @@ const useGeneratorQueue = <T>(
 
   const consumeQ = useCallback(function* (limit: number | null = 1) {
     if (ref.current.length === 0) {
-      console.log(' ++ called consumeQ and length is 0');
       return;
     }
 
     if (limit === null) {
       yield ref.current.splice(-ref.current.length).reverse();
     } else {
-      yield ref.current.splice(limit);
+      yield ref.current.splice(0, limit).reverse();
     }
   }, []);
 

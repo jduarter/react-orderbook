@@ -94,7 +94,7 @@ export const getGroupByFactor = (
 
 export const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
-  (): void => {
+  (): void =>
     // eslint-disable-next-line no-restricted-globals
     setImmediate(() => {
       const f =
@@ -113,8 +113,6 @@ export const getGroupByButtonPressEventHandler =
         });
       }
     });
-  };
-
 export const calculateSpread = (high: number, low: number): number => {
   if (!low || !high) {
     return 0;
@@ -134,15 +132,16 @@ export const wipeZeroRecords = (input: OrdersMap): OrdersMap => {
   return ret;
 };
 
-export const reduceScopeWithFn = <
+export const applyFnToScope = <
   T extends OrdersMap = OrdersMap,
   FR = OrderbookGenericScopeDataType<T>,
+  I extends OrderbookGenericScopeDataType<T> = OrderbookGenericScopeDataType<T>,
 >(
-  input: OrderbookGenericScopeDataType<T>,
-  transformer: (input: OrdersMap) => FR,
+  input: I,
+  transformer: (input: OrdersMap, k: keyof I) => FR,
 ): OrderbookGenericScopeDataType<FR> => ({
-  bids: transformer(input.bids) as FR,
-  asks: transformer(input.asks) as FR,
+  bids: transformer(input.bids, 'bids' as keyof I),
+  asks: transformer(input.asks, 'asks' as keyof I),
 });
 
 export const getNormalizedGroupedPrice = (

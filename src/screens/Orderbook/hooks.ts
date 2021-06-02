@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { InteractionManager } from 'react-native';
 
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
@@ -21,7 +22,7 @@ import type {
 } from './types';
 import type { WebSocketState } from '@hooks/useWebSocket';
 
-import { orderAndLimit, reduceScopeWithFn } from './utils';
+import { orderAndLimit, applyFnToScope } from './utils';
 
 export const useOrderbookController = ({
   subscribeToProductIds,
@@ -144,10 +145,10 @@ export const useOrderbookConnection = ({
       } else {
         if (!decoded?.event) {
           if (decoded?.feed === 'book_ui_1') {
-            const decodedMap = reduceScopeWithFn(decoded, (kv) => new Map(kv));
+            const decodedMap = applyFnToScope(decoded, (kv) => new Map(kv));
             dispatchToQ([{ kind: 'u', updates: decodedMap }]);
           } else if (decoded?.feed === 'book_ui_1_snapshot') {
-            const decodedMap = reduceScopeWithFn(decoded, (kv) => new Map(kv));
+            const decodedMap = applyFnToScope(decoded, (kv) => new Map(kv));
             dispatchToQ([{ kind: 's', updates: decodedMap }]);
           } else {
             console.warn(
@@ -230,13 +231,13 @@ export const useOrderbookReducer = (
 
 export const useOrderbookProcessing = ({
   onProcessCycle,
-  intervalMs = 150,
+  intervalMs = 50,
 }: UseOrderbookProcessingProperties): void => {
   useSafeEffect((isMounted) => {
     // eslint-disable-next-line no-restricted-globals
     const intval = setInterval(() => {
       if (isMounted()) {
-        onProcessCycle();
+        InteractionManager.runAfterInteractions(() => onProcessCycle());
       }
     }, intervalMs);
     return () => {
