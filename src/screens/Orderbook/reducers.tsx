@@ -19,7 +19,7 @@ import type {
 const scope = <T extends OrdersMap = OrdersMap>(
   bids: T,
   asks: T,
-): OrderbookGenericScopeDataType<T> => ({
+): { bids: T; asks: T } => ({
   bids,
   asks,
 });

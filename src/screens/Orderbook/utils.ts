@@ -94,7 +94,7 @@ export const getGroupByFactor = (
 
 export const getGroupByButtonPressEventHandler =
   (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
-  (): void =>
+  (): void => {
     // eslint-disable-next-line no-restricted-globals
     setImmediate(() => {
       const f =
@@ -113,6 +113,8 @@ export const getGroupByButtonPressEventHandler =
         });
       }
     });
+  };
+
 export const calculateSpread = (high: number, low: number): number => {
   if (!low || !high) {
     return 0;
