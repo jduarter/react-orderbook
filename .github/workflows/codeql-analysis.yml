@@ -63,4 +63,5 @@ jobs:
       uses: github/codeql-action/autobuild@v1
     - if: matrix.language == 'java'
       run: |
+        npm install
         (cd android/; ./gradlew assembleRelease)
