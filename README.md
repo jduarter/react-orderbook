@@ -1,4 +1,5 @@
 ## React Native Orderbook
+[![CodeQL](https://github.com/jduarter/orderbook_Jorge_2021_may25/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/jduarter/orderbook_Jorge_2021_may25/actions/workflows/codeql-analysis.yml)
 
 ## Install instructions.
 
