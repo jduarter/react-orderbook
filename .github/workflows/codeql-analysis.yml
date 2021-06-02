@@ -52,8 +52,7 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
         
-    - if: matrix.language == 'javascript'
-      name: Install dependencies using npm
+    - name: Install dependencies using npm
       run: |
         npm install
       
@@ -68,7 +67,6 @@ jobs:
     - if: matrix.language == 'java'
       name: Build android App
       run: |
-        npm install
         (cd android/; ./gradlew assembleRelease)
         
     - name: Perform CodeQL Analysis
