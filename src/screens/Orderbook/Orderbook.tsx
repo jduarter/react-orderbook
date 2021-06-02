@@ -12,11 +12,7 @@ import {
 import { default as OrderbookSection } from './components/OrderbookSection';
 
 import GroupByButtonGroup from './atoms/GroupByButtonGroup';
-import {
-  ErrorScreen,
-  ERROR_TITLES,
-  ERROR_TYPES,
-} from '@components/ErrorScreen';
+import { ErrorScreen, ERROR_TYPES } from '@components/ErrorScreen';
 import LoadingOverlay from '@components/LoadingOverlay';
 import type { OrderbookProps } from './types';
 
@@ -81,13 +77,7 @@ const OrderbookComponent: FC<OrderbookProps> = ({
   return (
     <View style={styles.flex1}>
       {!isLoading && wsState.isConnected === false && (
-        <ErrorScreen
-          errorType={
-            /*  connectionStatus.connectedToInternet === false
-              ? ERROR_TYPES.INTERNET_IS_UNAVAILABLE
-              : */ ERROR_TITLES[ERROR_TYPES.SERVICE_IS_UNAVAILABLE]
-          }
-        />
+        <ErrorScreen errorType={ERROR_TYPES.SERVICE_IS_UNAVAILABLE} />
       )}
 
       <View style={styles.orderBookSubWrapper}>
