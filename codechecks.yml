@@ -1,0 +1,6 @@
+checks:
+  - name: typecov
+    options:
+      atLeast: 99
+      name: orderbookJd
+      tsconfigPath: ./tsconfig.json
