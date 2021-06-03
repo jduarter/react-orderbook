@@ -22,8 +22,12 @@ const App: FC = () => {
     <SafeAreaView style={[backgroundStyle, { flex: 1 }]}>
       <StatusBar barStyle={'dark-content'} hidden={true} />
 
-      <View style={[backgroundStyle, { flex: 1 }]}>
-        <Orderbook productId={'PI_XBTUSD'} webSocketUri={WEBSOCKET_URI} />
+      <View style={[backgroundStyle, { flex: 1 }]} testID={'MAIN_VIEW'}>
+        <Orderbook
+          productId={'PI_XBTUSD'}
+          webSocketUri={WEBSOCKET_URI}
+          testID={'MAIN_ORDERBOOK_INSTANCE'}
+        />
       </View>
     </SafeAreaView>
   );
