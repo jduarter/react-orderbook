@@ -34,7 +34,7 @@ const determineNumberOfRowsAutomatically = (
     (deviceHeight * (1 - MIDDLE_MENU_RELATIVE_HEIGHT)) / suggestedRowHeight,
   );
 
-const OrderbookComponent: FC<OrderbookProps> = ({
+const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
   initialGroupBy = 100,
   productId = 'PI_XBTUSD',
   webSocketUri = 'wss://www.cryptofacilities.com/ws/v1',
