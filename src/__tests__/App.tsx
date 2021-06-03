@@ -1,14 +1,37 @@
-/**
- * @format
- */
-
 import 'react-native';
-import React from 'react';
+import * as React from 'react';
+
+import TestRenderer from 'react-test-renderer';
+
+jest.useFakeTimers();
+const mockedUseEffect = jest.fn();
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useEffect: () => mockedUseEffect(),
+}));
+
 import App from '../app';
 
-// Note: test renderer must be required after react-native.
-import renderer from 'react-test-renderer';
+afterEach(() => {
+  jest.resetAllMocks();
+  jest.clearAllTimers();
+});
 
 it('renders correctly', () => {
-  renderer.create(<App />);
+  const testRenderer = TestRenderer.create(<App />);
+  const testInstance = testRenderer.root;
+
+  const mainView = testInstance.findByProps({ testID: 'MAIN_VIEW' });
+
+  expect(() =>
+    testInstance.findByProps({ testID: 'MAIN_ORDERBOOK_INSTANCE' }),
+  ).not.toThrow();
+
+  expect((mainView.children[0] as any).children[0].type.name).toEqual(
+    'OrderbookComponent',
+  );
+
+  jest.runOnlyPendingTimers();
+
+  expect(mockedUseEffect).toHaveBeenCalled();
 });

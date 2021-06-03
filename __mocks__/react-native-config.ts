@@ -1,3 +1,1 @@
-export default {
-  WEBSOCKET_URI: 'MOCKED_WEBSOCKET_URI',
-};
+export const WEBSOCKET_URI = 'ws://localhost:42018';
