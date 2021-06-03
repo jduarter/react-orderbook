@@ -49,6 +49,7 @@ module.exports = {
     'import',
     'prettier',
     'security',
+    'testing-library',
   ],
   rules: {
     '@typescript-eslint/no-implicit-any-catch': 'off',
@@ -256,6 +257,7 @@ module.exports = {
         '*.{spec,test}.{js,ts,tsx}',
         '**/__{mocks,tests}__/**/*.{js,ts,tsx}',
       ],
+      extends: ['plugin:testing-library/react'],
       env: {
         jest: true,
       },
