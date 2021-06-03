@@ -23,7 +23,8 @@
         "sec:doctor": "npm doctor",
         "sec:outdated": "npm outdated",
         "sec:lockfile": "npx lockfile-lint --path package-lock.json --type npm --validate-https --allowed-hosts registry.npmjs.org",
-        "release:changelog": "npx conventional-changelog -p eslint -i CHANGELOG.md -s && git add CHANGELOG.md",
+        "typecoverage:update": "npx type-coverage --update --at-least 96",
+	"release:changelog": "npx conventional-changelog -p eslint -i CHANGELOG.md -s && git add CHANGELOG.md",
         "release:version": "npx conventional-recommended-bump",
         "release:bump": "npm version `npx conventional-recommended-bump`",
         "release:all": "npm run release:changelog && npm run release:version && npx release:bump"
@@ -93,6 +94,7 @@
         "react-native-typescript-transformer": "^1.2.13",
         "react-test-renderer": "17.0.1",
         "ts-jest": "^26.5.6",
+        "type-coverage": "^2.17.5",
         "typecov": "^0.2.3",
         "typescript": "^4.2.4",
         "typescript-coverage-report": "^0.6.0"

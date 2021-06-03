@@ -1,4 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-npm test && npm run sec:lockfile && npm run sec:detect-secrets
+npm test && npm run sec:lockfile && npm run sec:detect-secrets && npm run typecoverage:update
