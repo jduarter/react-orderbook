@@ -74,13 +74,6 @@ const useHandlers: BindHandlersFunction = (
         }
         onMessage(decoded);
       } catch (err: any) {
-        console.log({
-          err,
-          e1: err instanceof WebSocketJSONError,
-          e2: err instanceof WebSocketError,
-          e3: err.constructor.name,
-          e4: err.name,
-        });
         if (err instanceof WebSocketJSONError) {
           throw err;
         } else {
@@ -297,8 +290,8 @@ const useWebSocket = <
 
   return React.useMemo(
     () => ({
-      send: ownRef.current ? ownRef.current?.send : send,
-      connect: ownRef.current ? ownRef.current?.connect : connect,
+      send: ownRef.current ? ownRef.current.send : send,
+      connect: ownRef.current ? ownRef.current.connect : connect,
       state,
     }),
     [state, send, connect],
