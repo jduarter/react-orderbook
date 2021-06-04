@@ -26,6 +26,7 @@
     "sec:doctor": "npm doctor",
     "sec:outdated": "npm outdated",
     "sec:lockfile": "npx lockfile-lint --path package-lock.json --type npm --validate-https --allowed-hosts registry.npmjs.org",
+    "typecoverage:report": "npx typescript-coverage-report -p src/",
     "typecoverage:update": "npx type-coverage --update true --detail -p tsconfig.json --ignore-files \"*/android/**\" --ignore-files \"package*json\" --ignore-files \"*/ios/**\" --ignore-files \"**.json\"",
     "release:changelog": "npx conventional-changelog -p eslint -i CHANGELOG.md -s && git add CHANGELOG.md",
     "release:version": "npx conventional-recommended-bump",
@@ -34,7 +35,6 @@
   },
   "dependencies": {
     "@codechecks/build-size-watcher": "^0.1.0",
-    "@codechecks/client": "^0.1.10",
     "@react-hook/debounce": "^3.0.0",
     "@react-hook/throttle": "^2.2.0",
     "@react-native-community/netinfo": "^6.0.0",
@@ -54,6 +54,7 @@
     "@babel/plugin-proposal-export-namespace-from": "^7.14.2",
     "@babel/runtime": "^7.14.0",
     "@bradleymeck/node-policy": "^0.1.0",
+    "@codechecks/client": "^0.1.10-beta",
     "@commitlint/cli": "^12.1.4",
     "@commitlint/config-conventional": "^12.1.4",
     "@react-native-community/eslint-config": "^2.0.0",
