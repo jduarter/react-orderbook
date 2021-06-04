@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": false,
   "typeCoverage": {
-    "atLeast": 96.42
+    "atLeast": 97.36
   },
   "scripts": {
     "android": "react-native run-android",
