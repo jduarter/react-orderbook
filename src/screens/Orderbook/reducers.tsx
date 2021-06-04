@@ -1,6 +1,6 @@
 /* eslint security/detect-object-injection:0 */
 
-import at from 'array.prototype.at';
+const at = (arr: [], idx: number) => arr[idx >= 0 ? idx : arr.length + idx];
 
 import {
   getGroupedPrice,
