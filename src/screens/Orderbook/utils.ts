@@ -164,3 +164,6 @@ export const exactPriceIsWithinGroupPrice = (
   groupPrice: number,
   groupBy: number,
 ): boolean => exact >= groupPrice && exact < groupPrice + groupBy;
+
+export const arrayAt = <T>(arr: T[], idx: number): T =>
+  arr[idx >= 0 ? idx : arr.length + idx];

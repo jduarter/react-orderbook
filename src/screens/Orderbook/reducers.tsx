@@ -1,12 +1,11 @@
 /* eslint security/detect-object-injection:0 */
 
-const at = (arr: [], idx: number) => arr[idx >= 0 ? idx : arr.length + idx];
-
 import {
   getGroupedPrice,
   applyFnToScope,
   wipeZeroRecords,
   getAffectedPricesInUpdateList,
+  arrayAt,
 } from './utils';
 
 import type {
@@ -258,7 +257,7 @@ const ensureConsistencyWithDiff = (
         if (newBidsArr.length === 0) {
           break;
         }
-        const firstBidRow = at(newBidsArr, -1)[0];
+        const firstBidRow = arrayAt(newBidsArr, -1)[0];
         if (cheaperDiffAsk < firstBidRow) {
           newBidsArr = newBidsArr.slice(0, 1);
         } else {
@@ -280,7 +279,7 @@ const ensureConsistencyWithDiff = (
         if (newAsksArr.length === 0) {
           break;
         }
-        const firstAskRow = at(newAsksArr, 0)[0];
+        const firstAskRow = arrayAt(newAsksArr, 0)[0];
         if (firstAskRow < mostExpensiveDiffBids) {
           newAsksArr = newAsksArr.slice(1);
         } else {
