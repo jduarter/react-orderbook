@@ -40,7 +40,6 @@
     "@react-native-community/netinfo": "^6.0.0",
     "@react-spring/native": "^9.1.2",
     "@testing-library/react-native": "^7.2.0",
-    "array.prototype.at": "^1.0.1",
     "comma-number": "^2.1.0",
     "react": "17.0.1",
     "react-native": "0.64.1",
