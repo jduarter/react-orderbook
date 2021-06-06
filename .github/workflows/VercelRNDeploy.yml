@@ -10,8 +10,8 @@ on:
     - cron: '15 22 * * 3'
 
 jobs:
-  analyze:
-    name: Analyze
+  deploy:
+    name: Deployment to Vercel (as web)
     environment: defaultEnv
     runs-on: ubuntu-latest
     permissions:
