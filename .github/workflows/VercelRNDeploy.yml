@@ -1,0 +1,62 @@
+name: "VercelRNDeploy"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  schedule:
+    - cron: '15 22 * * 3'
+
+jobs:
+  analyze:
+    name: Analyze
+    environment: defaultEnv
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+        
+    - name: Install dependencies using npm
+      run: |
+        npm install
+      
+    - name: Run npm run typescript
+      run: |
+        npm run typescript
+        
+    - name: Run npm test
+      run: |
+        npm test      
+
+    - name: Convert to expo project
+      run: |
+        npx expoize
+        
+    - name: Run expo-optimize
+      run: |
+        npx expo-optimize
+        
+    - name: Run expo-optimize
+      run: |
+        npx expo-optimize
+        
+    - name: Run expo build for web
+      run: |
+        npx expo build:web
+
+    - name: Vercel Action
+      uses: amondnet/vercel-action@v20.0.0
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
