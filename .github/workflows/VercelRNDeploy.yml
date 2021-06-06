@@ -55,4 +55,5 @@ jobs:
     - name: Vercel Action
       uses: amondnet/vercel-action@v20.0.0
       with:
+        working-directory: ./web-build
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
