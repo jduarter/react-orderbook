@@ -48,10 +48,6 @@ jobs:
       run: |
         npx expo-optimize
         
-    - name: Run expo-optimize
-      run: |
-        npx expo-optimize
-        
     - name: Run expo build for web
       run: |
         npx expo build:web
