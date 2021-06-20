@@ -1,6 +1,7 @@
 ## React Native Orderbook
 [![CodeQL](https://github.com/jduarter/orderbook_Jorge_2021_may25/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/jduarter/orderbook_Jorge_2021_may25/actions/workflows/codeql-analysis.yml)
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fjduarter%2Forderbook_Jorge_2021_may25%2Fmaster%2Fpackage.json)](https://github.com/jduarter/orderbook_Jorge_2021_may25)
+<a href="https://codeclimate.com/github/jduarter/orderbook_Jorge_2021_may25/maintainability"><img src="https://api.codeclimate.com/v1/badges/b2d14de2ab2bfc28a5f6/maintainability" /></a>
 
 ## Install instructions.
 
