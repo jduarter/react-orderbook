@@ -85,3 +85,18 @@ export type Dispatch = React.Dispatch<ReducerAction>;
 export type InitialState = () => WebSocketState;
 
 export type WebSocketInstanceType = any;
+
+export type OwnRefType = {
+  connect: () => Promise<boolean>;
+  send: (obj: any) => Promise<boolean>;
+} | null;
+
+export interface UseHandlersWithReconnectProps {
+  autoReconnect: boolean;
+  reconnectCheckIntervalMs: number;
+  onClose: () => void;
+  onOpen: (o: { send: WebSocketSendFunction<any> }) => void;
+  isConnecting: boolean;
+  current: OwnRefType | null;
+  send: WebSocketSendFunction<any>;
+}

@@ -4,7 +4,7 @@ import {
   getGroupedPrice,
   applyFnToScope,
   wipeZeroRecords,
-  getAffectedPricesInUpdateList,
+  extractPricesFromMap,
   arrayAt,
 } from './utils';
 
@@ -198,22 +198,13 @@ const reduceTwoScopesWithFn = <
     {},
   ) as OrderbookGenericScopeDataType<FR>;
 
-const extractPricesFromMap = (m: OrdersMap): number[] =>
-  Array.from(m).map(([price]) => price);
-
 const getGroupMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<{ created: number[]; removed: number[] }> => {
-  const a = applyFnToScope<OrdersMap, number[]>(
-    before,
-    getAffectedPricesInUpdateList,
-  );
+  const a = applyFnToScope<OrdersMap, number[]>(before, extractPricesFromMap);
 
-  const b = applyFnToScope<OrdersMap, number[]>(
-    after,
-    getAffectedPricesInUpdateList,
-  );
+  const b = applyFnToScope<OrdersMap, number[]>(after, extractPricesFromMap);
 
   const changedKeys = reduceTwoScopesWithFn<
     number[],
@@ -327,10 +318,7 @@ const reducePendingGroupUpdatesToState = (
       return {
         ...restOfAcc,
         ...scopeElementsWithoutZeroRecords(newState),
-        grouped: applyFnToScope(
-          scopeElementsWithoutZeroRecords(newState.grouped),
-          wipeZeroRecords,
-        ),
+        grouped: scopeElementsWithoutZeroRecords(newState.grouped),
       };
     },
     state,
@@ -365,18 +353,16 @@ export const orderBookReducer = (
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload.value };
-      break;
 
     case 'UPDATE_GROUPED':
       return {
         ...reducePendingGroupUpdatesToState(action.payload.updates, state),
         isLoading: false,
       };
-      break;
 
     case 'SET_GROUP_BY':
       return reduceStateToNewGroupBySetting(state, action.payload.value);
-      break;
+
     default:
       throw new Error('orderBook: unknown reducer: ' + action.type);
   }

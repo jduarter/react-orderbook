@@ -1,5 +1,5 @@
 import { useCallback, useRef, useMemo } from 'react';
-import { getThrowableError } from '@utils/getThrowableError';
+import { getThrowableError } from 'throwable-error';
 
 import type { UseGeneratorQueueReturn } from './types';
 

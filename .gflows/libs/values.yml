@@ -1,0 +1,13 @@
+#@data/values
+---
+git:
+  main_branches:
+    - 'main'
+    - 'develop'
+    - 'master'
+
+environment: defaultEnv
+
+vercel:
+  alias_domains: 'orderbookjd-{{BRANCH}}-jduarter'
+  project_name: 'orderbookjd'

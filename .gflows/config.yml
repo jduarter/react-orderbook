@@ -1,0 +1,8 @@
+# Config file for GFlows.
+# See https://github.com/jduarter/gflows/wiki/Configuration for options.
+githubDir: .github
+templates:
+  engine: ytt
+  defaults:
+    dependencies:
+      - https://raw.githubusercontent.com/jduarter/react-native-vercel-deploy-workflow-template/master

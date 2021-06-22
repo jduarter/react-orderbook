@@ -1,0 +1,16 @@
+#@ load("@ytt:data", "data")
+
+#@ def trigger_defaults_for_build():
+  pull_request:
+    branches:
+      - "develop"
+  push:
+    branches: #@ data.values.git.main_branches
+#@ end
+
+#@ def pull_request_defaults():
+  pull_request:
+    branches: #@ data.values.git.main_branches
+  push:
+    branches: #@ data.values.git.main_branches
+#@ end
