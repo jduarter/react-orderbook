@@ -124,7 +124,7 @@ export const useOrderbookConnection = ({
     onProcessCycle: React.useCallback(() => {
       for (const updates of consumeQ(null)) {
         if (!updates || updates.length === 0) {
-          continue;
+          break;
         }
 
         orderBookDispatch({
@@ -182,6 +182,10 @@ export const useOrderbookConnection = ({
     [subscribeToProductIds, orderBookDispatch],
   );
 
+  const onClose = React.useCallback((): void => {
+    orderBookDispatch({ type: 'RESET_STATE' });
+  }, [orderBookDispatch]);
+
   const {
     connect: wsConnect,
     close: wsDisconnect,
@@ -191,6 +195,7 @@ export const useOrderbookConnection = ({
     onMessage,
     onOpen,
     onError,
+    onClose,
     reconnectCheckIntervalMs,
     autoReconnect,
   });

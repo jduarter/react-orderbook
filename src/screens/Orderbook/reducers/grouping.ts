@@ -125,8 +125,10 @@ export const applyMinimumThresholdsToGroups = (
         ? minimumSizeForGroup
         : calcSumSizeForUpdates;
 
-    if (newGroupSize > 0) {
+    if (newGroupSize >= 0) {
       result.set(groupPrice, newGroupSize);
+    } else if (minimumSizeForGroup === 0) {
+      result.set(groupPrice, 0);
     }
   }
 
