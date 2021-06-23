@@ -1,24 +1,21 @@
 import { getThrowableError } from 'throwable-error';
 
-import type { ThrowableErrorConstructorArguments } from 'throwable-error';
-
-export const WebSocketError = getThrowableError(
-  'WebSocketError',
-  (userMessage: string, details?: { originalError?: Error }) => ({
+export const WebSocketError = getThrowableError('WebSocketError', {
+  mapperFn: (userMessage: string, details?: { originalError?: Error }) => ({
     userMessage,
     originalError: details?.originalError || undefined,
   }),
-);
+});
 
-export const WebSocketJSONError = getThrowableError<
+type ErrorDetails = { originalError?: Error; data?: any };
+export const WebSocketJSONError = getThrowableError<[string, ErrorDetails]>(
   'WebSocketJSONError',
-  ThrowableErrorConstructorArguments & [string, { data: any }]
->(
-  'WebSocketJSONError',
-  (userMessage: string, details?: { originalError?: Error; data?: any }) => ({
-    userMessage,
-    originalError: details?.originalError || undefined,
-    data: details?.data || undefined,
-  }),
-  WebSocketError,
+  {
+    mapperFn: (userMessage: string, details?: ErrorDetails) => ({
+      userMessage,
+      originalError: details?.originalError || undefined,
+      data: details?.data || undefined,
+    }),
+    extendFrom: WebSocketError,
+  },
 );

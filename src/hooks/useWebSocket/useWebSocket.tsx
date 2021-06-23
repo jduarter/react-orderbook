@@ -1,72 +1,79 @@
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 
 import { useIntervalCallback } from '@hooks/useTimerCallbacks';
+import type { TimerHandler } from '@hooks/useTimerCallbacks';
 
 import type { MutableRefObject } from 'react';
 import type {
   UseWebSocketProperties,
   WebSocketInstanceType,
-  GenericMessageFromServer,
   UseHandlersWithReconnectProps,
   Dispatch,
   OwnRefType,
   WebSocketHandlers,
+  ReconnectHOCReturnType,
+  WebSocketNativeError,
+  OnMessageReceivedFunction,
+  GenericMessageFromServer,
+  OnCloseFnType,
 } from './types';
 
 const voidFunction = ((): void => undefined) as any;
 
-import { WebSocketError } from './errors';
-import { useHandlers } from './hooks';
+import { WebSocketError, WebSocketJSONError } from './errors';
+
 import { useWebSocketReducer, INITIAL_STATE } from './reducers';
 
-const useOnCloseConnection = (current: WebSocket | null): void =>
-  useEffect(() => {
-    return () => {
-      console.log('[WS] closing connection');
-      if (current) {
-        if (current.close) {
-          current.close();
-        }
-        current.onopen = null;
-        current.onerror = null;
-        current.onmessage = null;
-        current.onclose = null;
-      }
-    };
-  }, []);
+const onConnectionClosed = (
+  ref: React.MutableRefObject<WebSocket | null>,
+): void => {
+  if (ref.current) {
+    if (ref.current.close) {
+      ref.current.close();
+    }
+    ref.current.onopen = null;
+    ref.current.onerror = null;
+    ref.current.onmessage = null;
+    ref.current.onclose = null;
+    ref.current = null;
+  }
+};
 
-const useConnectFn = (
-  uri: string,
-  dispatch: Dispatch,
+const bindHandlersToWebSocketRef = (
   ref: MutableRefObject<WebSocketInstanceType>,
   handlers: Partial<WebSocketHandlers<any>>,
-) =>
-  useCallback(async (): Promise<boolean> => {
+): void => {
+  ref.current.onopen = handlers.onOpen || null;
+  ref.current.onmessage = handlers.onMessage || null;
+  ref.current.onclose = handlers.onClose || null;
+  ref.current.onerror = handlers.onError || null;
+};
+
+const getConnectFn =
+  (
+    uri: string,
+    dispatch: Dispatch,
+    ref: MutableRefObject<WebSocketInstanceType>,
+    handlers: Partial<WebSocketHandlers<any>>,
+  ) =>
+  async (): Promise<boolean> => {
+    console.log('[WS] connecting to: ', uri);
+
     dispatch({ type: 'SET_CONNECTED', payload: { value: true } });
 
     ref.current = new WebSocket(uri) as WebSocketInstanceType;
 
     if (ref.current) {
-      ref.current.onopen = (handlers.onOpen as () => void) || null;
-      ref.current.onmessage = handlers.onMessage || null;
-      ref.current.onclose = handlers.onClose || null;
-      ref.current.onerror = handlers.onError || null;
-
+      bindHandlersToWebSocketRef(ref, handlers);
       return true;
     } else {
       throw new WebSocketError('Unexpected connect error.');
     }
-  }, [
-    uri,
-    dispatch,
-    handlers.onOpen,
-    handlers.onMessage,
-    handlers.onClose,
-    handlers.onError,
-  ]);
+  };
 
-const useSendFn = (ref: MutableRefObject<WebSocketInstanceType>) =>
-  useCallback(async (obj: any): Promise<boolean> => {
+const getSendFn =
+  (ref: MutableRefObject<WebSocketInstanceType>) =>
+  async (obj: any): Promise<boolean> => {
     console.log('[WS] send: ', obj);
     if (!ref.current) {
       throw new WebSocketError('[useWebSocket] client is not ready');
@@ -82,45 +89,153 @@ const useSendFn = (ref: MutableRefObject<WebSocketInstanceType>) =>
         err,
       );
     }
-  }, []);
+  };
 
-const useHandlersWithReconnect = ({
-  autoReconnect,
-  reconnectCheckIntervalMs,
+const withReconnect = ({
+  reconnectTimer,
   onClose,
   onOpen,
-  isConnecting,
-  current,
-  send,
-}: UseHandlersWithReconnectProps) => {
-  const handleReconnect = useCallback((): void => {
-    if (autoReconnect && isConnecting === false && current) {
-      current.connect();
-    }
-  }, [autoReconnect, isConnecting]);
-
-  const reconnectTimer = useIntervalCallback(
-    reconnectCheckIntervalMs,
-    handleReconnect,
-  );
-
-  const onLocalClose = useCallback(() => {
-    if (autoReconnect && !reconnectTimer.isStarted()) {
+}: UseHandlersWithReconnectProps): ReconnectHOCReturnType => {
+  const onLocalClose = () => {
+    if (!reconnectTimer.isStarted()) {
       reconnectTimer.start();
     }
 
     onClose();
-  }, [onClose, reconnectTimer, autoReconnect]);
+  };
 
-  const onLocalOpen = useCallback(() => {
-    if (autoReconnect && reconnectTimer.isStarted()) {
+  const onLocalOpen = (aRef: MutableRefObject<null | OwnRefType>) => {
+    if (reconnectTimer.isStarted()) {
       reconnectTimer.finish();
     }
-    onOpen({ send });
-  }, [reconnectTimer, autoReconnect, onOpen]);
+    onOpen(aRef);
+  };
 
-  return [onLocalOpen, onLocalClose];
+  return { onClose: onLocalClose, onOpen: onLocalOpen };
 };
+
+const useReconnectTimer = (
+  autoReconnect: boolean,
+  isConnecting: boolean,
+  reconnectCheckIntervalMs: number,
+  ref: MutableRefObject<OwnRefType | null>,
+): TimerHandler =>
+  useIntervalCallback(
+    reconnectCheckIntervalMs,
+    useCallback(() => {
+      if (autoReconnect && isConnecting === false && ref?.current?.connect) {
+        ref.current.connect();
+      }
+    }, [isConnecting]),
+  );
+
+const generateOnMessageHandler =
+  <MFS extends GenericMessageFromServer = GenericMessageFromServer>(
+    onMessage: OnMessageReceivedFunction<MFS>,
+  ) =>
+  ({ data }: { data?: string }): void => {
+    if (!onMessage) {
+      throw new WebSocketError('onMessageReceive handler is null.');
+    }
+
+    if (!data) {
+      return;
+    }
+
+    try {
+      let decoded;
+      try {
+        decoded = JSON.parse(data);
+      } catch (err: any) {
+        throw new WebSocketJSONError(
+          'onMessageReceive: could not decode JSON-parsed data!',
+          { originalError: err, data },
+        );
+      }
+      onMessage(decoded);
+    } catch (err: any) {
+      if (err instanceof WebSocketJSONError) {
+        throw err;
+      } else {
+        throw new WebSocketError(
+          'onMessageReceive: unexpected error, probably due exception raised in onMessage() handler.',
+          { originalError: err },
+        );
+      }
+    }
+  };
+
+const getConnectedHandler = ({
+  handlerName,
+  originalHandler,
+  ownRef,
+}: {
+  handlerName: string;
+  originalHandler: WebSocketHandlers<any>[keyof WebSocketHandlers<any>];
+  ownRef: MutableRefObject<null | OwnRefType>;
+}) => {
+  const onOpen = (/*originalWsEvent: { isTrusted?: boolean }*/): void => {
+    originalHandler && originalHandler(ownRef);
+    ownRef?.current?.dispatch({
+      type: 'SET_CONNECTED',
+      payload: { value: true },
+    });
+  };
+
+  const onClose = () => {
+    ownRef?.current?.dispatch({
+      type: 'SET_CONNECTED',
+      payload: { value: false },
+    });
+    ownRef?.current?.dispatch({
+      type: 'SET_CONNECTING',
+      payload: { value: false },
+    });
+
+    if (originalHandler) {
+      (originalHandler as OnCloseFnType)();
+    }
+  };
+
+  const onError = (error: WebSocketNativeError) => {
+    onClose();
+    if (originalHandler) {
+      originalHandler(error);
+    }
+    // {"isTrusted": false, "message": "The operation couldn’t be completed. Network is down"}
+  };
+
+  const connectedHandlers: WebSocketHandlers<any> = {
+    onOpen,
+    onClose,
+    onError,
+    onMessage: generateOnMessageHandler(
+      originalHandler as OnMessageReceivedFunction<any>,
+    ),
+  };
+
+  return {
+    [handlerName]:
+      connectedHandlers[handlerName as keyof typeof connectedHandlers],
+  };
+};
+
+const withConnectedHandlers = <
+  I extends OwnRefType['handlers'] = OwnRefType['handlers'],
+>(
+  input: Partial<Record<keyof I, any>>,
+  ownRef: MutableRefObject<null | OwnRefType>,
+): I =>
+  Object.keys(input).reduce((acc, handlerName) => {
+    return {
+      ...acc,
+      ...getConnectedHandler({
+        handlerName,
+        originalHandler: input[handlerName as keyof I],
+        ownRef,
+      }),
+    };
+  }, {} as I);
 
 const useWebSocket = <
   MFS extends GenericMessageFromServer = GenericMessageFromServer,
@@ -142,43 +257,56 @@ const useWebSocket = <
 
   const [state, dispatch] = useWebSocketReducer(INITIAL_STATE);
 
-  const send = useSendFn(ref);
-
-  const [onLocalOpen, onLocalClose] = useHandlersWithReconnect({
-    onOpen,
-    onClose,
+  const reconnectTimer = useReconnectTimer(
     autoReconnect,
+    state.isConnecting,
     reconnectCheckIntervalMs,
-    current: ownRef?.current,
-    isConnecting: state.isConnecting,
-    send,
-  });
-
-  const handlers = useHandlers(
-    { send, dispatch },
-    {
-      onMessage,
-      onOpen: onLocalOpen,
-      onClose: onLocalClose,
-      onError,
-    },
+    ownRef,
   );
 
-  const connect = useConnectFn(uri, dispatch, ref, handlers);
-
-  useOnCloseConnection(ref.current);
-
   useEffect(() => {
-    ownRef.current = { connect, send };
-  }, [connect, send]);
+    const connectionStateHandlers = withConnectedHandlers(
+      {
+        onOpen,
+        onClose,
+      },
+      ownRef,
+    );
+
+    const handlers = {
+      ...(autoReconnect
+        ? withReconnect({
+            ...connectionStateHandlers,
+            reconnectTimer,
+          } as UseHandlersWithReconnectProps)
+        : connectionStateHandlers),
+      ...withConnectedHandlers({ onMessage, onError }, ownRef),
+    };
+
+    /* initialize ref with connect/send methods */
+    const connect = getConnectFn(uri, dispatch, ref, handlers);
+    const send = getSendFn(ref);
+
+    ownRef.current = {
+      dispatch,
+      connect,
+      send,
+      handlers,
+    };
+
+    return () => {
+      /* cleanup */
+      onConnectionClosed(ref);
+    };
+  }, []);
 
   return useMemo(
     () => ({
-      send: ownRef.current ? ownRef.current.send : send,
-      connect: ownRef.current ? ownRef.current.connect : connect,
+      send: (obj: any) => ownRef.current?.send && ownRef.current.send(obj),
+      connect: () => ownRef.current?.connect && ownRef.current.connect(),
       state,
     }),
-    [state, send, connect],
+    [state],
   );
 };
 

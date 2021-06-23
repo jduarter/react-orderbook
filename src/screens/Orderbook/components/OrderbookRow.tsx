@@ -24,7 +24,7 @@ const OrderbookRow: React.FC<Props> = ({
   isLeaving,
   total,
 }) => {
-  /* @todo dynamically adjust decimals in the parent component */
+  /* @todo: dynamically adjust decimals in the parent component */
 
   const priceComponent = React.useMemo(
     () => (

@@ -20,7 +20,7 @@ import type {
   OrderbookGenericScopeDataType,
   OrdersMap,
 } from './types';
-import type { WebSocketState } from '@hooks/useWebSocket';
+import type { WebSocketState, WebSocketNativeError } from '@hooks/useWebSocket';
 
 import { orderAndLimit, applyFnToScope } from './utils';
 
@@ -81,15 +81,14 @@ export const useOrderbookController = ({
 const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
   useGeneratorQueue<PendingGroupUpdateRecord>(initial);
 
+// batch all updates in a single one to prevent
+// several subsequent state updates (+ renders)
+// and keep the last value for each key to prevent
+// useless processing
 const preprocessUpdates = (
   updates: PendingGroupUpdateRecord[],
-): OrderbookGenericScopeDataType<OrdersMap> => {
-  // batch all updates in a single one to prevent
-  // several subsequent state updates (+ renders)
-  // and keep the last value for each key to prevent
-  // useless processing
-
-  const res = updates.reduce(
+): OrderbookGenericScopeDataType<OrdersMap> =>
+  updates.reduce(
     (acc, { updates }: PendingGroupUpdateRecord) => {
       return {
         ...acc,
@@ -100,39 +99,37 @@ const preprocessUpdates = (
     { asks: new Map(), bids: new Map() },
   );
 
-  return res;
+const ALLOWED_FEEDS = ['book_ui_1', 'book_ui_1_snapshot'];
+const DEFAULT_ERROR_HANDLER = (err: WebSocketNativeError | Error) => {
+  console.log('---> ERROR:', err);
 };
 
+/*
+ * @todo: restore NetInfo functionality and troubleshoot issue
+ * const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
+ * const [connectionStatus, setConnectionStatus] =
+ *   React.useState<ConnectionStatusState>(INITIAL_CONNECTION_STATUS_STATE);
+ */
 export const useOrderbookConnection = ({
   orderBookDispatch,
   subscribeToProductIds,
   webSocketUri,
   reconnectCheckIntervalMs = 5000,
   autoReconnect = true,
+  onError = DEFAULT_ERROR_HANDLER,
 }: UseOrderbookConnectionProperties): { wsState: WebSocketState } => {
   const { dispatchToQ, consumeQ } = useOrderbookMainStateRef();
-  // NetInfo isn't accurately dispatching events currently
-  // after first iOS disconnect - it seems like there are more developers
-  // experiencing the same issue.
-  // I will disable it for the moment, delete unneeded code & focus
-  // purely in the WS connection state.
-  // const { isConnected, isInternetReachable } = NetInfo.useNetInfo();
-  /*
-  const [connectionStatus, setConnectionStatus] =
-    React.useState<ConnectionStatusState>(INITIAL_CONNECTION_STATUS_STATE);
-*/
+
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
       for (const updates of consumeQ(null)) {
         if (!updates || updates.length === 0) {
-          console.log('(CONTINUE)');
           continue;
         }
-        const updatess = preprocessUpdates(updates);
 
         orderBookDispatch({
           type: 'UPDATE_GROUPED',
-          payload: { updates: [updatess] },
+          payload: { updates: [preprocessUpdates(updates)] },
         });
       }
     }, [consumeQ, orderBookDispatch]),
@@ -142,36 +139,39 @@ export const useOrderbookConnection = ({
     (decoded: OrderbookWSMessageType) => {
       if (decoded?.event === 'info' || decoded?.event === 'subscribed') {
         console.log('Orderbook: Websocket info: ', decoded);
-      } else {
-        if (!decoded?.event) {
-          if (decoded?.feed === 'book_ui_1') {
-            const decodedMap = applyFnToScope(decoded, (kv) => new Map(kv));
-            dispatchToQ([{ kind: 'u', updates: decodedMap }]);
-          } else if (decoded?.feed === 'book_ui_1_snapshot') {
-            const decodedMap = applyFnToScope(decoded, (kv) => new Map(kv));
-            dispatchToQ([{ kind: 's', updates: decodedMap }]);
-          } else {
-            console.warn(
-              'Orderbook: Unknown message received from WebSocket: ',
-              {
-                decoded,
-              },
-            );
-          }
-        } else {
-          console.warn('Orderbook: Unknown message received from WebSocket: ', {
-            decoded,
-          });
-        }
+        return;
+      }
+
+      if (decoded?.event) {
+        console.warn('Orderbook: Unknown message received from WebSocket: ', {
+          decoded,
+        });
+        return;
+      }
+
+      if (!decoded?.feed || ALLOWED_FEEDS.indexOf(decoded?.feed) == -1) {
+        console.warn('Orderbook: Unknown message received from WebSocket: ', {
+          decoded,
+        });
+        return;
+      }
+
+      const updates = applyFnToScope(decoded, (kv) => new Map(kv));
+
+      switch (decoded.feed) {
+        case 'book_ui_1':
+          dispatchToQ([{ kind: 'u', updates }]);
+          break;
+        case 'book_ui_1_snapshot':
+          dispatchToQ([{ kind: 's', updates }]);
+          break;
       }
     },
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const onOpen = React.useCallback(
-    ({ send }): void => {
-      console.log('*** onConnect triggered correctly');
-
+    ({ current: { send } }): void => {
       orderBookDispatch({ type: 'SET_LOADING', payload: { value: false } });
       send({
         event: 'subscribe',
@@ -181,10 +181,6 @@ export const useOrderbookConnection = ({
     },
     [subscribeToProductIds, orderBookDispatch],
   );
-
-  const onError = React.useCallback((err) => {
-    console.log('---> ERROR:', err);
-  }, []);
 
   const {
     connect: wsConnect,

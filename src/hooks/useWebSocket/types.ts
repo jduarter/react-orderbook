@@ -1,4 +1,5 @@
-import type {} from 'react';
+import type { TimerHandler } from '@hooks/useTimerCallbacks';
+import type { MutableRefObject } from 'react';
 
 export type OnMessageReceivedFunction<MFS extends GenericMessageFromServer> = (
   data: MFS,
@@ -13,11 +14,7 @@ export interface WebSocketNativeError {
 export type GenericMessageFromServer = Record<string, any>;
 export type GenericMessageToClient = Record<string | number, any>;
 
-export type OnConnectFunction = <
-  MTC extends GenericMessageToClient = GenericMessageToClient,
->(params: {
-  send: WebSocketSendFunction<MTC>;
-}) => void;
+export type OnConnectFunction = (ref: MutableRefObject<OwnRefType>) => void;
 export type OnDisconnectFunction = () => void;
 export type OnErrorFunction = (err: WebSocketNativeError) => void;
 
@@ -29,6 +26,10 @@ export interface WebSocketHandlers<
   onClose: OnDisconnectFunction | null;
   onError: OnErrorFunction | null;
 }
+
+export type WebSocketHandlerNames<
+  MFS extends GenericMessageFromServer = GenericMessageFromServer,
+> = keyof WebSocketHandlers<MFS>;
 
 export type UseWebSocketOptionalProps<
   MFS extends GenericMessageFromServer = GenericMessageFromServer,
@@ -50,12 +51,8 @@ export type WebSocketSendFunction<
 
 export type BindHandlersFunction<
   MFS extends GenericMessageFromServer = GenericMessageFromServer,
-  MTC extends GenericMessageToClient = GenericMessageToClient,
 > = (
-  o: {
-    send: WebSocketSendFunction<MTC>;
-    dispatch: Dispatch;
-  },
+  o: MutableRefObject<OwnRefType>,
   handlers: WebSocketHandlers<MFS>,
 ) => Partial<WebSocketHandlers<MFS>>;
 
@@ -89,14 +86,23 @@ export type WebSocketInstanceType = any;
 export type OwnRefType = {
   connect: () => Promise<boolean>;
   send: (obj: any) => Promise<boolean>;
-} | null;
+  dispatch: Dispatch;
+  handlers: WebSocketHandlers & {
+    onClose: OnCloseFnType;
+    onOpen: OnOpenFnType;
+  };
+};
+
+export type OnCloseFnType = () => void;
+export type OnOpenFnType = (o: MutableRefObject<null | OwnRefType>) => void;
 
 export interface UseHandlersWithReconnectProps {
-  autoReconnect: boolean;
-  reconnectCheckIntervalMs: number;
-  onClose: () => void;
-  onOpen: (o: { send: WebSocketSendFunction<any> }) => void;
-  isConnecting: boolean;
-  current: OwnRefType | null;
-  send: WebSocketSendFunction<any>;
+  onClose: OnCloseFnType;
+  onOpen: OnOpenFnType;
+  reconnectTimer: TimerHandler;
+}
+
+export interface ReconnectHOCReturnType {
+  onClose: OnCloseFnType;
+  onOpen: OnOpenFnType;
 }

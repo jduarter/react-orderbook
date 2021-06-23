@@ -1,6 +1,7 @@
 import type {
   GenericMessageFromServer,
   WebSocketState,
+  WebSocketNativeError,
 } from '../../hooks/useWebSocket';
 
 export type OrderbookGroupedPrice = number;
@@ -26,6 +27,7 @@ export interface UseOrderbookConnectionProperties {
   subscribeToProductIds: string[];
   reconnectCheckIntervalMs?: number;
   autoReconnect?: boolean;
+  onError?: (err: WebSocketNativeError | Error) => void;
 }
 
 type OnProcessCycle = () => void;

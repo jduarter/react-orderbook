@@ -12,3 +12,15 @@ export interface UseGeneratorQueueReturn<T> {
   dispatchToQ: UseGeneratorQueueDispatch<T>;
   consumeQ: GetSingleUpdateFunction<T>;
 }
+
+export interface GeneratorQueueOptions {
+  queueMaxSize: number;
+  throwErrorOnMaxSizeReach: boolean;
+  kind: 'FIFO';
+}
+
+export interface ErrorDetails {
+  originalError?: Error;
+}
+
+export type ErrorArgs = [string] | [string, ErrorDetails | undefined];

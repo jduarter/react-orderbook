@@ -1,22 +1,23 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { getThrowableError } from 'throwable-error';
 
-import type { UseGeneratorQueueReturn } from './types';
+import type {
+  UseGeneratorQueueReturn,
+  ErrorArgs,
+  ErrorDetails,
+  GeneratorQueueOptions,
+} from './types';
 
 const DEFAULT_QUEUE_MAX_SIZE = 1024;
 
-interface GeneratorQueueOptions {
-  queueMaxSize: number;
-  throwErrorOnMaxSizeReach: boolean;
-  kind: 'FIFO';
-}
-
-const GeneratorQueueError = getThrowableError(
+const GeneratorQueueError = getThrowableError<ErrorArgs>(
   'GeneratorQueueError',
-  (userMessage: string, details?: { originalError?: Error }) => ({
-    userMessage,
-    originalError: details?.originalError || undefined,
-  }),
+  {
+    mapperFn: (userMessage: string, details?: ErrorDetails) => ({
+      userMessage,
+      originalError: details?.originalError || undefined,
+    }),
+  },
 );
 
 const useGeneratorQueue = <T>(
@@ -31,12 +32,14 @@ const useGeneratorQueue = <T>(
   const dispatchToQ = useCallback(
     (payload: T[]): number => {
       const currCount = ref.current.push(...payload);
-      if (currCount > opts.queueMaxSize) {
-        if (opts.throwErrorOnMaxSizeReach === true) {
-          throw new GeneratorQueueError(
-            'Queue max size reached: ' + currCount + ' > ' + opts.queueMaxSize,
-          );
-        }
+
+      if (
+        currCount > opts.queueMaxSize &&
+        opts.throwErrorOnMaxSizeReach === true
+      ) {
+        throw new GeneratorQueueError(
+          'Queue max size reached: ' + currCount + ' > ' + opts.queueMaxSize,
+        );
       }
 
       return currCount;
@@ -49,11 +52,11 @@ const useGeneratorQueue = <T>(
       return;
     }
 
-    if (limit === null) {
-      yield ref.current.splice(-ref.current.length).reverse();
-    } else {
-      yield ref.current.splice(0, limit).reverse();
-    }
+    yield (
+      !limit
+        ? ref.current.splice(-ref.current.length)
+        : ref.current.splice(0, limit)
+    ).reverse();
   }, []);
 
   return useMemo(() => ({ dispatchToQ, consumeQ }), [dispatchToQ, consumeQ]);

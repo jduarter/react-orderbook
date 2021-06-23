@@ -3,7 +3,7 @@
 import 'react-native';
 import React from 'react';
 
-import { create, act } from 'react-test-renderer';
+import { render, act as tlAct, cleanup } from '@testing-library/react-native';
 
 jest.mock('react-native-orientation-locker');
 jest.mock('react-native-config');
@@ -23,23 +23,29 @@ const getControlledPromise = () => {
   return { promise, ...promiseCtl };
 };
 
-const controlPromise = getControlledPromise();
+describe('main WebSocket test', () => {
+  const controlPromise = getControlledPromise();
+  let app = null;
+  beforeEach(() => {
+    server = new WS('ws://localhost:42018');
 
-beforeEach(() => {
-  server = new WS('ws://localhost:42018');
+    server.on('connection', () => {
+      controlPromise.resolve();
+    });
 
-  server.on('connection', () => {
-    controlPromise.resolve();
+    app = render(<App />);
   });
-});
 
-afterEach(() => {
-  WS.clean();
-});
+  afterEach(() => {
+    cleanup();
+    app = null;
+    WS.clean();
+    jest.resetAllMocks();
+  });
 
-it('renders <App /> correctly and connects to websocket server in subsequent renders', async () => {
-  const app = create(<App />);
-  await act(async () => controlPromise.promise);
-  await act(async () => server.connected);
-  return act(async () => app.unmount());
+  it('renders <App /> correctly and connects to websocket server in subsequent renders', async () => {
+    await tlAct(async () => controlPromise.promise);
+    await tlAct(async () => server.connected);
+    return tlAct(async () => app.unmount());
+  });
 });

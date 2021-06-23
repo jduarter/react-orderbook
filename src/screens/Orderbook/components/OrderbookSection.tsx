@@ -40,6 +40,7 @@ const getTotalForRow = (
       ((orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0),
     0,
   );
+
 const processNormalizedData = (
   normalizedData: NormalizedData,
   keyPrefix: string,
@@ -73,11 +74,13 @@ const OrderbookSection: React.FC<{
   totalOrderBy,
   rowHeight = 42,
 }) => {
-  const data = React.useMemo(
-    () =>
-      processNormalizedData(normalizedData, keyPrefix, totalOrderBy, groupBy),
-    [keyPrefix, normalizedData, groupBy, totalOrderBy],
+  const data = processNormalizedData(
+    normalizedData,
+    keyPrefix,
+    totalOrderBy,
+    groupBy,
   );
+
   const transData = React.useMemo(
     () =>
       DEFAULT_TRANSITION_OPTIONS({
@@ -108,25 +111,6 @@ const OrderbookSection: React.FC<{
     },
     [rowHeight, backgroundColor],
   );
-
-  /*
-   This is useful to test the component with no animations.
-  const mapper = !DISABLE_ANIMATIONS
-    ? transitions
-    : (_data) =>
-        _data.map((item) => {
-          return (
-            <OrderbookRow
-              key={item[2]}
-              price={p}
-              val={item[1]}
-              total={item[3]}
-              backgroundColor={backgroundColor}
-              isLeaving={true}
-            />
-          );
-        });
-        */
 
   return React.useMemo(
     () => <View style={{ backgroundColor }}>{transitions(cb)}</View>,

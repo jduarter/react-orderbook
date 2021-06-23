@@ -6,6 +6,7 @@ import type {
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
   OrdersMap,
+  OrderbookOrdersSortedObject,
 } from './types';
 
 type SortByOperationTypes = -1 | 1;
@@ -23,15 +24,17 @@ const numberFormater = (
 export const formatNumber = (v: number, decimals = 2): string =>
   numberFormater()(commaNumber(v.toFixed(decimals)));
 
+const denormalizePrice = (
+  input: OrderbookNormalizedPrice | number,
+  decimalsToParse: number,
+): number => Number.parseFloat(input as any) / Math.pow(10, decimalsToParse);
+
 export const getPrintPriceForNormalizedPrice = (
   input: OrderbookNormalizedPrice,
   decimalsToPrint = 2,
   decimalsToParse = 2,
 ): string =>
-  formatNumber(
-    Number.parseFloat(input) / Math.pow(10, decimalsToParse),
-    decimalsToPrint,
-  );
+  formatNumber(denormalizePrice(input, decimalsToParse), decimalsToPrint);
 
 export const getGroupedPrice = (
   price: number,
@@ -53,30 +56,39 @@ export const immutableGetReversedArr = <
   return copy;
 };
 
+export const mapToSortedObj = (m: OrdersMap): OrderbookOrdersSortedObject =>
+  Array.from(m).reduce(
+    (acc, [ck, cv]) => ({
+      ...acc,
+      [getNormalizedPrice(ck)]: cv,
+    }),
+    {},
+  );
+
+export const mapToSortedArr = (
+  m: OrdersMap,
+  shouldDenormalizePrice = true,
+): [number, number][] =>
+  Object.entries(mapToSortedObj(m)).map((x) => [
+    shouldDenormalizePrice ? denormalizePrice(Number(x[0]), 2) : Number(x[0]),
+    x[1],
+  ]);
+
 export const orderAndLimit = (
   map: OrdersMap,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
 ): [number, number][] => {
-  const sortedObj = Array.from(map).reduce((acc, [ck, cv]) => {
-    return { ...acc, [getNormalizedPrice(ck)]: cv };
-  }, {});
-
-  const array = Object.entries<number>(sortedObj);
-
+  const array = mapToSortedArr(map, false);
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
-
-  return immutableGetReversedArr<[number, number]>(
-    sorted.map(([k, v]) => [Number(k), v]),
-  );
+  return immutableGetReversedArr<[number, number]>(sorted);
 };
 
 export const getGroupByFactor = (
   groupBy: GroupByOptionType,
   op: SortByOperationTypes,
 ): number => {
-  console.log({ groupBy, op });
   const currentIndex = AVAILABLE_FACTORS.indexOf(groupBy);
   if (currentIndex + op >= 0 && currentIndex + op <= AVAILABLE_FACTORS.length) {
     const nextStateVal = AVAILABLE_FACTORS[currentIndex + op];

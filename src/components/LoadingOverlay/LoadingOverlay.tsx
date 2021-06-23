@@ -17,10 +17,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         <View style={styles.imageWrapper}>
           <Image
             style={styles.image}
-            source={
-              // eslint-disable-next-line unicorn/prefer-module
-              require('./assets/loading.gif')
-            }
+            source={require('./assets/loading.gif')}
           />
         </View>
       </View>

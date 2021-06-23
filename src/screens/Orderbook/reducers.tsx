@@ -6,6 +6,7 @@ import {
   wipeZeroRecords,
   extractPricesFromMap,
   arrayAt,
+  mapToSortedArr,
 } from './utils';
 
 import type {
@@ -150,7 +151,6 @@ const applyMinimumThresholdsToGroups = (
   }
 
   const result = new Map();
-
   for (const [groupPrice, calcSumSizeForUpdates] of groupMins) {
     const minimumSizeForGroup = groups.get(groupPrice) || 0;
 
@@ -198,12 +198,16 @@ const reduceTwoScopesWithFn = <
     {},
   ) as OrderbookGenericScopeDataType<FR>;
 
+type GroupsMembersDiffType = OrderbookGenericScopeDataType<{
+  created: number[];
+  removed: number[];
+}>;
+
 const getGroupMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
-): OrderbookGenericScopeDataType<{ created: number[]; removed: number[] }> => {
+): GroupsMembersDiffType => {
   const a = applyFnToScope<OrdersMap, number[]>(before, extractPricesFromMap);
-
   const b = applyFnToScope<OrdersMap, number[]>(after, extractPricesFromMap);
 
   const changedKeys = reduceTwoScopesWithFn<
@@ -219,29 +223,15 @@ const getGroupMembersDiff = (
   );
 };
 
-const mapToSortedArr = (m: OrdersMap): [number, number][] => {
-  const sortedObj = Array.from(m).reduce((acc, [ck, cv]) => {
-    return { ...acc, [ck]: cv };
-  }, {});
-  return Object.entries(sortedObj).map((x) => [Number(x[0]), x[1]]) as [
-    number,
-    number,
-  ][];
-};
-
-const ensureConsistencyWithDiff = (
-  grouped: OrderbookGenericScopeDataType<OrdersMap>,
-  acc: OrderbookStateType,
-): OrderbookGenericScopeDataType<OrdersMap> => {
-  const newGrouped = { ...acc.grouped };
-
-  const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
-
-  // b) if new asks are added, check if bids should be corrected
+const enforceBidsConsistency = (
+  newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
+  groupsDiff: GroupsMembersDiffType,
+  groupedBids: OrdersMap,
+): void => {
   if (groupsDiff.asks.created.length > 0) {
     const cheaperDiffAsk = Math.min(...groupsDiff.asks.created);
 
-    let newBidsArr = mapToSortedArr(acc.grouped.bids);
+    let newBidsArr = mapToSortedArr(groupedBids);
 
     if (newBidsArr.length > 0) {
       do {
@@ -249,6 +239,7 @@ const ensureConsistencyWithDiff = (
           break;
         }
         const firstBidRow = arrayAt(newBidsArr, -1)[0];
+
         if (cheaperDiffAsk < firstBidRow) {
           newBidsArr = newBidsArr.slice(0, 1);
         } else {
@@ -259,12 +250,17 @@ const ensureConsistencyWithDiff = (
       newGrouped.bids = new Map(newBidsArr);
     }
   }
+  return;
+};
 
-  // b) if new bids are added, check if asks should be corrected
+const enforceAsksConsistency = (
+  newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
+  groupsDiff: GroupsMembersDiffType,
+  groupedAsks: OrdersMap,
+): void => {
   if (groupsDiff.bids.created.length > 0) {
     const mostExpensiveDiffBids = Math.max(...groupsDiff.bids.created);
-
-    let newAsksArr = mapToSortedArr(acc.grouped.asks);
+    let newAsksArr = mapToSortedArr(groupedAsks);
     if (newAsksArr.length > 0) {
       do {
         if (newAsksArr.length === 0) {
@@ -281,10 +277,25 @@ const ensureConsistencyWithDiff = (
       newGrouped.asks = new Map(newAsksArr);
     }
   }
+  return;
+};
+
+const ensureConsistencyWithDiff = (
+  grouped: OrderbookGenericScopeDataType<OrdersMap>,
+  acc: OrderbookStateType,
+): OrderbookGenericScopeDataType<OrdersMap> => {
+  const newGrouped = { ...acc.grouped };
+  const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
+
+  // a) if new asks are added, check if bids should be corrected
+  enforceAsksConsistency(newGrouped /* ref */, groupsDiff, acc.grouped.asks);
+
+  // b) if new bids are added, check if asks should be corrected
+  enforceBidsConsistency(newGrouped /* ref */, groupsDiff, acc.grouped.bids);
+
   return newGrouped;
 };
 
-// warning: it only returns the 'bids' and 'asks' properties of the scope obj.
 const scopeElementsWithoutZeroRecords = (
   sc: Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'>,
 ): Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'> =>
@@ -329,19 +340,22 @@ const reducePendingGroupUpdatesToState = (
   // therefore, some estimations are made, specially over the first
   // renders of the widget).
 
-  return { ...res, grouped: ensureConsistencyWithDiff(state.grouped, res) };
+  return {
+    ...res,
+    grouped: ensureConsistencyWithDiff(state.grouped, res),
+  };
 };
 
 const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
   groupBy: number,
 ): OrderbookStateType => {
-  const grouped = reduceUpdatesToScopedStateForGrouped(
+  const { grouped } = reduceUpdatesToScopedStateForGrouped(
     scope(new Map(), new Map()),
     { ...INITIAL_ORDERBOOK_STATE.grouped },
     groupBy,
     scope(state.bids, state.asks),
-  ).grouped;
+  );
 
   return { ...state, groupBy, grouped };
 };
