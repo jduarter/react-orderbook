@@ -138,3 +138,5 @@ export interface OrderbookControllerHookReturn {
   rowsPerSection?: number;
   wsState: WebSocketState;
 }
+
+export type AllScopePropertyNames = 'bids' | 'asks';

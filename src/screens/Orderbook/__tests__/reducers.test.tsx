@@ -1,6 +1,7 @@
 // @ts-nocheck
 
-import { reduceKeyPairToState, mutateForGrouping } from '../reducers';
+import { reduceMapToState } from '../reducers/common';
+import { mutateForGrouping } from '../reducers/grouping';
 
 import {
   MUTATEFORGROUPING_TEST_SUITE,
@@ -35,7 +36,7 @@ const sobj2map = (o: Record<string, number>) => {
   return ou;
 };
 
-describe('screens(Orderbook): hook(reduceKeyPairToState): tests', () => {
+describe('screens(Orderbook): hook(reduceMapToState): tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -43,10 +44,7 @@ describe('screens(Orderbook): hook(reduceKeyPairToState): tests', () => {
   for (const tc of TESTCASES) {
     it(tc.name, async () =>
       expect(
-        callFunction<OrderbookOrdersSortedObject>(
-          reduceKeyPairToState,
-          tc.args,
-        ),
+        callFunction<OrderbookOrdersSortedObject>(reduceMapToState, tc.args),
       ).toEqual(tc.expectsResult),
     );
   }

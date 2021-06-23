@@ -175,3 +175,22 @@ export const exactPriceIsWithinGroupPrice = (
 
 export const arrayAt = <T>(arr: T[], idx: number): T =>
   arr[idx >= 0 ? idx : arr.length + idx];
+
+export const scope = <T extends OrdersMap = OrdersMap>(
+  bids: T,
+  asks: T,
+): { bids: T; asks: T } => ({
+  bids,
+  asks,
+});
+
+export const sortedObjValueSymDiff = (a: number[], b: number[]): number[] =>
+  a.filter((x) => !b.includes(x)).concat(b.filter((x) => !a.includes(x)));
+
+export const calculateDiff = (
+  before: number[],
+  after: number[],
+): { created: number[]; removed: number[] } => ({
+  created: after.filter((x) => !before.includes(x)),
+  removed: before.filter((x) => !after.includes(x)),
+});
