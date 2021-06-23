@@ -223,68 +223,85 @@ const getGroupMembersDiff = (
   );
 };
 
-const enforceBidsConsistency = (
+const enforceGroupConsistency = (
+  groupName: 'asks' | 'bids',
+  xDiffFn: typeof Math.min | typeof Math.max,
+  selectFirstRowFn: (arr: [number, number][]) => number,
+  slicerCondFn: (a: number, b: number) => boolean,
+  slicerFn: (arr: [number, number][]) => [number, number][],
+  altGroupName: 'asks' | 'bids',
   newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
   groupsDiff: GroupsMembersDiffType,
-  groupedBids: OrdersMap,
+  groupedAltGroup: OrdersMap,
 ): void => {
-  if (groupsDiff.asks.created.length > 0) {
-    const cheaperDiffAsk = Math.min(...groupsDiff.asks.created);
+  if (groupsDiff[groupName].created.length > 0) {
+    const cheaperDiff = xDiffFn(...groupsDiff[groupName].created);
+    let newArr = mapToSortedArr(groupedAltGroup);
 
-    let newBidsArr = mapToSortedArr(groupedBids);
-
-    if (newBidsArr.length > 0) {
+    if (newArr.length > 0) {
       do {
-        if (newBidsArr.length === 0) {
+        if (newArr.length === 0) {
           break;
         }
-        const firstBidRow = arrayAt(newBidsArr, -1)[0];
+        const firstRow = selectFirstRowFn(newArr);
 
-        if (cheaperDiffAsk < firstBidRow) {
-          newBidsArr = newBidsArr.slice(0, 1);
+        if (slicerCondFn(cheaperDiff, firstRow)) {
+          newArr = slicerFn(newArr);
         } else {
           break;
         }
         // eslint-disable-next-line no-constant-condition
       } while (true);
-      newGrouped.bids = new Map(newBidsArr);
+      newGrouped[altGroupName] = new Map(newArr);
     }
   }
   return;
 };
-
 const enforceAsksConsistency = (
   newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
   groupsDiff: GroupsMembersDiffType,
   groupedAsks: OrdersMap,
-): void => {
-  if (groupsDiff.bids.created.length > 0) {
-    const mostExpensiveDiffBids = Math.max(...groupsDiff.bids.created);
-    let newAsksArr = mapToSortedArr(groupedAsks);
-    if (newAsksArr.length > 0) {
-      do {
-        if (newAsksArr.length === 0) {
-          break;
-        }
-        const firstAskRow = arrayAt(newAsksArr, 0)[0];
-        if (firstAskRow < mostExpensiveDiffBids) {
-          newAsksArr = newAsksArr.slice(1);
-        } else {
-          break;
-        }
-        // eslint-disable-next-line no-constant-condition
-      } while (true);
-      newGrouped.asks = new Map(newAsksArr);
-    }
-  }
-  return;
-};
+): void =>
+  enforceGroupConsistency(
+    'bids',
+    Math.max,
+    (arr) => arrayAt(arr, 0)[0],
+    (a, b) => a > b,
+    (arr) => arr.slice(1),
+    'asks',
+    newGrouped,
+    groupsDiff,
+    groupedAsks,
+  );
+
+const enforceBidsConsistency = (
+  newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
+  groupsDiff: GroupsMembersDiffType,
+  groupedBids: OrdersMap,
+): void =>
+  enforceGroupConsistency(
+    'asks',
+    Math.min,
+    (arr) => arrayAt(arr, -1)[0],
+    (a, b) => a < b,
+    (arr) => arr.slice(1),
+    'bids',
+    newGrouped,
+    groupsDiff,
+    groupedBids,
+  );
+
+// the "ensureConsistencyWithDiff" is to make sure some
+// rows are properly wiped (the API doesnt have a "snapshot" action,
+// therefore, some estimations are made, specially over the first
+// renders of the widget).
 
 const ensureConsistencyWithDiff = (
   grouped: OrderbookGenericScopeDataType<OrdersMap>,
   acc: OrderbookStateType,
-): OrderbookGenericScopeDataType<OrdersMap> => {
-  const newGrouped = { ...acc.grouped };
+): OrderbookStateType => {
+  const { grouped: newGrouped } = acc;
+
   const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
 
   // a) if new asks are added, check if bids should be corrected
@@ -293,7 +310,7 @@ const ensureConsistencyWithDiff = (
   // b) if new bids are added, check if asks should be corrected
   enforceBidsConsistency(newGrouped /* ref */, groupsDiff, acc.grouped.bids);
 
-  return newGrouped;
+  return { ...acc, grouped: newGrouped };
 };
 
 const scopeElementsWithoutZeroRecords = (
@@ -308,43 +325,28 @@ const scopeElementsWithoutZeroRecords = (
 const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: OrderbookGenericScopeDataType<OrdersMap>[],
   state: OrderbookStateType,
-): OrderbookStateType => {
-  const res = Array.from(pendingGroupUpdates).reduce(
-    (acc: OrderbookStateType, updates) => {
-      const { bids, asks, grouped, ...restOfAcc } = acc;
+): OrderbookStateType =>
+  Array.from(pendingGroupUpdates).reduce((acc: OrderbookStateType, updates) => {
+    const { bids, asks, grouped, ...restOfAcc } = acc;
 
-      const groupedWithMinimumThresholdsApplied = applyFnToScope(
-        grouped,
-        (sc, k) =>
-          applyMinimumThresholdsToGroups(sc, state.groupBy, updates[k]),
-      );
+    const groupedWithMinimumThresholdsApplied = applyFnToScope(
+      grouped,
+      (sc, k) => applyMinimumThresholdsToGroups(sc, state.groupBy, updates[k]),
+    );
 
-      const newState = reduceUpdatesToScopedStateForGrouped(
-        updates,
-        groupedWithMinimumThresholdsApplied,
-        state.groupBy,
-        scope(bids, asks),
-      );
+    const newState = reduceUpdatesToScopedStateForGrouped(
+      updates,
+      groupedWithMinimumThresholdsApplied,
+      state.groupBy,
+      scope(bids, asks),
+    );
 
-      return {
-        ...restOfAcc,
-        ...scopeElementsWithoutZeroRecords(newState),
-        grouped: scopeElementsWithoutZeroRecords(newState.grouped),
-      };
-    },
-    state,
-  );
-
-  // the "ensureConsistencyWithDiff" is to make sure some
-  // rows are properly wiped (the API doesnt have a "snapshot" action,
-  // therefore, some estimations are made, specially over the first
-  // renders of the widget).
-
-  return {
-    ...res,
-    grouped: ensureConsistencyWithDiff(state.grouped, res),
-  };
-};
+    return {
+      ...restOfAcc,
+      ...scopeElementsWithoutZeroRecords(newState),
+      grouped: scopeElementsWithoutZeroRecords(newState.grouped),
+    };
+  }, state);
 
 const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
@@ -370,7 +372,10 @@ export const orderBookReducer = (
 
     case 'UPDATE_GROUPED':
       return {
-        ...reducePendingGroupUpdatesToState(action.payload.updates, state),
+        ...ensureConsistencyWithDiff(
+          state.grouped,
+          reducePendingGroupUpdatesToState(action.payload.updates, state),
+        ),
         isLoading: false,
       };
 
