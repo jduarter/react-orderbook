@@ -26,16 +26,6 @@ const callFunction = <
   fn: TestFunctionType<R, A>,
   testArguments: A,
 ) => fn(...testArguments) as R;
-/*
-const callFunctionAsync = async <
-    R extends any,
-    A extends TestFunctionArgumentsType = TestFunctionArgumentsType,
->(
-    fn: TestFunctionType<R, A>,
-    testArguments: A,
-): Promise<R> => {
-    return fn(...testArguments);
-};*/
 
 const sobj2map = (o: Record<string, number>) => {
   const ou = new Map(
