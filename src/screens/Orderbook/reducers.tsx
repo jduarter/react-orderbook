@@ -68,6 +68,9 @@ export const orderBookReducer = (
   action: OrderbookReducerAction,
 ): OrderbookStateType => {
   switch (action.type) {
+    case 'RESET_STATE':
+      return { ...INITIAL_ORDERBOOK_STATE };
+
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload.value };
 

@@ -86,16 +86,14 @@ export interface OrderbookStateType
 }
 
 export type OrderbookReducerActionTypes =
-  | 'CALCULATE_GROUPED'
-  | 'ORDERBOOK_UPDATE'
-  | 'ORDERBOOK_SNAPSHOT'
+  | 'RESET_STATE'
   | 'SET_GROUP_BY'
   | 'SET_LOADING'
   | 'UPDATE_GROUPED';
 
 export interface OrderbookReducerAction {
   type: OrderbookReducerActionTypes;
-  payload: any;
+  payload?: any;
 }
 
 export type OrderbookDispatch = React.Dispatch<OrderbookReducerAction>;
