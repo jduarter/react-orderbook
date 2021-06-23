@@ -21,11 +21,9 @@ export const webSocketStateReducer = (
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: !!action.payload.value };
-      break;
 
     case 'SET_CONNECTED':
       return { ...state, isConnected: !!action.payload.value };
-      break;
 
     case 'SET_CONNECTING':
       return {
@@ -33,13 +31,11 @@ export const webSocketStateReducer = (
         isConnecting: !!action.payload.value,
         isLoading: true,
       };
-      break;
 
     default:
       throw new Error(
         'webSocketStateReducer: unknown action type <' + action.type + '>',
       );
-      break;
   }
 };
 
