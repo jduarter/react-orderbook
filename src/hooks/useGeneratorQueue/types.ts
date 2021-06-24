@@ -20,6 +20,7 @@ export interface GeneratorQueueOptions {
 }
 
 export interface ErrorDetails {
+  [k: string]: any;
   originalError?: Error;
 }
 
