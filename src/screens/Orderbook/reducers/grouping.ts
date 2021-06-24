@@ -135,7 +135,7 @@ export const applyMinimumThresholdsToGroups = (
   return result;
 };
 
-export const getGroupMembersDiff = (
+export const getScopeMembersDiff = (
   before: OrderbookGenericScopeDataType<OrdersMap>,
   after: OrderbookGenericScopeDataType<OrdersMap>,
 ): GroupsMembersDiffType => {
@@ -155,23 +155,50 @@ export const getGroupMembersDiff = (
   );
 };
 
+type SelectFirstRowFnType = (arr: [number, number][]) => number;
+type SlicerCondFnType = (a: number, b: number) => boolean;
+type SlicerFnType = (arr: [number, number][]) => [number, number][];
+
 type EGCParamsTupleType = [
   /* groupName */ 'asks' | 'bids',
   /* xDiffFn */ typeof Math.min | typeof Math.max,
-  /* selectFirstRowFn */ (arr: [number, number][]) => number,
-  /* slicerCondFn */ (a: number, b: number) => boolean,
-  /* slicerFn */ (arr: [number, number][]) => [number, number][],
-  /* altGroupName */ 'asks' | 'bids',
+  /* selectFirstRowFn */ SelectFirstRowFnType,
+  /* slicerCondFn */ SlicerCondFnType,
+  /* slicerFn */ SlicerFnType,
 ];
 
 type EGCArgumentsType = [
   ...EGCParamsTupleType,
-  /* newGrouped */ OrderbookGenericScopeDataType<OrdersMap>,
   /* groupsDiff */ GroupsMembersDiffType,
-  /* groupedAltGroup */ OrdersMap,
+  /* acc */ OrdersMap,
 ];
 
-type EGCFunctionType = (...args: EGCArgumentsType) => void;
+type EGCFunctionType = (
+  ...args: EGCArgumentsType
+) => [OrdersMap, number | null];
+
+const wipeRowsUntilAdjusted = (
+  arr: [number, number][],
+  cheaperDiff: number,
+  selectFirstRowFn: SelectFirstRowFnType,
+  slicerCondFn: SlicerCondFnType,
+  slicerFn: SlicerFnType,
+): OrdersMap => {
+  do {
+    if (arr.length === 0) {
+      break;
+    }
+    const firstRow = selectFirstRowFn(arr);
+
+    if (slicerCondFn(cheaperDiff, firstRow)) {
+      arr = slicerFn(arr);
+    } else {
+      break;
+    }
+    // eslint-disable-next-line no-constant-condition
+  } while (true);
+  return new Map(arr);
+};
 
 export const enforceGroupConsistency: EGCFunctionType = (
   groupName,
@@ -179,35 +206,29 @@ export const enforceGroupConsistency: EGCFunctionType = (
   selectFirstRowFn,
   slicerCondFn,
   slicerFn,
-  altGroupName,
-  newGrouped,
   groupsDiff,
-  groupedAltGroup,
+  acc,
 ) => {
   if (groupsDiff[groupName].created.length <= 0) {
-    return;
+    return [acc, null];
   }
   const cheaperDiff = xDiffFn(...groupsDiff[groupName].created);
-  let newArr = mapToSortedArr(groupedAltGroup);
+  let arr = mapToSortedArr(acc);
 
-  if (newArr.length <= 0) {
-    return;
+  if (arr.length <= 0) {
+    return [acc, null];
   }
 
-  do {
-    if (newArr.length === 0) {
-      break;
-    }
-    const firstRow = selectFirstRowFn(newArr);
-
-    if (slicerCondFn(cheaperDiff, firstRow)) {
-      newArr = slicerFn(newArr);
-    } else {
-      break;
-    }
-    // eslint-disable-next-line no-constant-condition
-  } while (true);
-  newGrouped[altGroupName] = new Map(newArr);
+  return [
+    wipeRowsUntilAdjusted(
+      arr,
+      cheaperDiff,
+      selectFirstRowFn,
+      slicerCondFn,
+      slicerFn,
+    ),
+    cheaperDiff,
+  ];
 };
 
 const EC_ASKS_PARAMS: EGCParamsTupleType = [
@@ -216,21 +237,14 @@ const EC_ASKS_PARAMS: EGCParamsTupleType = [
   (arr: [number, number][]): number => arrayAt(arr, 0)[0],
   (a: number, b: number) => a > b,
   (arr: any[]): any[] => arr.slice(1),
-  'asks',
 ];
 
 export const enforceAsksConsistency = (
-  newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
   groupsDiff: GroupsMembersDiffType,
-  groupedAsks: OrdersMap,
-): void =>
+  acc: OrdersMap,
+): [OrdersMap, number | null] =>
   enforceGroupConsistency(
-    ...([
-      ...EC_ASKS_PARAMS,
-      newGrouped,
-      groupsDiff,
-      groupedAsks,
-    ] as EGCArgumentsType),
+    ...([...EC_ASKS_PARAMS, groupsDiff, acc] as EGCArgumentsType),
   );
 
 const EC_BIDS_PARAMS: EGCParamsTupleType = [
@@ -238,22 +252,15 @@ const EC_BIDS_PARAMS: EGCParamsTupleType = [
   Math.min,
   (arr: [number, number][]): number => arrayAt(arr, -1)[0],
   (a: number, b: number) => a < b,
-  (arr: any[]): any[] => arr.slice(1),
-  'bids',
+  (arr: any[]): any[] => arr.slice(0, -1),
 ];
 
 export const enforceBidsConsistency = (
-  newGrouped: OrderbookGenericScopeDataType<OrdersMap>,
   groupsDiff: GroupsMembersDiffType,
   groupedBids: OrdersMap,
-): void =>
+): [OrdersMap, number | null] =>
   enforceGroupConsistency(
-    ...([
-      ...EC_BIDS_PARAMS,
-      newGrouped,
-      groupsDiff,
-      groupedBids,
-    ] as EGCArgumentsType),
+    ...([...EC_BIDS_PARAMS, groupsDiff, groupedBids] as EGCArgumentsType),
   );
 
 // the "ensureConsistencyWithDiff" is to make sure some
@@ -262,18 +269,27 @@ export const enforceBidsConsistency = (
 // renders of the widget).
 
 export const ensureConsistencyWithDiff = (
-  grouped: OrderbookGenericScopeDataType<OrdersMap>,
-  acc: OrderbookStateType,
+  oldState: OrderbookStateType,
+  newStateToCheck: OrderbookStateType,
 ): OrderbookStateType => {
-  const { grouped: newGrouped } = acc;
+  const newState = { ...newStateToCheck };
 
-  const groupsDiff = getGroupMembersDiff(grouped, acc.grouped);
+  const groupsDiff = getScopeMembersDiff(
+    oldState.grouped,
+    newStateToCheck.grouped,
+  );
 
   // a) if new asks are added, check if bids should be corrected
-  enforceAsksConsistency(newGrouped /* ref */, groupsDiff, acc.grouped.asks);
+  [newState.grouped.asks] = enforceAsksConsistency(
+    groupsDiff,
+    newStateToCheck.grouped.asks,
+  );
 
   // b) if new bids are added, check if asks should be corrected
-  enforceBidsConsistency(newGrouped /* ref */, groupsDiff, acc.grouped.bids);
+  [newState.grouped.bids] = enforceBidsConsistency(
+    groupsDiff,
+    newStateToCheck.grouped.bids,
+  );
 
-  return { ...acc, grouped: newGrouped };
+  return newState;
 };

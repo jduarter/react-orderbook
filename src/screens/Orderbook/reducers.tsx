@@ -77,7 +77,7 @@ export const orderBookReducer = (
     case 'UPDATE_GROUPED':
       return {
         ...ensureConsistencyWithDiff(
-          state.grouped,
+          state,
           reducePendingGroupUpdatesToState(action.payload.updates, state),
         ),
         isLoading: false,
