@@ -56,6 +56,7 @@ const generateOnMessageHandler =
       }
     }
   };
+
 export const getConnectedHandler = ({
   handlerName,
   originalHandler,

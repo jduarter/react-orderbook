@@ -3,6 +3,9 @@
 import React from 'react';
 import type { FC } from 'react';
 import { SafeAreaView, StatusBar, View } from 'react-native';
+
+import { initLoggers } from './services/AppLog';
+
 import Orientation from 'react-native-orientation-locker';
 
 import { Orderbook } from './screens/Orderbook';
@@ -12,6 +15,8 @@ import { WEBSOCKET_URI } from 'react-native-config';
 const backgroundStyle = {
   backgroundColor: '#000',
 };
+
+initLoggers();
 
 const App: FC = () => {
   React.useEffect(() => {

@@ -1,6 +1,8 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { getThrowableError } from 'throwable-error';
 
+import { useLogScope } from '../../services/AppLog';
+
 import type {
   UseGeneratorQueueReturn,
   ErrorArgs,
@@ -31,8 +33,12 @@ const HARD_MAX_QUEUE_ARRAY_SIZE = 4294967295;
 /* The limit is determined by: The FixedArray backing store of the Map has a maximum size
  * of 1GB (independent of the overall heap size limit) On a 64-bit system that
  * means 1GB / 8B => 2^30 / 2^3 => 2^27 ~= 134M
+ *
+ * A Map needs 3 elements per entry (key, value, next bucket link), and has a maximum load
+ * factor of 50% (to avoid the slowdown caused by many bucket collisions), and its capacity
+ * must be a power of 2. 2^27 / (3 * 2) rounded down to the next power of 2 is 2^24
  */
-// const HARD_MAX_QUEUE_MAP_SIZE = 134000000;
+// const HARD_MAX_QUEUE_MAP_SIZE = 16777216;
 
 // @todo: extract this logic, use reflect-metadata to try to use types in runtime for automagic validation
 const USE_GENERATOR_QUEUE_INPUT_VALIDATORS = {
@@ -87,6 +93,8 @@ const useGeneratorQueue = <T>(
     kind: 'FIFO',
   },
 ): UseGeneratorQueueReturn<T> => {
+  const Log = useLogScope('useGeneratorQueue');
+
   assertArgsAreValid(
     { ...opts, initialState },
     USE_GENERATOR_QUEUE_INPUT_VALIDATORS,
@@ -117,9 +125,15 @@ const useGeneratorQueue = <T>(
       return;
     }
 
-    yield !limit
+    const result = !limit
       ? ref.current.splice(-ref.current.length)
       : ref.current.splice(0, limit);
+
+    Log.debug('CONSUMED_ELEMENTS', {
+      amount: result.length,
+    });
+
+    yield result;
   }, []);
 
   return useMemo(() => ({ dispatchToQ, consumeQ }), [dispatchToQ, consumeQ]);
