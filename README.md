@@ -3,7 +3,7 @@
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fmegah4x0r%2Freact-native-orderbook%2Fmaster%2Fpackage.json)](https://github.com/megah4x0r/react-native-orderbook)
 <a href="https://codeclimate.com/github/megah4x0r/react-native-orderbook/maintainability"><img src="https://api.codeclimate.com/v1/badges/b2d14de2ab2bfc28a5f6/maintainability" /></a>
 
-Web preview [master branch] : https://orderbookjd-master-megah4x0r.vercel.app/
+Web preview [master branch] : https://an39sg-orderbook-master.vercel.app
 
 ## Install instructions.
 
