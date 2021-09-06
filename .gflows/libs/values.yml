@@ -9,5 +9,5 @@ git:
 environment: defaultEnv
 
 vercel:
-  alias_domains: 'orderbookjd-{{BRANCH}}-jduarter'
+  alias_domains: 'an39sg-orderbook-{{BRANCH}}'
   project_name: 'orderbookjd'

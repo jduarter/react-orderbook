@@ -52,6 +52,6 @@ jobs:
       with:
         vercel-args: -c -C
         working-directory: ./web-build
-        alias-domains: orderbookjd-{{BRANCH}}-jduarter
+        alias-domains: an39sg-orderbook-{{BRANCH}}
         vercel-project-name: orderbookjd
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
