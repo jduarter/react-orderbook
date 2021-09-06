@@ -17,6 +17,18 @@ interface Props {
   backgroundColor: string;
 }
 
+const getAnimationOptions = ({
+  isLeaving,
+  backgroundColor,
+}: {
+  isLeaving: boolean;
+  backgroundColor: string;
+}) => ({
+  shouldPlay: !isLeaving,
+  backgroundColor,
+  maxFrequencyMs: 5000,
+});
+
 const OrderbookRow: React.FC<Props> = ({
   price,
   val,
@@ -44,16 +56,7 @@ const OrderbookRow: React.FC<Props> = ({
 
       <AnimatedTextValue
         style={styles.orderBookMainText}
-        opts={React.useMemo(
-          () => ({
-            animation: {
-              shouldPlay: !isLeaving,
-              backgroundColor,
-              maxFrequencyMs: 5000,
-            },
-          }),
-          [isLeaving, backgroundColor],
-        )}>
+        animationOpts={getAnimationOptions({ backgroundColor, isLeaving })}>
         {formatNumber(val, 0)}
       </AnimatedTextValue>
 

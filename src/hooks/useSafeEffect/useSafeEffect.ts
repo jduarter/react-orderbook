@@ -14,6 +14,7 @@ const useSafeEffect = (
     mounted: boolean;
     effectFn: null | UseSafeEffectEffect;
   }>({ mounted: false, effectFn: null });
+
   useEffect(() => {
     ref.current.mounted = true;
     return () => {

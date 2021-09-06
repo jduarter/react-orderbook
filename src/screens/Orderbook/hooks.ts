@@ -241,6 +241,7 @@ export const useOrderbookProcessing = ({
         InteractionManager.runAfterInteractions(() => onProcessCycle());
       }
     }, intervalMs);
+
     return () => {
       // eslint-disable-next-line no-restricted-globals
       if (intval) clearInterval(intval);

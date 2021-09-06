@@ -13,13 +13,9 @@ interface AnimationOptions {
   backgroundColor: string;
 }
 
-interface PropsOptions {
-  animation: AnimationOptions;
-}
-
 type Props = React.PropsWithChildren<{
   style?: Partial<StyleProp<TextProps>>;
-  opts: undefined | Partial<PropsOptions>;
+  animationOpts?: AnimationOptions;
 }>;
 
 interface AnimTrackTimeRef {
@@ -44,7 +40,6 @@ const getRgbaFromHex = (hex: string, a = 0, multiplyColorWithFactor = 0.03) => {
         idx % 2 === 0 ? [...acc, srcArr.slice(idx, idx + 2).join('')] : acc,
       [],
     )
-    .flat()
     .map((x) =>
       (
         (a !== 1 && multiplyColorWithFactor !== 1
@@ -176,16 +171,12 @@ const DEFAULT_OPTIONS = {
 const AnimatedTextValue: React.FC<Props> = ({
   children,
   style,
-  opts = undefined,
+  animationOpts = undefined,
 }) => {
-  const _opts = {
-    animation: {
-      ...DEFAULT_OPTIONS.animation,
-      ...((opts?.animation && opts.animation) || {}),
-    },
+  const animation = {
+    ...DEFAULT_OPTIONS.animation,
+    ...(animationOpts ? animationOpts : {}),
   };
-
-  const { animation } = _opts;
 
   const [transitions] = useLocalTransitions({
     children: children as string,
@@ -198,7 +189,7 @@ const AnimatedTextValue: React.FC<Props> = ({
       : {}),
   });
 
-  return _opts.animation.shouldPlay ? (
+  return animation.shouldPlay ? (
     transitions((tStyle) => (
       <animated.Text style={[style, postProcessStyle(tStyle)]}>
         {children}
