@@ -1,7 +1,8 @@
 ## React Native Orderbook
 [![CodeQL](https://github.com/megah4x0r/react-orderbook/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/megah4x0r/react-orderbook/actions/workflows/codeql-analysis.yml)
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fmegah4x0r%2Freact-orderbook%2Fmaster%2Fpackage.json)](https://github.com/megah4x0r/react-orderbook)
-<a href="https://codeclimate.com/github/megah4x0r/react-orderbook/maintainability"><img src="https://api.codeclimate.com/v1/badges/b2d14de2ab2bfc28a5f6/maintainability" /></a>
+<a href="https://codeclimate.com/github/megah4x0r/react-orderbook/maintainability"><img src="https://api.codeclimate.com/v1/badges/6bf137ff20892f7d95fe/maintainability" /></a>
+<a href="https://codeclimate.com/github/megah4x0r/react-orderbook/test_coverage"><img src="https://api.codeclimate.com/v1/badges/6bf137ff20892f7d95fe/test_coverage" /></a>
 
 Web preview [master branch] : https://an39sg-orderbook-master.vercel.app
 
