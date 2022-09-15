@@ -69,7 +69,7 @@ const getSendFn =
       const encoded = JSON.stringify(obj);
       const result = ref.current.send(encoded) as void | boolean;
       return result === undefined ? true : result;
-    } catch (err) {
+    } catch (err: any) {
       throw new WebSocketError(
         '[useWebSocket] error serializing JSON data.',
         err,
