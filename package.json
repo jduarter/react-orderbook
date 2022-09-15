@@ -43,7 +43,7 @@
     "comma-number": "^2.1.0",
     "interlogger": "0.0.11",
     "react": "17.0.1",
-    "react-native": "0.64.2",
+    "react-native": "0.70.1",
     "react-native-config": "^1.4.2",
     "react-native-flipper": "^0.95.0",
     "react-native-orientation-locker": "https://github.com/megah4x0r/react-native-orientation-locker#17a87ae",
