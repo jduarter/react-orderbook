@@ -171,7 +171,17 @@ export const useOrderbookConnection = ({
   );
 
   const onOpen = React.useCallback(
-    ({ current: { send } }): void => {
+    ({
+      current: { send },
+    }: {
+      current: {
+        send: (p: {
+          event: string;
+          feed: string;
+          product_ids: string[];
+        }) => void;
+      };
+    }): void => {
       orderBookDispatch({ type: 'SET_LOADING', payload: { value: false } });
       send({
         event: 'subscribe',
@@ -201,7 +211,7 @@ export const useOrderbookConnection = ({
   });
 
   const mainEffect = React.useCallback(
-    (isMounted) => {
+    (isMounted: () => boolean) => {
       if (!isMounted()) {
         return;
       }

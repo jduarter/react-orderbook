@@ -93,7 +93,10 @@ const OrderbookSection: React.FC<{
   const transitions = useTransition(data, transData);
 
   const cb = React.useCallback(
-    (style, item) => {
+    (
+      style: { height: any /* @todo: type */ },
+      item: [string, number, string, number],
+    ) => {
       const shouldStopChildrenAnimation =
         style.height?.get && style.height.get() !== Math.floor(rowHeight);
 
