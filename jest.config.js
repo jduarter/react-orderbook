@@ -6,7 +6,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
     ...tsjPreset.transform,
-    '\\.js$': '<rootDir>/node_modules/react-native/jest/preprocessor.js',
+    //  '\\.js$': '<rootDir>/node_modules/react-native/jest/preprocessor.js',
     'node_modules/react-native-orientation-locker/.+\\.(j|t)sx?$': 'ts-jest',
   },
   testRegex: '(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$',
