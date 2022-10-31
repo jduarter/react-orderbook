@@ -50,7 +50,7 @@ jobs:
     - name: Vercel Action
       uses: amondnet/vercel-action@v20.0.0
       with:
-        vercel-args: -c -C
+        vercel-args: -y
         working-directory: ./web-build
         alias-domains: an39sg-orderbook-{{BRANCH}}
         vercel-project-name: orderbookjd
