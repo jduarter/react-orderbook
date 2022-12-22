@@ -11,6 +11,7 @@ import Orientation from 'react-native-orientation-locker';
 import { Orderbook } from './screens/Orderbook';
 // @ts-ignore
 import { WEBSOCKET_URI } from 'react-native-config';
+import CryptoFacilities from './exchanges/CryptoFacilities';
 
 const backgroundStyle = {
   backgroundColor: '#000',
@@ -29,8 +30,7 @@ const App: FC = () => {
 
       <View style={[backgroundStyle, { flex: 1 }]} testID={'MAIN_VIEW'}>
         <Orderbook
-          productId={'PI_XBTUSD'}
-          webSocketUri={WEBSOCKET_URI}
+          exchangeModule={CryptoFacilities}
           testID={'MAIN_ORDERBOOK_INSTANCE'}
         />
       </View>

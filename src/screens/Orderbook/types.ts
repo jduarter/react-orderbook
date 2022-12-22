@@ -4,6 +4,10 @@ import type {
   WebSocketNativeError,
 } from '../../hooks/useWebSocket';
 
+import type { MutableRefObject } from 'react';
+import type { OwnRefType } from '../../hooks/useWebSocket/types';
+import type { UseGeneratorQueueDispatch } from '../../hooks/useGeneratorQueue/types';
+
 export type OrderbookGroupedPrice = number;
 export type OrderbookNormalizedPrice = string;
 
@@ -23,11 +27,10 @@ type OrderbookAsksType = OrdersMap;
 
 export interface UseOrderbookConnectionProperties {
   orderBookDispatch: OrderbookDispatch;
-  webSocketUri: string;
-  subscribeToProductIds: string[];
   reconnectCheckIntervalMs?: number;
   autoReconnect?: boolean;
   onError?: (err: WebSocketNativeError | Error) => void;
+  exchangeModule: ExchangeModule;
 }
 
 type OnProcessCycle = () => void;
@@ -110,10 +113,35 @@ export type OrderbookReducerCalculateGroupedPartialState = Pick<
   'bids' | 'asks' | 'grouped'
 >;
 
+export type ProductId = string;
+
+type OrderbookReducingFunction = (
+  state: OrderbookStateType,
+  action: OrderbookReducerAction,
+) => OrderbookStateType;
+
+export type ExchangeModuleMainReducerOverridesHash = {
+  [type in OrderbookReducerActionTypes]: OrderbookReducingFunction;
+};
+
+export interface ExchangeModule {
+  defaultOptions: {
+    uri: string;
+    subscribeToProductIds: ProductId[];
+    groupBy: number;
+  };
+  onMessage: (
+    dispatchToQ: UseGeneratorQueueDispatch<PendingGroupUpdateRecord>,
+  ) => (decoded: OrderbookWSMessageType) => void;
+  onOpen: (
+    orderBookDispatch: OrderbookDispatch,
+    subscribeToProductIds: ProductId[],
+  ) => (current: MutableRefObject<OwnRefType>) => void;
+  mainReducerOverrides: ExchangeModuleMainReducerOverridesHash;
+}
+
 export interface OrderbookProps {
-  initialGroupBy?: number;
-  productId: string;
-  webSocketUri: string;
+  exchangeModule: ExchangeModule;
   numberOfRowsPerSection?: number;
   typeID?: string;
 }

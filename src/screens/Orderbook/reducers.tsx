@@ -6,7 +6,6 @@ import { scopeElementsWithoutZeroRecords } from './reducers/common';
 import {
   applyMinimumThresholdsToGroups,
   reduceUpdatesToScopedStateForGrouped,
-  ensureConsistencyWithDiff,
 } from './reducers/grouping';
 
 import type {
@@ -14,6 +13,7 @@ import type {
   OrderbookStateType,
   OrdersMap,
   OrderbookReducerAction,
+  ExchangeModuleMainReducerOverridesHash,
 } from './types';
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
@@ -23,7 +23,7 @@ export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   isLoading: true,
 };
 
-const reducePendingGroupUpdatesToState = (
+export const reducePendingGroupUpdatesToState = (
   pendingGroupUpdates: OrderbookGenericScopeDataType<OrdersMap>[],
   state: OrderbookStateType,
 ): OrderbookStateType =>
@@ -63,30 +63,33 @@ const reduceStateToNewGroupBySetting = (
   return { ...state, groupBy, grouped };
 };
 
-export const orderBookReducer = (
-  state: OrderbookStateType,
-  action: OrderbookReducerAction,
-): OrderbookStateType => {
-  switch (action.type) {
-    case 'RESET_STATE':
-      return { ...INITIAL_ORDERBOOK_STATE };
+export const orderBookReducer =
+  (exchangeModuleOverrides: ExchangeModuleMainReducerOverridesHash) =>
+  (
+    state: OrderbookStateType,
+    action: OrderbookReducerAction,
+  ): OrderbookStateType => {
+    if (exchangeModuleOverrides[action.type]) {
+      return exchangeModuleOverrides[action.type](state, action);
+    }
 
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload.value };
+    switch (action.type) {
+      case 'RESET_STATE':
+        return { ...INITIAL_ORDERBOOK_STATE };
 
-    case 'UPDATE_GROUPED':
-      return {
-        ...ensureConsistencyWithDiff(
-          state,
-          reducePendingGroupUpdatesToState(action.payload.updates, state),
-        ),
-        isLoading: false,
-      };
+      case 'SET_LOADING':
+        return { ...state, isLoading: action.payload.value };
 
-    case 'SET_GROUP_BY':
-      return reduceStateToNewGroupBySetting(state, action.payload.value);
+      case 'UPDATE_GROUPED':
+        return {
+          ...reducePendingGroupUpdatesToState(action.payload.updates, state),
+          isLoading: false,
+        };
 
-    default:
-      throw new Error('orderBook: unknown reducer: ' + action.type);
-  }
-};
+      case 'SET_GROUP_BY':
+        return reduceStateToNewGroupBySetting(state, action.payload.value);
+
+      default:
+        throw new Error('orderBook: unknown reducer: ' + action.type);
+    }
+  };

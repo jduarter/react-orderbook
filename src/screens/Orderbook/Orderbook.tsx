@@ -35,9 +35,7 @@ const determineNumberOfRowsAutomatically = (
   );
 
 const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
-  initialGroupBy = 100,
-  productId = 'PI_XBTUSD',
-  webSocketUri = 'wss://www.cryptofacilities.com/ws/v1',
+  exchangeModule,
   numberOfRowsPerSection = null,
 }) => {
   const { height } = useWindowDimensions();
@@ -68,9 +66,7 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
 
   const { asksData, bidsData, isLoading, orderBookDispatch, groupBy, wsState } =
     useOrderbookController({
-      subscribeToProductIds: [productId],
-      initialGroupBy,
-      webSocketUri,
+      exchangeModule,
       rowsPerSection: effectiveNumberOfRowsPerSection,
     });
 
