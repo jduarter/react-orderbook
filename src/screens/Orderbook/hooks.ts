@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { InteractionManager } from 'react-native';
 
+import { Decimal } from 'decimal.js';
+
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 
@@ -17,13 +19,70 @@ import type {
   UseOrderbookConnectionProperties,
   UseOrderbookProcessingProperties,
   OrderbookControllerHookReturn,
-  OrderbookGenericScopeDataType,
-  OrdersMap,
   ExchangeModule,
+  OrdersMap,
 } from './types';
 import type { WebSocketState, WebSocketNativeError } from '@hooks/useWebSocket';
 
-import { orderAndLimit } from './utils';
+type NormalizedRecord = [number, number];
+type NormalizedData = NormalizedRecord[];
+
+// @todo - move this logic to reducer to prevent UI thread locking
+const getTotalForRow = (
+  rows: NormalizedData,
+  index: number,
+  orderBy: 'asc' | 'desc',
+): Decimal =>
+  rows.reduce(
+    (acc: Decimal, current, ridx: number) =>
+      acc.add(
+        (orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0,
+      ),
+    new Decimal(0),
+  );
+
+const immutableGetReversedArr = <
+  T extends [unknown, unknown] = [number, Decimal],
+>(
+  array: T[],
+): T[] => {
+  const copy = [...array];
+  copy.reverse();
+  return copy;
+};
+
+const splice = (str: string, offset: number, text: string): string => {
+  let calculatedOffset = offset < 0 ? str.length + offset : offset;
+  return (
+    str.substring(0, calculatedOffset) + text + str.substring(calculatedOffset)
+  );
+};
+
+const decimalFormat = (optimalInt: number, decimals: number = 2) => {
+  return splice(optimalInt.toString(), -decimals, '.');
+};
+
+const orderAndLimit = (
+  map: OrdersMap,
+  limit = 10,
+  orderBy: 'asc' | 'desc' = 'asc',
+): [string, number, Decimal][] => {
+  const array = [...map].sort((a, b) => a[0] - b[0]);
+
+  const sorted =
+    orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
+
+  const result = immutableGetReversedArr<[number, number]>(sorted);
+
+  return result.map((elem, index) => {
+    const total = getTotalForRow(
+      result,
+      index,
+      orderBy === 'asc' ? 'desc' : 'asc',
+    );
+    return [decimalFormat(elem[0], 2), elem[1], total];
+  });
+};
 
 export const useOrderbookController = ({
   exchangeModule,
@@ -36,6 +95,8 @@ export const useOrderbookController = ({
     () => ({
       ...INITIAL_ORDERBOOK_STATE,
       groupBy: exchangeModule.defaultOptions.groupBy,
+      minGroupBy:
+        exchangeModule.defaultOptions.defaultProduct.groupByFactors[0],
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -43,60 +104,37 @@ export const useOrderbookController = ({
 
   const [orderBook, orderBookDispatch] = useOrderbookReducer(
     lazyInitialState,
-    exchangeModule.mainReducerOverrides,
+    exchangeModule,
   );
+
   const { wsState } = useOrderbookConnection({
     orderBookDispatch,
     exchangeModule,
   });
+
+  // move this inside the reducer logic
 
   const asksData = orderAndLimit(
     orderBook.grouped.asks,
     rowsPerSection,
     'desc',
   );
+
   const bidsData = orderAndLimit(orderBook.grouped.bids, rowsPerSection, 'asc');
 
-  return React.useMemo(
-    () => ({
-      asksData,
-      bidsData,
-      groupBy: orderBook.groupBy,
-      isLoading: orderBook.isLoading,
-      orderBookDispatch,
-      wsState,
-    }),
-    [
-      asksData,
-      orderBook.groupBy,
-      orderBook.isLoading,
-      bidsData,
-      orderBookDispatch,
-      wsState,
-    ],
-  );
+  return {
+    asksData,
+    bidsData,
+    groupBy: orderBook.groupBy,
+    minGroupBy: orderBook.minGroupBy,
+    isLoading: orderBook.isLoading,
+    orderBookDispatch,
+    wsState,
+  };
 };
 
 const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
   useGeneratorQueue<PendingGroupUpdateRecord>(initial);
-
-// batch all updates in a single one to prevent
-// several subsequent state updates (+ renders)
-// and keep the last value for each key to prevent
-// useless processing
-const preprocessUpdates = (
-  updates: PendingGroupUpdateRecord[],
-): OrderbookGenericScopeDataType<OrdersMap> =>
-  updates.reduce(
-    (acc, { updates }: PendingGroupUpdateRecord) => {
-      return {
-        ...acc,
-        asks: new Map([...acc.asks, ...updates.asks]),
-        bids: new Map([...acc.bids, ...updates.bids]),
-      };
-    },
-    { asks: new Map(), bids: new Map() },
-  );
 
 const DEFAULT_ERROR_HANDLER = (err: WebSocketNativeError | Error) => {
   console.log('---> ERROR:', err);
@@ -123,10 +161,11 @@ export const useOrderbookConnection = ({
         if (!updates || updates.length === 0) {
           break;
         }
+        console.log('onProcessCycle: ', { updates });
 
         orderBookDispatch({
           type: 'UPDATE_GROUPED',
-          payload: { updates: [preprocessUpdates(updates)] },
+          payload: { updates },
         });
       }
     }, [consumeQ, orderBookDispatch]),
@@ -140,9 +179,10 @@ export const useOrderbookConnection = ({
   const onOpen = React.useCallback(
     exchangeModule.onOpen(
       orderBookDispatch,
-      exchangeModule.defaultOptions.subscribeToProductIds,
+      exchangeModule.defaultOptions.defaultProduct,
+      dispatchToQ,
     ),
-    [exchangeModule.defaultOptions.subscribeToProductIds, orderBookDispatch],
+    [exchangeModule.defaultOptions.defaultProduct, orderBookDispatch],
   );
 
   const onClose = React.useCallback((): void => {
@@ -153,7 +193,8 @@ export const useOrderbookConnection = ({
     connect: wsConnect,
     close: wsDisconnect,
     state: wsState,
-  } = useWebSocket<OrderbookWSMessageType>({
+  } = !exchangeModule.fakeRemote &&
+  useWebSocket<OrderbookWSMessageType>({
     uri: exchangeModule.defaultOptions.uri,
     onMessage,
     onOpen,
@@ -170,27 +211,33 @@ export const useOrderbookConnection = ({
       }
 
       console.log('[ws] opening connection from mainEffect');
-      wsConnect();
+      if (exchangeModule.fakeRemote) {
+        exchangeModule.fakeRemote(orderBookDispatch, dispatchToQ);
+      } else {
+        wsConnect();
+      }
 
       return () => {
         console.log('[ws] closing connection from mainEffect');
         if (wsDisconnect) wsDisconnect();
       };
     },
-    [wsConnect, wsDisconnect],
+    [wsConnect, wsDisconnect, exchangeModule.fakeRemote],
   );
 
   useSafeEffect(mainEffect, []);
 
-  return { wsState };
+  return exchangeModule.fakeRemote
+    ? { wsState: { isConnected: true } }
+    : { wsState };
 };
 
 export const useOrderbookReducer = (
   initialState: OrderbookReducerInitialState = INITIAL_ORDERBOOK_STATE,
-  exchangeModuleOverrides: any, //@todo-type
+  exchangeModule: ExchangeModule,
 ): [OrderbookStateType, OrderbookDispatch] =>
   React.useReducer<OrderbookReducer>(
-    orderBookReducer(exchangeModuleOverrides),
+    React.useMemo(() => orderBookReducer(exchangeModule), [exchangeModule]),
     initialState as OrderbookStateType,
   );
 

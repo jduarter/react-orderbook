@@ -18,7 +18,7 @@ import type { OrderbookProps } from './types';
 
 import { useOrderbookController } from './hooks';
 
-const MIDDLE_MENU_RELATIVE_HEIGHT = 0.15;
+const MIDDLE_MENU_RELATIVE_HEIGHT = 0.1;
 const ROW_VERTICAL_MARGIN = 2;
 
 const FONT_SIZE = 18;
@@ -85,11 +85,8 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
           {asksData.length > 0 && (
             <OrderbookSection
               rowHeight={improvedRowHeight}
-              keyPrefix={'a_'}
               backgroundColor={'#7c0a02'}
               normalizedData={asksData}
-              totalOrderBy={'asc'}
-              groupBy={groupBy}
             />
           )}
         </View>
@@ -103,6 +100,9 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
           <GroupByButtonGroup
             groupBy={groupBy}
             orderBookDispatch={orderBookDispatch}
+            availableFactors={
+              exchangeModule.defaultOptions.defaultProduct.groupByFactors
+            }
           />
         </View>
         <View
@@ -113,11 +113,8 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
           {bidsData.length > 0 && (
             <OrderbookSection
               rowHeight={improvedRowHeight}
-              keyPrefix={'b_'}
               backgroundColor={'#043927'}
               normalizedData={bidsData}
-              totalOrderBy={'desc'}
-              groupBy={groupBy}
             />
           )}
         </View>

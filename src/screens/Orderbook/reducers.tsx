@@ -1,6 +1,6 @@
 /* eslint security/detect-object-injection:0 */
 
-import { applyFnToScope, scope } from './utils';
+import { scope } from './utils';
 
 import { scopeElementsWithoutZeroRecords } from './reducers/common';
 import {
@@ -9,85 +9,123 @@ import {
 } from './reducers/grouping';
 
 import type {
-  OrderbookGenericScopeDataType,
   OrderbookStateType,
-  OrdersMap,
   OrderbookReducerAction,
-  ExchangeModuleMainReducerOverridesHash,
+  ExchangeModule,
+  PendingGroupUpdateRecord,
 } from './types';
 
 export const INITIAL_ORDERBOOK_STATE: OrderbookStateType = {
   ...scope(new Map(), new Map()),
-  groupBy: 100,
+  groupBy: 0,
+  minGroupBy: 0,
   grouped: scope(new Map(), new Map()),
   isLoading: true,
 };
 
 export const reducePendingGroupUpdatesToState = (
-  pendingGroupUpdates: OrderbookGenericScopeDataType<OrdersMap>[],
+  pendingGroupUpdate: PendingGroupUpdateRecord,
   state: OrderbookStateType,
-): OrderbookStateType =>
-  Array.from(pendingGroupUpdates).reduce((acc: OrderbookStateType, updates) => {
-    const { bids, asks, grouped, ...restOfAcc } = acc;
-
-    const groupedWithMinimumThresholdsApplied = applyFnToScope(
-      grouped,
-      (sc, k) => applyMinimumThresholdsToGroups(sc, state.groupBy, updates[k]),
-    );
-
-    const newState = reduceUpdatesToScopedStateForGrouped(
-      updates,
-      groupedWithMinimumThresholdsApplied,
+): OrderbookStateType => {
+  const { bids, asks, grouped, ...restOfAcc } = state;
+  /*
+  const groupedWithMinimumThresholdsApplied = applyFnToScope(grouped, (sc, k) =>
+    applyMinimumThresholdsToGroups(
+      sc,
       state.groupBy,
-      scope(bids, asks),
-    );
+      state.minGroupBy,
+      pendingGroupUpdate.updates[k],
+    ),
+  );
 
-    return {
-      ...restOfAcc,
-      ...scopeElementsWithoutZeroRecords(newState),
-      grouped: scopeElementsWithoutZeroRecords(newState.grouped),
-    };
-  }, state);
+  console.log(
+    'groupedWithMinimumThresholdsApplied: ',
+    groupedWithMinimumThresholdsApplied,
+  );
+
+  console.log('starting reduceUpdatesToScopedStateForGrouped with params:', {
+    updates: pendingGroupUpdate.updates,
+    grouped,
+  });
+  */
+  const newState = reduceUpdatesToScopedStateForGrouped(
+    pendingGroupUpdate.updates, // groupedWithMinimumThresholdsApplied,
+    grouped,
+    state.groupBy,
+    state.minGroupBy,
+    scope(bids, asks),
+  );
+
+  return {
+    ...restOfAcc,
+    ...scopeElementsWithoutZeroRecords(newState),
+    grouped: scopeElementsWithoutZeroRecords(newState.grouped),
+  };
+  /*  },
+    state,
+  );*/
+};
 
 const reduceStateToNewGroupBySetting = (
   state: OrderbookStateType,
   groupBy: number,
+  minGroupBy: number,
 ): OrderbookStateType => {
+  const emptyGrouped = { ...INITIAL_ORDERBOOK_STATE.grouped };
+
   const { grouped } = reduceUpdatesToScopedStateForGrouped(
-    scope(new Map(), new Map()),
-    { ...INITIAL_ORDERBOOK_STATE.grouped },
-    groupBy,
     scope(state.bids, state.asks),
+    emptyGrouped,
+    groupBy,
+    minGroupBy,
+    scope(new Map(), new Map()),
   );
 
-  return { ...state, groupBy, grouped };
+  return { ...state, groupBy, minGroupBy, grouped };
 };
 
 export const orderBookReducer =
-  (exchangeModuleOverrides: ExchangeModuleMainReducerOverridesHash) =>
+  (exchangeModule: ExchangeModule) =>
   (
     state: OrderbookStateType,
     action: OrderbookReducerAction,
   ): OrderbookStateType => {
-    if (exchangeModuleOverrides[action.type]) {
-      return exchangeModuleOverrides[action.type](state, action);
+    if (
+      exchangeModule?.mainReducerOverrides &&
+      action.type in exchangeModule.mainReducerOverrides
+    ) {
+      return exchangeModule.mainReducerOverrides[action.type](state, action);
     }
 
     switch (action.type) {
       case 'RESET_STATE':
-        return { ...INITIAL_ORDERBOOK_STATE };
+        return {
+          ...INITIAL_ORDERBOOK_STATE,
+          groupBy: exchangeModule.defaultOptions.groupBy,
+          minGroupBy:
+            exchangeModule.defaultOptions.defaultProduct.groupByFactors[0],
+        };
 
       case 'SET_LOADING':
         return { ...state, isLoading: action.payload.value };
 
       case 'UPDATE_GROUPED':
-        return {
-          ...reducePendingGroupUpdatesToState(action.payload.updates, state),
-          isLoading: false,
-        };
+        return action.payload.updates.reduce(
+          (acc: OrderbookStateType, curr: PendingGroupUpdateRecord) => ({
+            acc,
+            ...reducePendingGroupUpdatesToState(curr, state),
+          }),
+          { isLoading: false },
+        );
 
       case 'SET_GROUP_BY':
-        return reduceStateToNewGroupBySetting(state, action.payload.value);
+        return {
+          ...reduceStateToNewGroupBySetting(
+            state,
+            action.payload.value,
+            exchangeModule.defaultOptions.defaultProduct.groupByFactors[0],
+          ),
+        };
 
       default:
         throw new Error('orderBook: unknown reducer: ' + action.type);

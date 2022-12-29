@@ -6,13 +6,13 @@ import type {
   AllScopePropertyNames,
 } from '../types';
 
-export const reduceMapToState = <T extends Map<number, number> = OrdersMap>(
+export const reduceMapToState = <T extends OrdersMap = OrdersMap>(
   data: T,
   initialState: OrdersMap,
 ): OrdersMap => {
   const ret = new Map(initialState);
   for (const [price, oSize] of data) {
-    if (oSize === 0) {
+    if (oSize.isZero()) {
       ret.delete(price);
     } else {
       ret.set(price, oSize);

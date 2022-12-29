@@ -2,8 +2,6 @@ import {
   getGroupedPrice,
   applyFnToScope,
   extractPricesFromMap,
-  arrayAt,
-  mapToSortedArr,
   scope,
   sortedObjValueSymDiff,
   calculateDiff,
@@ -11,16 +9,14 @@ import {
 
 import { reduceUpdatesToScopedState, reduceTwoScopesWithFn } from './common';
 
-import type {
-  OrderbookGenericScopeDataType,
-  OrdersMap,
-  OrderbookStateType,
-} from '../types';
+import type { OrderbookGenericScopeDataType, OrdersMap } from '../types';
 import type { GroupsMembersDiffType } from './types';
+import Decimal from 'decimal.js';
 
 export const mutateForGrouping = (
   updates: OrdersMap,
   groupBy: number,
+  minGroupBy: number,
   inputLastKnownExactValues: OrdersMap,
   initialState: OrdersMap,
 ): [OrdersMap, OrdersMap] => {
@@ -32,22 +28,37 @@ export const mutateForGrouping = (
   const lastKnownExactValues = new Map(inputLastKnownExactValues);
 
   for (const [price, v] of updates) {
-    const groupedPrice = getGroupedPrice(price, groupBy);
+    if (groupBy === 0.1) console.log(' -> process: ', [price, v]);
 
-    const oldSizeForExact = lastKnownExactValues.get(price);
+    const groupedPrice = getGroupedPrice(price, groupBy, minGroupBy);
+    if (false && groupBy === minGroupBy) {
+      acc.set(groupedPrice, v);
 
-    const exactDiff =
-      oldSizeForExact === undefined ? v : -1 * ((oldSizeForExact || 0) - v);
+      lastKnownExactValues.set(price, v);
+    } else {
+      const oldGroupSize = acc.get(groupedPrice); // || new Decimal(0);
 
-    const oldGroupSize = acc.get(groupedPrice) || 0;
+      if (typeof oldGroupSize === 'undefined' || oldGroupSize.isZero()) {
+        acc.set(groupedPrice, v);
+      } else {
+        const oldSizeForExact =
+          lastKnownExactValues.get(price) || new Decimal(0);
+        const result = v.sub(oldSizeForExact);
 
-    const sumB = oldGroupSize + exactDiff;
+        if (groupBy === 0.1)
+          console.log('oldGroupSize: ', {
+            priceInfo: [price, groupedPrice],
+            groupBy,
+            v,
+            old: { exact: oldSizeForExact, group: oldGroupSize },
+            resultToSum: result,
+          });
 
-    if (oldGroupSize > 0 && exactDiff !== 0 && sumB >= 0) {
-      acc.set(groupedPrice, sumB);
+        acc.set(groupedPrice, oldGroupSize.add(result));
+      }
+
+      lastKnownExactValues.set(price, v);
     }
-
-    lastKnownExactValues.set(price, v);
   }
 
   return [acc, lastKnownExactValues];
@@ -56,6 +67,7 @@ export const mutateForGrouping = (
 const mutateScopeForGrouping = (
   updates: OrderbookGenericScopeDataType<OrdersMap>,
   groupBy: number,
+  minGroupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<OrdersMap> & {
@@ -64,12 +76,14 @@ const mutateScopeForGrouping = (
   const [bids, mainBids] = mutateForGrouping(
     updates.bids,
     groupBy,
+    minGroupBy,
     oldExactRootState.bids,
     initialState.bids,
   );
   const [asks, mainAsks] = mutateForGrouping(
     updates.asks,
     groupBy,
+    minGroupBy,
     oldExactRootState.asks,
     initialState.asks,
   );
@@ -84,11 +98,13 @@ export const reduceUpdatesToScopedStateForGrouped = (
   updates: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
   groupBy: number,
+  minGroupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
 ) => {
   const { groupedMutatedData, ...newState } = mutateScopeForGrouping(
     updates,
     groupBy,
+    minGroupBy,
     oldExactRootState,
     initialState,
   );
@@ -102,6 +118,7 @@ export const reduceUpdatesToScopedStateForGrouped = (
 export const applyMinimumThresholdsToGroups = (
   groups: OrdersMap,
   groupBy: number,
+  minGroupBy: number,
   updates: OrdersMap,
 ): OrdersMap => {
   if (updates.size === 0) {
@@ -111,7 +128,7 @@ export const applyMinimumThresholdsToGroups = (
   const groupMins = new Map(groups);
   for (const [exactPriceInFloat, absoluteSizeInUpdate] of updates) {
     groupMins.set(
-      getGroupedPrice(exactPriceInFloat, groupBy),
+      getGroupedPrice(exactPriceInFloat, groupBy, minGroupBy),
       absoluteSizeInUpdate,
     );
   }
@@ -153,143 +170,4 @@ export const getScopeMembersDiff = (
     changedKeys,
     calculateDiff,
   );
-};
-
-type SelectFirstRowFnType = (arr: [number, number][]) => number;
-type SlicerCondFnType = (a: number, b: number) => boolean;
-type SlicerFnType = (arr: [number, number][]) => [number, number][];
-
-type EGCParamsTupleType = [
-  /* groupName */ 'asks' | 'bids',
-  /* xDiffFn */ typeof Math.min | typeof Math.max,
-  /* selectFirstRowFn */ SelectFirstRowFnType,
-  /* slicerCondFn */ SlicerCondFnType,
-  /* slicerFn */ SlicerFnType,
-];
-
-type EGCArgumentsType = [
-  ...EGCParamsTupleType,
-  /* groupsDiff */ GroupsMembersDiffType,
-  /* acc */ OrdersMap,
-];
-
-type EGCFunctionType = (
-  ...args: EGCArgumentsType
-) => [OrdersMap, number | null];
-
-const wipeRowsUntilAdjusted = (
-  arr: [number, number][],
-  cheaperDiff: number,
-  selectFirstRowFn: SelectFirstRowFnType,
-  slicerCondFn: SlicerCondFnType,
-  slicerFn: SlicerFnType,
-): OrdersMap => {
-  do {
-    if (arr.length === 0) {
-      break;
-    }
-    const firstRow = selectFirstRowFn(arr);
-
-    if (slicerCondFn(cheaperDiff, firstRow)) {
-      arr = slicerFn(arr);
-    } else {
-      break;
-    }
-    // eslint-disable-next-line no-constant-condition
-  } while (true);
-  return new Map(arr);
-};
-
-export const enforceGroupConsistency: EGCFunctionType = (
-  groupName,
-  xDiffFn,
-  selectFirstRowFn,
-  slicerCondFn,
-  slicerFn,
-  groupsDiff,
-  acc,
-) => {
-  if (groupsDiff[groupName].created.length <= 0) {
-    return [acc, null];
-  }
-  const cheaperDiff = xDiffFn(...groupsDiff[groupName].created);
-  let arr = mapToSortedArr(acc);
-
-  if (arr.length <= 0) {
-    return [acc, null];
-  }
-
-  return [
-    wipeRowsUntilAdjusted(
-      arr,
-      cheaperDiff,
-      selectFirstRowFn,
-      slicerCondFn,
-      slicerFn,
-    ),
-    cheaperDiff,
-  ];
-};
-
-const EC_ASKS_PARAMS: EGCParamsTupleType = [
-  'bids',
-  Math.max,
-  (arr: [number, number][]): number => arrayAt(arr, 0)[0],
-  (a: number, b: number) => a > b,
-  (arr: any[]): any[] => arr.slice(1),
-];
-
-export const enforceAsksConsistency = (
-  groupsDiff: GroupsMembersDiffType,
-  acc: OrdersMap,
-): [OrdersMap, number | null] =>
-  enforceGroupConsistency(
-    ...([...EC_ASKS_PARAMS, groupsDiff, acc] as EGCArgumentsType),
-  );
-
-const EC_BIDS_PARAMS: EGCParamsTupleType = [
-  'asks',
-  Math.min,
-  (arr: [number, number][]): number => arrayAt(arr, -1)[0],
-  (a: number, b: number) => a < b,
-  (arr: any[]): any[] => arr.slice(0, -1),
-];
-
-export const enforceBidsConsistency = (
-  groupsDiff: GroupsMembersDiffType,
-  groupedBids: OrdersMap,
-): [OrdersMap, number | null] =>
-  enforceGroupConsistency(
-    ...([...EC_BIDS_PARAMS, groupsDiff, groupedBids] as EGCArgumentsType),
-  );
-
-// the "ensureConsistencyWithDiff" is to make sure some
-// rows are properly wiped (the API doesnt have a "snapshot" action,
-// therefore, some estimations are made, specially over the first
-// renders of the widget).
-
-export const ensureConsistencyWithDiff = (
-  oldState: OrderbookStateType,
-  newStateToCheck: OrderbookStateType,
-): OrderbookStateType => {
-  const newState = { ...newStateToCheck };
-
-  const groupsDiff = getScopeMembersDiff(
-    oldState.grouped,
-    newStateToCheck.grouped,
-  );
-
-  // a) if new asks are added, check if bids should be corrected
-  [newState.grouped.asks] = enforceAsksConsistency(
-    groupsDiff,
-    newStateToCheck.grouped.asks,
-  );
-
-  // b) if new bids are added, check if asks should be corrected
-  [newState.grouped.bids] = enforceBidsConsistency(
-    groupsDiff,
-    newStateToCheck.grouped.bids,
-  );
-
-  return newState;
 };

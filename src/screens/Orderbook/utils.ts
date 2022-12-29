@@ -1,21 +1,16 @@
-import commaNumber from 'comma-number';
+// import commaNumber from 'comma-number';
+
+import type { Decimal } from 'decimal.js';
 
 import type {
-  OrderbookGroupedPrice,
-  OrderbookNormalizedPrice,
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
   OrdersMap,
-  OrderbookOrdersSortedObject,
 } from './types';
 
 type SortByOperationTypes = -1 | 1;
 type GroupByOptionType = number;
-
-const AVAILABLE_FACTORS = [
-  0.1, 0.25, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000,
-];
-
+/*
 const numberFormater = (
   overrideThousandSeparator = ',',
   overrideDecimalSeparator = '.',
@@ -35,27 +30,72 @@ export const getPrintPriceForNormalizedPrice = (
   decimalsToParse = 2,
 ): string =>
   formatNumber(denormalizePrice(input, decimalsToParse), decimalsToPrint);
+*/
+export const getGroupedPrice = (
+  optimalIntegerPriceRepr: number,
+  groupBy: number,
+  minGroupBy: number,
+  priceMaxDecPrecision: number = 2,
+) => {
+  const price = optimalIntegerPriceRepr / Math.pow(10, priceMaxDecPrecision);
+  const isMinimumGroupBy = groupBy === minGroupBy;
+  const ret = Math.floor(price / groupBy) * groupBy;
+
+  if (true || isMinimumGroupBy) {
+    return Math.round(ret * Math.pow(10, priceMaxDecPrecision));
+  } else {
+    return Math.round((ret + groupBy) * Math.pow(10, priceMaxDecPrecision));
+  }
+};
+
+/* 
+export const getGroupedPrice = (
+  // price: number,
+  optimalIntegerPriceRepr: number,
+  groupBy: number,
+  minGroupBy: number,
+): number => {
+  const price = optimalIntegerPriceRepr / Math.pow(10, 2);
+  console.log('* getGroupedPrice: ', { price, groupBy, minGroupBy });
+  const isMinimumGroupBy = groupBy === minGroupBy; // new Decimal(groupBy).eq(minGroupBy);
+
+  const ret = Math.floor(price / groupBy) * groupBy; // price.div(groupBy).floor().mul(groupBy);
+  if (isMinimumGroupBy) {
+    return Math.round(ret * Math.pow(10, 2));
+  } else {
+    //return Math.round(Math.ceil(ret + groupBy) * Math.pow(10, 2));
+    return Math.round(Math.ceil((ret + groupBy) * Math.pow(10, 2)));
+    // ret.add(groupBy);
+  }
+};
 
 export const getGroupedPrice = (
   price: number,
   groupBy: number,
-): OrderbookGroupedPrice => Math.floor(price / groupBy) * groupBy;
-
+  minGroupBy: number,
+): OrderbookGroupedPrice => {
+  const ret = parseInt(
+    Math.floor(price / Math.pow(10, 8) / groupBy) * groupBy * Math.pow(10, 8),
+  ); //price.floor(groupBy).mul(groupBy);
+   console.log('[i] getGroupedPrice: price:', {
+    price,
+    groupBy,
+    minGroupBy,
+    tPrice: typeof price,
+    RESULT: ret,
+  }); 
+  return ret;
+}; //Math.floor(price / groupBy) * groupBy;
+*/
+/*
 export const getNormalizedPrice = (
   input: number,
   decimals = 2,
-): OrderbookNormalizedPrice => (Math.pow(10, decimals) * input).toString();
+): OrderbookNormalizedPrice =>
+  parseInt(Math.pow(10, decimals) * input).toString();
+  */
 
-export const immutableGetReversedArr = <
-  T extends [unknown, unknown] = [number, number],
->(
-  array: T[],
-): T[] => {
-  const copy = [...array];
-  copy.reverse();
-  return copy;
-};
-
+/*
 export const mapToSortedObj = (m: OrdersMap): OrderbookOrdersSortedObject =>
   Array.from(m).reduce(
     (acc, [ck, cv]) => ({
@@ -79,21 +119,26 @@ export const orderAndLimit = (
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',
 ): [number, number][] => {
-  const array = mapToSortedArr(map, false);
+  const array = [...map].sort((a, b) => a[0] > b[0]);
+
   const sorted =
     orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
-  return immutableGetReversedArr<[number, number]>(sorted);
-};
 
+  const result = immutableGetReversedArr<[number, number]>(sorted);
+
+  return result;
+};
+*/
 export const getGroupByFactor = (
   groupBy: GroupByOptionType,
   op: SortByOperationTypes,
+  availableFactors: number[],
 ): number => {
-  const currentIndex = AVAILABLE_FACTORS.indexOf(groupBy);
-  if (currentIndex + op >= 0 && currentIndex + op <= AVAILABLE_FACTORS.length) {
-    const nextStateVal = AVAILABLE_FACTORS[currentIndex + op];
+  const currentIndex = availableFactors.indexOf(groupBy);
+  if (currentIndex + op >= 0 && currentIndex + op <= availableFactors.length) {
+    const nextStateVal = availableFactors[currentIndex + op];
     // eslint-disable-next-line security/detect-object-injection
-    const currentStateVal = AVAILABLE_FACTORS[currentIndex];
+    const currentStateVal = availableFactors[currentIndex];
 
     return op === -1
       ? currentStateVal / nextStateVal
@@ -103,11 +148,16 @@ export const getGroupByFactor = (
 };
 
 export const getGroupByButtonPressEventHandler =
-  (v: -1 | 1, groupBy: number, orderBookDispatch: OrderbookDispatch) =>
+  (
+    v: -1 | 1,
+    groupBy: number,
+    orderBookDispatch: OrderbookDispatch,
+    availableFactors: number[],
+  ) =>
   (): void => {
     // eslint-disable-next-line no-restricted-globals
     setImmediate(() => {
-      const f = getGroupByFactor(groupBy, v);
+      const f = getGroupByFactor(groupBy, v, availableFactors);
 
       if (f > 0) {
         orderBookDispatch({
@@ -115,8 +165,8 @@ export const getGroupByButtonPressEventHandler =
           payload: {
             value:
               v === -1
-                ? groupBy / getGroupByFactor(groupBy, v)
-                : groupBy * getGroupByFactor(groupBy, v),
+                ? groupBy / getGroupByFactor(groupBy, v, availableFactors)
+                : groupBy * getGroupByFactor(groupBy, v, availableFactors),
           },
         });
       }
@@ -135,7 +185,10 @@ export const wipeZeroRecords = (input: OrdersMap): OrdersMap => {
   const ret = new Map(input);
   const arr = Array.from(input.entries());
   for (const [currKey, currVal] of arr) {
-    if (currVal === 0) {
+    //console.log('wipeZeroRecords: ', { currVal, tCurrVal: typeof currVal });
+    if (currVal.isZero()) {
+      //} === 0) {
+      //console.log('WipeZeroRecords: ', { currKey, tCurrKey: typeof currKey });
       ret.delete(currKey);
     }
   }
@@ -153,16 +206,22 @@ export const applyFnToScope = <
   bids: transformer(input.bids, 'bids' as keyof I),
   asks: transformer(input.asks, 'asks' as keyof I),
 });
-
+/*
 export const getNormalizedGroupedPrice = (
   price: number,
   groupBy: number,
   decimals = 2,
-): OrderbookNormalizedPrice =>
-  getNormalizedPrice(getGroupedPrice(price, groupBy), decimals);
+): OrderbookNormalizedPrice => {
+  console.log('getNormalizedGroupedPrice: ', { price, groupBy, decimals });
+
+  const ret = getNormalizedPrice(getGroupedPrice(price, groupBy), decimals);
+  console.log('--> ', ret);
+  return ret;
+};
 
 export const customFormatNumberToFloat = (price: string): number =>
   Number.parseInt(price) / 100;
+*/
 
 export const extractPricesFromMap = (m: OrdersMap): number[] =>
   Array.from(m).map(([price]) => price);
@@ -173,8 +232,10 @@ export const exactPriceIsWithinGroupPrice = (
   groupBy: number,
 ): boolean => exact >= groupPrice && exact < groupPrice + groupBy;
 
+/*
 export const arrayAt = <T>(arr: T[], idx: number): T =>
   arr[idx >= 0 ? idx : arr.length + idx];
+*/
 
 export const scope = <T extends OrdersMap = OrdersMap>(
   bids: T,

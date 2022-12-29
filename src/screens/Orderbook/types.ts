@@ -5,17 +5,14 @@ import type {
 } from '../../hooks/useWebSocket';
 
 import type { MutableRefObject } from 'react';
+
+import type { Decimal } from 'decimal.js';
+
 import type { OwnRefType } from '../../hooks/useWebSocket/types';
 import type { UseGeneratorQueueDispatch } from '../../hooks/useGeneratorQueue/types';
 
 export type OrderbookGroupedPrice = number;
-export type OrderbookNormalizedPrice = string;
-
 export type OrderbookOrderSize = number;
-export type OrderbookOrdersSortedObject = Record<
-  OrderbookNormalizedPrice,
-  OrderbookOrderSize
->;
 
 export interface OrderbookGenericScopeDataType<T> {
   bids: T;
@@ -79,11 +76,12 @@ export interface PendingGroupUpdateRecord {
   updates: WSUpdatesType;
 }
 
-export type OrdersMap = Map<number, number>;
+export type OrdersMap = Map<number, Decimal>; // @todo-type: different types for pre-processed and post-processed values
 
 export interface OrderbookStateType
   extends OrderbookGenericScopeDataType<OrdersMap> {
   groupBy: number;
+  minGroupBy: number;
   grouped: OrderbookGenericScopeDataType<OrdersMap>;
   isLoading: boolean;
 }
@@ -127,17 +125,37 @@ export type ExchangeModuleMainReducerOverridesHash = {
 export interface ExchangeModule {
   defaultOptions: {
     uri: string;
-    subscribeToProductIds: ProductId[];
+
+    defaultProduct: {
+      pairName: ProductId;
+      asset: {
+        symbol: string;
+        decimals: number;
+        decimalsToShow: number;
+      };
+      price: {
+        symbol: string;
+        decimals: number;
+        decimalsToShow: number;
+      };
+      groupByFactors: number[];
+    };
     groupBy: number;
   };
+  fakeRemote?:
+    | void
+    | ((
+        orderBookDispatch: OrderbookDispatch,
+        dispatchToQ: UseGeneratorQueueDispatch<PendingGroupUpdateRecord>,
+      ) => Promise<unknown>);
   onMessage: (
     dispatchToQ: UseGeneratorQueueDispatch<PendingGroupUpdateRecord>,
   ) => (decoded: OrderbookWSMessageType) => void;
   onOpen: (
     orderBookDispatch: OrderbookDispatch,
-    subscribeToProductIds: ProductId[],
+    subscribeToProductId: ProductId,
   ) => (current: MutableRefObject<OwnRefType>) => void;
-  mainReducerOverrides: ExchangeModuleMainReducerOverridesHash;
+  mainReducerOverrides?: ExchangeModuleMainReducerOverridesHash;
 }
 
 export interface OrderbookProps {
@@ -157,10 +175,11 @@ export type OrderbookReducer = (
 
 export interface OrderbookControllerHookReturn {
   orderBookDispatch: OrderbookDispatch;
-  bidsData: [number, number][];
-  asksData: [number, number][];
+  bidsData: [string, Decimal, Decimal][];
+  asksData: [string, Decimal, Decimal][];
   isLoading: boolean;
   groupBy: number;
+  minGroupBy: number;
   rowsPerSection?: number;
   wsState: WebSocketState;
 }
