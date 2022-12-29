@@ -41,6 +41,7 @@
     "@react-spring/native": "^9.1.2",
     "@testing-library/react-native": "^7.2.0",
     "comma-number": "^2.1.0",
+    "decimal.js": "^10.4.3",
     "interlogger": "0.0.11",
     "metro-babel-register": "^0.73.3",
     "react": "18.0.0",
