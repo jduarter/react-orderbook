@@ -129,8 +129,8 @@ const useLocalTransitions = ({
       config: {
         duration: 100,
       },
-      cancel: !shouldPlay,
-      pause: !shouldPlay,
+      cancel: !shouldPlay && !shouldAnimateAgain,
+      pause: !shouldPlay && !shouldAnimateAgain,
       key: (item: unknown) => item,
       from: { color: '#888', fontWeight: '300' },
       enter: { color: '#fff' },
