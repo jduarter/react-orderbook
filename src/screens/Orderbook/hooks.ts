@@ -1,86 +1,21 @@
 import * as React from 'react';
 
-import { Decimal } from 'decimal.js';
-
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { orderBookReducer, INITIAL_ORDERBOOK_STATE } from './reducers';
 
 import { useSafeEffect } from '@hooks/useSafeEffect';
-import { useGeneratorQueue } from '@hooks/useGeneratorQueue';
 
 import type {
   OrderbookDispatch,
   OrderbookStateType,
   OrderbookReducerInitialState,
   OrderbookReducer,
-  PendingGroupUpdateRecord,
   OrderbookWSMessageType,
   UseOrderbookConnectionProperties,
   OrderbookControllerHookReturn,
   ExchangeModule,
-  OrdersMap,
 } from './types';
 import type { WebSocketState, WebSocketNativeError } from '@hooks/useWebSocket';
-
-type NormalizedRecord = [number, number];
-type NormalizedData = NormalizedRecord[];
-
-// @todo - move this logic to reducer to prevent UI thread locking
-const getTotalForRow = (
-  rows: NormalizedData,
-  index: number,
-  orderBy: 'asc' | 'desc',
-): Decimal =>
-  rows.reduce(
-    (acc: Decimal, current, ridx: number) =>
-      acc.add(
-        (orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0,
-      ),
-    new Decimal(0),
-  );
-
-const immutableGetReversedArr = <
-  T extends [unknown, unknown] = [number, Decimal],
->(
-  array: T[],
-): T[] => {
-  const copy = [...array];
-  copy.reverse();
-  return copy;
-};
-
-const splice = (str: string, offset: number, text: string): string => {
-  let calculatedOffset = offset < 0 ? str.length + offset : offset;
-  return (
-    str.substring(0, calculatedOffset) + text + str.substring(calculatedOffset)
-  );
-};
-
-const decimalFormat = (optimalInt: number, decimals: number = 2) => {
-  return splice(optimalInt.toString(), -decimals, '.');
-};
-
-const orderAndLimit = (
-  map: OrdersMap,
-  limit = 10,
-  orderBy: 'asc' | 'desc' = 'asc',
-): [string, number, Decimal][] => {
-  const array = [...map].sort((a, b) => a[0] - b[0]);
-
-  const sorted =
-    orderBy === 'desc' ? array.slice(0, limit) : array.slice(-limit);
-
-  const result = immutableGetReversedArr<[number, number]>(sorted);
-
-  return result.map((elem, index) => {
-    const total = getTotalForRow(
-      result,
-      index,
-      orderBy === 'asc' ? 'desc' : 'asc',
-    );
-    return [decimalFormat(elem[0], 2), elem[1], total];
-  });
-};
 
 export const useOrderbookController = ({
   exchangeModule,
@@ -95,6 +30,7 @@ export const useOrderbookController = ({
       groupBy: exchangeModule.defaultOptions.groupBy,
       minGroupBy:
         exchangeModule.defaultOptions.defaultProduct.groupByFactors[0],
+      rowsPerSection,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -111,7 +47,7 @@ export const useOrderbookController = ({
   });
 
   // move this inside the reducer logic
-
+  /*
   const asksData = orderAndLimit(
     orderBook.grouped.asks,
     rowsPerSection,
@@ -119,10 +55,11 @@ export const useOrderbookController = ({
   );
 
   const bidsData = orderAndLimit(orderBook.grouped.bids, rowsPerSection, 'asc');
+*/
 
   return {
-    asksData,
-    bidsData,
+    asksData: orderBook.viewport.asks,
+    bidsData: orderBook.viewport.bids,
     groupBy: orderBook.groupBy,
     minGroupBy: orderBook.minGroupBy,
     isLoading: orderBook.isLoading,
@@ -148,27 +85,6 @@ export const useOrderbookConnection = ({
   onError = DEFAULT_ERROR_HANDLER,
   exchangeModule,
 }: UseOrderbookConnectionProperties): { wsState: WebSocketState } => {
-  /*
-  useOrderbookProcessing({
-    onProcessCycle: React.useCallback(() => {
-      for (const updates of consumeQ(null)) {
-        if (!updates || updates.length === 0) {
-          break;
-        }
-        console.log('onProcessCycle: ', { updates });
-
-       
-      }
-    }, [consumeQ, orderBookDispatch]),
-  });
-
- InteractionManager.runAfterInteractions(() => {
-   orderBookDispatch({
-     type: 'UPDATE_GROUPED',
-     payload: { updates },
-   });
- });*/
-
   const onMessage = React.useCallback(
     exchangeModule.onMessage(orderBookDispatch),
     [], // eslint-disable-line react-hooks/exhaustive-deps

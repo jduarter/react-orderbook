@@ -1,5 +1,3 @@
-import type { Decimal } from 'decimal.js';
-
 import type {
   OrderbookDispatch,
   OrderbookGenericScopeDataType,
@@ -115,7 +113,7 @@ export const exactPriceIsWithinGroupPrice = (
   groupBy: number,
 ): boolean => exact >= groupPrice && exact < groupPrice + groupBy;
 
-export const scope = <T extends OrdersMap = OrdersMap>(
+export const scope = <T extends {} = OrdersMap>(
   bids: T,
   asks: T,
 ): { bids: T; asks: T } => ({
