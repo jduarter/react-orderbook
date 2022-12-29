@@ -9,7 +9,6 @@ import type { MutableRefObject } from 'react';
 import type { Decimal } from 'decimal.js';
 
 import type { OwnRefType } from '../../hooks/useWebSocket/types';
-import type { UseGeneratorQueueDispatch } from '../../hooks/useGeneratorQueue/types';
 
 export type OrderbookGroupedPrice = number;
 export type OrderbookOrderSize = number;
@@ -82,7 +81,9 @@ export interface OrderbookStateType
   extends OrderbookGenericScopeDataType<OrdersMap> {
   groupBy: number;
   minGroupBy: number;
+  rowsPerSection: number;
   grouped: OrderbookGenericScopeDataType<OrdersMap>;
+  viewport: OrderbookGenericScopeDataType<NormalizedData>;
   isLoading: boolean;
 }
 
@@ -170,10 +171,15 @@ export type OrderbookReducer = (
   action: OrderbookReducerAction,
 ) => OrderbookStateType;
 
+export type UnprocessedRecord = [number, Decimal];
+export type UnprocessedData = UnprocessedRecord[];
+export type NormalizedRecord = [string, Decimal, Decimal, number];
+export type NormalizedData = NormalizedRecord[];
+
 export interface OrderbookControllerHookReturn {
   orderBookDispatch: OrderbookDispatch;
-  bidsData: [string, Decimal, Decimal][];
-  asksData: [string, Decimal, Decimal][];
+  bidsData: NormalizedData;
+  asksData: NormalizedData;
   isLoading: boolean;
   groupBy: number;
   minGroupBy: number;
