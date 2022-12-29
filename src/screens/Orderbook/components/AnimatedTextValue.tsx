@@ -58,13 +58,13 @@ const postProcessStyle = (
 ): StyleProp<any> => {
   return {
     ...s,
-    ...(s.fontWeight && s.fontWeight.get
+    /* ...(s.fontWeight && s.fontWeight.get
       ? {
           fontWeight: (
             Math.floor(parseFloat(s.fontWeight.get() as string) / 100) * 100
           ).toString(),
         }
-      : {}),
+      : {}), */
   };
 };
 
@@ -132,14 +132,14 @@ const useLocalTransitions = ({
       cancel: !shouldPlay && !shouldAnimateAgain,
       pause: !shouldPlay && !shouldAnimateAgain,
       key: (item: unknown) => item,
-      from: { color: '#888', fontWeight: '300' },
+      from: { color: '#888' /* fontWeight: '300'*/ },
       enter: { color: '#fff' },
       update: [
         {
           ...(backgroundColor
             ? {
                 backgroundColor: getRgbaFromHex(backgroundColor, 0.3),
-                fontWeight: '500',
+                //fontWeight: '500',
               }
             : {}),
         },

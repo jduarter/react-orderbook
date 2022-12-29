@@ -2,6 +2,8 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { useTransition, animated, config } from '@react-spring/native';
 
+import type { NormalizedData } from '../types';
+
 import type { Decimal } from 'decimal.js';
 
 import { default as OrderbookRow } from './OrderbookRow';
@@ -27,10 +29,16 @@ const DEFAULT_TRANSITION_OPTIONS = ({
 
 const AnimatedOrderbookSection: React.FC<{
   backgroundColor: string;
-  normalizedData: [string, Decimal, Decimal][];
+  backgroundColorForWeights: string;
+  normalizedData: NormalizedData;
   textColor?: string;
   rowHeight?: number;
-}> = ({ backgroundColor, normalizedData, rowHeight = 42 }) => {
+}> = ({
+  backgroundColor,
+  backgroundColorForWeights,
+  normalizedData,
+  rowHeight = 42,
+}) => {
   const transData = React.useMemo(
     () =>
       DEFAULT_TRANSITION_OPTIONS({
@@ -45,7 +53,7 @@ const AnimatedOrderbookSection: React.FC<{
   const cb = React.useCallback(
     (
       style: { height: any /* @todo: type */ },
-      item: [string, Decimal, Decimal],
+      item: [string, Decimal, Decimal, number],
     ) => {
       const shouldStopChildrenAnimation =
         style.height?.get && style.height.get() !== Math.floor(rowHeight);
@@ -56,7 +64,9 @@ const AnimatedOrderbookSection: React.FC<{
             price={item[0]}
             val={item[1]}
             total={item[2]}
+            relSizeWeight={item[3]}
             backgroundColor={backgroundColor}
+            backgroundColorForWeights={backgroundColorForWeights}
             isLeaving={shouldStopChildrenAnimation}
           />
         </animated.View>
@@ -73,10 +83,16 @@ const AnimatedOrderbookSection: React.FC<{
 
 const OrderbookSection: React.FC<{
   backgroundColor: string;
-  normalizedData: [string, Decimal, Decimal][];
+  backgroundColorForWeights: string;
+  normalizedData: NormalizedData;
   textColor?: string;
   rowHeight?: number;
-}> = ({ backgroundColor, normalizedData, rowHeight = 42 }) => {
+}> = ({
+  backgroundColor,
+  backgroundColorForWeights,
+  normalizedData,
+  rowHeight = 42,
+}) => {
   return (
     <View>
       {normalizedData.map((dataItem) => (
@@ -90,7 +106,9 @@ const OrderbookSection: React.FC<{
             price={dataItem[0]}
             val={dataItem[1]}
             total={dataItem[2]}
+            relSizeWeight={dataItem[3]}
             backgroundColor={backgroundColor}
+            backgroundColorForWeights={backgroundColorForWeights}
             isLeaving={false}
           />
         </View>

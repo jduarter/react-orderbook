@@ -11,6 +11,8 @@ interface Props {
   total: Decimal;
   isLeaving: boolean;
   backgroundColor: string;
+  backgroundColorForWeights: string;
+  relSizeWeight: number;
 }
 
 const getAnimationOptions = ({
@@ -31,12 +33,24 @@ const OrderbookRow: React.FC<Props> = ({
   price,
   val,
   backgroundColor,
+  backgroundColorForWeights,
   isLeaving,
   total,
+  relSizeWeight,
 }) => {
   if (ANIMATIONS) {
     return (
       <View style={styles.orderBookRowWrap}>
+        <View
+          style={{
+            position: 'absolute',
+            backgroundColor: backgroundColorForWeights,
+            height: '100%',
+            padding: 18,
+            marginTop: 2,
+            width: Math.round(relSizeWeight * 100).toString() + '%',
+            right: 0,
+          }}></View>
         <Text style={styles.priceText}>{price}</Text>
 
         <AnimatedTextValue
