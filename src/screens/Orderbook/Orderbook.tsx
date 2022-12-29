@@ -86,6 +86,7 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
             <OrderbookSection
               rowHeight={improvedRowHeight}
               backgroundColor={'#7c0a02'}
+              backgroundColorForWeights={'#690902'}
               normalizedData={asksData}
             />
           )}
@@ -113,7 +114,8 @@ const OrderbookComponent: FC<OrderbookProps & { testID?: string }> = ({
           {bidsData.length > 0 && (
             <OrderbookSection
               rowHeight={improvedRowHeight}
-              backgroundColor={'#043927'}
+              backgroundColor={'#043904'}
+              backgroundColorForWeights={'#032e03'}
               normalizedData={bidsData}
             />
           )}
