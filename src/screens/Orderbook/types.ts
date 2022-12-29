@@ -144,12 +144,9 @@ export interface ExchangeModule {
   };
   fakeRemote?:
     | void
-    | ((
-        orderBookDispatch: OrderbookDispatch,
-        dispatchToQ: UseGeneratorQueueDispatch<PendingGroupUpdateRecord>,
-      ) => Promise<unknown>);
+    | ((orderBookDispatch: OrderbookDispatch) => Promise<unknown>);
   onMessage: (
-    dispatchToQ: UseGeneratorQueueDispatch<PendingGroupUpdateRecord>,
+    orderBookDispatch: OrderbookDispatch,
   ) => (decoded: OrderbookWSMessageType) => void;
   onOpen: (
     orderBookDispatch: OrderbookDispatch,

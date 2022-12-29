@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { InteractionManager } from 'react-native';
 
 import { Decimal } from 'decimal.js';
 
@@ -17,7 +16,6 @@ import type {
   PendingGroupUpdateRecord,
   OrderbookWSMessageType,
   UseOrderbookConnectionProperties,
-  UseOrderbookProcessingProperties,
   OrderbookControllerHookReturn,
   ExchangeModule,
   OrdersMap,
@@ -133,9 +131,6 @@ export const useOrderbookController = ({
   };
 };
 
-const useOrderbookMainStateRef = (initial: PendingGroupUpdateRecord[] = []) =>
-  useGeneratorQueue<PendingGroupUpdateRecord>(initial);
-
 const DEFAULT_ERROR_HANDLER = (err: WebSocketNativeError | Error) => {
   console.log('---> ERROR:', err);
 };
@@ -153,8 +148,7 @@ export const useOrderbookConnection = ({
   onError = DEFAULT_ERROR_HANDLER,
   exchangeModule,
 }: UseOrderbookConnectionProperties): { wsState: WebSocketState } => {
-  const { dispatchToQ, consumeQ } = useOrderbookMainStateRef();
-
+  /*
   useOrderbookProcessing({
     onProcessCycle: React.useCallback(() => {
       for (const updates of consumeQ(null)) {
@@ -163,16 +157,20 @@ export const useOrderbookConnection = ({
         }
         console.log('onProcessCycle: ', { updates });
 
-        orderBookDispatch({
-          type: 'UPDATE_GROUPED',
-          payload: { updates },
-        });
+       
       }
     }, [consumeQ, orderBookDispatch]),
   });
 
+ InteractionManager.runAfterInteractions(() => {
+   orderBookDispatch({
+     type: 'UPDATE_GROUPED',
+     payload: { updates },
+   });
+ });*/
+
   const onMessage = React.useCallback(
-    exchangeModule.onMessage(dispatchToQ),
+    exchangeModule.onMessage(orderBookDispatch),
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -180,7 +178,6 @@ export const useOrderbookConnection = ({
     exchangeModule.onOpen(
       orderBookDispatch,
       exchangeModule.defaultOptions.defaultProduct,
-      dispatchToQ,
     ),
     [exchangeModule.defaultOptions.defaultProduct, orderBookDispatch],
   );
@@ -212,7 +209,7 @@ export const useOrderbookConnection = ({
 
       console.log('[ws] opening connection from mainEffect');
       if (exchangeModule.fakeRemote) {
-        exchangeModule.fakeRemote(orderBookDispatch, dispatchToQ);
+        exchangeModule.fakeRemote(orderBookDispatch);
       } else {
         wsConnect();
       }
@@ -240,25 +237,3 @@ export const useOrderbookReducer = (
     React.useMemo(() => orderBookReducer(exchangeModule), [exchangeModule]),
     initialState as OrderbookStateType,
   );
-
-export const useOrderbookProcessing = ({
-  onProcessCycle,
-  intervalMs = 50,
-}: UseOrderbookProcessingProperties): void => {
-  useSafeEffect((isMounted) => {
-    // eslint-disable-next-line no-restricted-globals
-    const intval = setInterval(() => {
-      if (isMounted()) {
-        InteractionManager.runAfterInteractions(() => onProcessCycle());
-      }
-    }, intervalMs);
-
-    return () => {
-      // eslint-disable-next-line no-restricted-globals
-      if (intval) clearInterval(intval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return;
-};

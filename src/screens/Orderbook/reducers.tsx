@@ -3,10 +3,7 @@
 import { scope } from './utils';
 
 import { scopeElementsWithoutZeroRecords } from './reducers/common';
-import {
-  applyMinimumThresholdsToGroups,
-  reduceUpdatesToScopedStateForGrouped,
-} from './reducers/grouping';
+import { reduceUpdatesToScopedStateForGrouped } from './reducers/grouping';
 
 import type {
   OrderbookStateType,
@@ -28,31 +25,11 @@ export const reducePendingGroupUpdatesToState = (
   state: OrderbookStateType,
 ): OrderbookStateType => {
   const { bids, asks, grouped, ...restOfAcc } = state;
-  /*
-  const groupedWithMinimumThresholdsApplied = applyFnToScope(grouped, (sc, k) =>
-    applyMinimumThresholdsToGroups(
-      sc,
-      state.groupBy,
-      state.minGroupBy,
-      pendingGroupUpdate.updates[k],
-    ),
-  );
 
-  console.log(
-    'groupedWithMinimumThresholdsApplied: ',
-    groupedWithMinimumThresholdsApplied,
-  );
-
-  console.log('starting reduceUpdatesToScopedStateForGrouped with params:', {
-    updates: pendingGroupUpdate.updates,
-    grouped,
-  });
-  */
   const newState = reduceUpdatesToScopedStateForGrouped(
-    pendingGroupUpdate.updates, // groupedWithMinimumThresholdsApplied,
+    pendingGroupUpdate.updates,
     grouped,
     state.groupBy,
-    state.minGroupBy,
     scope(bids, asks),
   );
 
@@ -61,9 +38,6 @@ export const reducePendingGroupUpdatesToState = (
     ...scopeElementsWithoutZeroRecords(newState),
     grouped: scopeElementsWithoutZeroRecords(newState.grouped),
   };
-  /*  },
-    state,
-  );*/
 };
 
 const reduceStateToNewGroupBySetting = (
@@ -77,7 +51,6 @@ const reduceStateToNewGroupBySetting = (
     scope(state.bids, state.asks),
     emptyGrouped,
     groupBy,
-    minGroupBy,
     scope(new Map(), new Map()),
   );
 

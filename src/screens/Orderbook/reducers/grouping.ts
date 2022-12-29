@@ -16,7 +16,6 @@ import Decimal from 'decimal.js';
 export const mutateForGrouping = (
   updates: OrdersMap,
   groupBy: number,
-  minGroupBy: number,
   inputLastKnownExactValues: OrdersMap,
   initialState: OrdersMap,
 ): [OrdersMap, OrdersMap] => {
@@ -28,37 +27,19 @@ export const mutateForGrouping = (
   const lastKnownExactValues = new Map(inputLastKnownExactValues);
 
   for (const [price, v] of updates) {
-    if (groupBy === 0.1) console.log(' -> process: ', [price, v]);
+    const groupedPrice = getGroupedPrice(price, groupBy);
 
-    const groupedPrice = getGroupedPrice(price, groupBy, minGroupBy);
-    if (false && groupBy === minGroupBy) {
+    const oldGroupSize = acc.get(groupedPrice);
+
+    if (typeof oldGroupSize === 'undefined' || oldGroupSize.isZero()) {
       acc.set(groupedPrice, v);
-
-      lastKnownExactValues.set(price, v);
     } else {
-      const oldGroupSize = acc.get(groupedPrice); // || new Decimal(0);
+      const oldSizeForExact = lastKnownExactValues.get(price) || new Decimal(0);
+      const result = v.sub(oldSizeForExact);
 
-      if (typeof oldGroupSize === 'undefined' || oldGroupSize.isZero()) {
-        acc.set(groupedPrice, v);
-      } else {
-        const oldSizeForExact =
-          lastKnownExactValues.get(price) || new Decimal(0);
-        const result = v.sub(oldSizeForExact);
-
-        if (groupBy === 0.1)
-          console.log('oldGroupSize: ', {
-            priceInfo: [price, groupedPrice],
-            groupBy,
-            v,
-            old: { exact: oldSizeForExact, group: oldGroupSize },
-            resultToSum: result,
-          });
-
-        acc.set(groupedPrice, oldGroupSize.add(result));
-      }
-
-      lastKnownExactValues.set(price, v);
+      acc.set(groupedPrice, oldGroupSize.add(result));
     }
+    lastKnownExactValues.set(price, v);
   }
 
   return [acc, lastKnownExactValues];
@@ -67,7 +48,6 @@ export const mutateForGrouping = (
 const mutateScopeForGrouping = (
   updates: OrderbookGenericScopeDataType<OrdersMap>,
   groupBy: number,
-  minGroupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<OrdersMap> & {
@@ -76,14 +56,12 @@ const mutateScopeForGrouping = (
   const [bids, mainBids] = mutateForGrouping(
     updates.bids,
     groupBy,
-    minGroupBy,
     oldExactRootState.bids,
     initialState.bids,
   );
   const [asks, mainAsks] = mutateForGrouping(
     updates.asks,
     groupBy,
-    minGroupBy,
     oldExactRootState.asks,
     initialState.asks,
   );
@@ -98,13 +76,11 @@ export const reduceUpdatesToScopedStateForGrouped = (
   updates: OrderbookGenericScopeDataType<OrdersMap>,
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
   groupBy: number,
-  minGroupBy: number,
   oldExactRootState: OrderbookGenericScopeDataType<OrdersMap>,
 ) => {
   const { groupedMutatedData, ...newState } = mutateScopeForGrouping(
     updates,
     groupBy,
-    minGroupBy,
     oldExactRootState,
     initialState,
   );
@@ -114,6 +90,8 @@ export const reduceUpdatesToScopedStateForGrouped = (
     grouped: reduceUpdatesToScopedState(groupedMutatedData, initialState),
   };
 };
+
+// unused unless for CryptoFacilities. review needed
 
 export const applyMinimumThresholdsToGroups = (
   groups: OrdersMap,

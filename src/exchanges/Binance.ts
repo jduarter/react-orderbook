@@ -51,7 +51,7 @@ const Binance: ExchangeModule = {
     groupBy: 0.01,
   },
 
-  onMessage: (dispatchToQ) => (decoded) => {
+  onMessage: (orderBookReducer) => (decoded) => {
     console.log('GOT MESSAGE FROM WS: ', decoded);
 
     if (decoded?.result === null) {
@@ -66,28 +66,30 @@ const Binance: ExchangeModule = {
       return;
     }
 
-    const updates = applyFnToScope(
-      { bids: toNormalizedMap(decoded.b), asks: toNormalizedMap(decoded.a) },
-      (kv) => new Map(kv),
+    const updates = applyFnToScope({ bids: decoded.b, asks: decoded.a }, (kv) =>
+      toNormalizedMap(kv),
     );
-    dispatchToQ([{ kind: 'u', updates }]);
+
+    orderBookDispatch({
+      type: 'UPDATE_GROUPED',
+      payload: { updates: [{ kind: 'u', updates }] },
+    });
   },
   onOpen:
     (orderBookDispatch, defaultProduct, dispatchToQ) =>
     ({ current: { send } }) => {
       getSnapshotFromApi(defaultProduct.pairName.toUpperCase())
         .then((snapshotData) => {
-          const updates = applyFnToScope(
-            {
-              bids: toNormalizedMap(snapshotData.bids),
-              asks: toNormalizedMap(snapshotData.asks),
-            },
-            (kv) => new Map(kv),
+          const updates = applyFnToScope(snapshotData, (kv) =>
+            toNormalizedMap(kv),
           );
 
           // @todo: consider lastUpdateId
 
-          dispatchToQ([{ kind: 's', updates }]);
+          orderBookDispatch({
+            type: 'UPDATE_GROUPED',
+            payload: { updates: [{ kind: 's', updates }] },
+          });
 
           orderBookDispatch({
             type: 'SET_LOADING',

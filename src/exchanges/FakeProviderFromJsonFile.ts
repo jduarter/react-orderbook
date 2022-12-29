@@ -14,7 +14,9 @@ const toOptimalInteger = (
 ) => {
   const d = new Decimal(input);
 
-  return d.mul(10 ** optimalIntReprPowFactor).toNumber();
+  const ret = d.mul(10 ** optimalIntReprPowFactor).toNumber();
+
+  return ret;
 };
 
 const toNormalizedMap = (
@@ -53,7 +55,7 @@ const FakeProviderFromJsonFile: ExchangeModule = {
     },
     groupBy: 0.01,
   },
-  fakeRemote: async (orderBookDispatch, dispatchToQ) => {
+  fakeRemote: async (orderBookDispatch) => {
     for (const ln of fakedJsonData) {
       const isWSupdate = 'E' in ln.data;
       const isSnapshotUpdate = !isWSupdate;
@@ -68,13 +70,20 @@ const FakeProviderFromJsonFile: ExchangeModule = {
           (kv) => toNormalizedMap(kv),
         );
 
-        dispatchToQ([{ kind: 'u', updates }]);
+        orderBookDispatch({
+          type: 'UPDATE_GROUPED',
+          payload: { updates: [{ kind: 'u', updates }] },
+        });
       } else if (isSnapshotUpdate) {
         // {"ln": {"data": {"asks": [Array], "bids": [Array], "lastUpdateId": 113354265}, "timeToSleep": 272}}
 
         // @todo: consider lastUpdateId
         const updates = applyFnToScope(ln.data, (kv) => toNormalizedMap(kv));
-        dispatchToQ([{ kind: 's', updates }]);
+
+        orderBookDispatch({
+          type: 'UPDATE_GROUPED',
+          payload: { updates: [{ kind: 's', updates }] },
+        });
 
         orderBookDispatch({
           type: 'SET_LOADING',
@@ -82,7 +91,6 @@ const FakeProviderFromJsonFile: ExchangeModule = {
         });
       }
 
-      console.log({});
       await asyncSleep(ln.timeToSleep);
     }
   },
