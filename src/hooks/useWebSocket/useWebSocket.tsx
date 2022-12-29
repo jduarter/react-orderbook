@@ -43,8 +43,6 @@ const getConnectFn =
     handlers: Partial<WebSocketHandlers<any>>,
   ) =>
   async (): Promise<boolean> => {
-    console.log('[WS] connecting to: ', uri);
-
     dispatch({ type: 'SET_CONNECTED', payload: { value: true } });
 
     ref.current = new WebSocket(uri) as WebSocketInstanceType;
@@ -60,7 +58,6 @@ const getConnectFn =
 const getSendFn =
   (ref: MutableRefObject<WebSocketInstanceType>) =>
   async (obj: any): Promise<boolean> => {
-    console.log('[WS] send: ', obj);
     if (!ref.current) {
       throw new WebSocketError('[useWebSocket] client is not ready');
     }
