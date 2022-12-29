@@ -8,11 +8,13 @@ import { getGroupByButtonPressEventHandler } from '../utils';
 interface GroupByButtonGroupProps {
   groupBy: number;
   orderBookDispatch: React.Dispatch<any>;
+  availableFactors: number[];
 }
 
 const GroupByButtonGroup: React.FC<GroupByButtonGroupProps> = ({
   groupBy,
   orderBookDispatch,
+  availableFactors,
 }) => (
   <View style={styles.groupByButtonsWrap}>
     <GroupButton
@@ -22,12 +24,18 @@ const GroupByButtonGroup: React.FC<GroupByButtonGroupProps> = ({
         -1,
         groupBy,
         orderBookDispatch,
+        availableFactors,
       )}
     />
     <GroupButton
       title={'+'}
       style={styles.flex1}
-      onPress={getGroupByButtonPressEventHandler(1, groupBy, orderBookDispatch)}
+      onPress={getGroupByButtonPressEventHandler(
+        1,
+        groupBy,
+        orderBookDispatch,
+        availableFactors,
+      )}
     />
   </View>
 );
