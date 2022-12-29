@@ -46,17 +46,6 @@ export const useOrderbookController = ({
     exchangeModule,
   });
 
-  // move this inside the reducer logic
-  /*
-  const asksData = orderAndLimit(
-    orderBook.grouped.asks,
-    rowsPerSection,
-    'desc',
-  );
-
-  const bidsData = orderAndLimit(orderBook.grouped.bids, rowsPerSection, 'asc');
-*/
-
   return {
     asksData: orderBook.viewport.asks,
     bidsData: orderBook.viewport.bids,
