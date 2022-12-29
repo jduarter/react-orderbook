@@ -10,7 +10,7 @@ const ALLOWED_FEEDS = ['book_ui_1', 'book_ui_1_snapshot'];
 const CryptoFacilities: ExchangeModule = {
   defaultOptions: {
     uri: 'wss://www.cryptofacilities.com/ws/v1',
-    subscribeToProductIds: ['PI_XBTUSD'],
+    subscribeToProductId: 'PI_XBTUSD',
     groupBy: 0.5,
   },
   onMessage: (dispatchToQ) => (decoded) => {
@@ -32,7 +32,7 @@ const CryptoFacilities: ExchangeModule = {
       });
       return;
     }
-
+    console.log({ decoded: JSON.stringify(decoded) });
     const updates = applyFnToScope(decoded, (kv) => new Map(kv));
 
     switch (decoded.feed) {
@@ -45,13 +45,13 @@ const CryptoFacilities: ExchangeModule = {
     }
   },
   onOpen:
-    (orderBookDispatch, subscribeToProductIds) =>
+    (orderBookDispatch, subscribeToProductId) =>
     ({ current: { send } }) => {
       orderBookDispatch({ type: 'SET_LOADING', payload: { value: false } });
       send({
         event: 'subscribe',
         feed: 'book_ui_1',
-        product_ids: subscribeToProductIds,
+        product_ids: [subscribeToProductId],
       });
     },
   mainReducerOverrides: {
