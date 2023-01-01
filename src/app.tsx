@@ -21,6 +21,11 @@ import { ExchangeSelector } from './components/ExchangeSelector';
 
 const IN_TEST = typeof jest != 'undefined';
 
+const IN_BROWSER = // @ts-ignore
+  typeof document != 'undefined' && // @ts-ignore
+  typeof window != 'undefined' && // @ts-ignore
+  typeof window.location != 'undefined';
+
 const backgroundStyle = {
   backgroundColor: '#000',
 };
@@ -40,7 +45,6 @@ const App: FC = () => {
 
   const exchangeModuleRef = React.useRef<ExchangeModule | null>(null);
   const [, forceUpdate] = React.useState<number>(0);
-
   const exchangeModule = IN_TEST ? JestDummy : exchangeModuleRef.current;
 
   if (!exchangeModule) {
@@ -59,7 +63,24 @@ const App: FC = () => {
     <SafeAreaView style={[backgroundStyle, { flex: 1 }]}>
       <StatusBar barStyle={'dark-content'} hidden={true} />
 
-      <View style={[backgroundStyle, { flex: 1 }]} testID={'MAIN_VIEW'}>
+      <View
+        style={[
+          backgroundStyle,
+          IN_BROWSER
+            ? {
+                width: 375,
+                height: 567,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                marginTop: 20,
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderColor: '#000',
+                borderRadius: 20,
+              }
+            : { flex: 1 },
+        ]}
+        testID={'MAIN_VIEW'}>
         <Orderbook
           exchangeModule={exchangeModule}
           testID={'MAIN_ORDERBOOK_INSTANCE'}
