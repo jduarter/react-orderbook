@@ -50,6 +50,7 @@ const OrderbookRow: React.FC<Props> = ({
             marginTop: 2,
             width: Math.round(relSizeWeight * 100).toString() + '%',
             right: 0,
+            zIndex: -1,
           }}></View>
         <Text style={styles.priceText}>{price}</Text>
 
