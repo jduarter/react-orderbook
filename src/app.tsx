@@ -69,7 +69,7 @@ const App: FC = () => {
           IN_BROWSER
             ? {
                 width: 375,
-                height: 567,
+                height: 685,
                 marginLeft: 'auto',
                 marginRight: 'auto',
                 marginTop: 20,
@@ -77,6 +77,7 @@ const App: FC = () => {
                 borderStyle: 'solid',
                 borderColor: '#000',
                 borderRadius: 20,
+                overflow: 'hidden',
               }
             : { flex: 1 },
         ]}
