@@ -4,6 +4,8 @@ import type {
   OrdersMap,
 } from './types';
 
+import { Decimal } from 'decimal.js';
+
 type SortByOperationTypes = -1 | 1;
 type GroupByOptionType = number;
 
@@ -104,9 +106,6 @@ export const applyFnToScope = <
   asks: transformer(input.asks, 'asks' as keyof I),
 });
 
-export const extractPricesFromMap = (m: OrdersMap): number[] =>
-  Array.from(m).map(([price]) => price);
-
 export const exactPriceIsWithinGroupPrice = (
   exact: number,
   groupPrice: number,
@@ -121,13 +120,19 @@ export const scope = <T extends {} = OrdersMap>(
   asks,
 });
 
-export const sortedObjValueSymDiff = (a: number[], b: number[]): number[] =>
-  a.filter((x) => !b.includes(x)).concat(b.filter((x) => !a.includes(x)));
+const toOptimalInteger = (input: string, optimalIntReprPowFactor: number) =>
+  Math.round(parseFloat(input) * 10 ** optimalIntReprPowFactor); // safeExactMul([, 10 ** optimalIntReprPowFactor], 5);
 
-export const calculateDiff = (
-  before: number[],
-  after: number[],
-): { created: number[]; removed: number[] } => ({
-  created: after.filter((x) => !before.includes(x)),
-  removed: before.filter((x) => !after.includes(x)),
-});
+export const toNormalizedMap = (
+  input: [string, string][],
+  optimalIntReprPowFactor: number,
+): OrdersMap =>
+  new Map(
+    input.map((el) => [
+      toOptimalInteger(el[0], optimalIntReprPowFactor),
+      new Decimal(el[1]),
+    ]),
+  );
+
+export const asyncSleep = (ms: number): Promise<unknown> =>
+  new Promise((resolve) => setTimeout(resolve, ms));

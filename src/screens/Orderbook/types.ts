@@ -129,6 +129,7 @@ export interface ExchangeModule {
 
     defaultProduct: {
       pairName: ProductId;
+      optimalIntReprPowFactor: number;
       asset: {
         symbol: string;
         decimals: number;
@@ -186,5 +187,3 @@ export interface OrderbookControllerHookReturn {
   rowsPerSection?: number;
   wsState: WebSocketState;
 }
-
-export type AllScopePropertyNames = 'bids' | 'asks';

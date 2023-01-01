@@ -1,55 +1,38 @@
 import type { ExchangeModule } from '../screens/Orderbook/types';
 
-import { applyFnToScope } from '../screens/Orderbook/utils';
-
-import { Decimal } from 'decimal.js';
-
-const toOptimalInteger = (input, optimalIntReprPowFactor: number) => {
-  const d = new Decimal(input);
-
-  return d.mul(10 ** optimalIntReprPowFactor).toNumber();
-};
-
-const toNormalizedMap = (
-  input: [string, string][],
-  optimalIntReprPowFactor: number = 2,
-): [number, Decimal][] => {
-  return input.map((el) => [
-    toOptimalInteger(el[0], optimalIntReprPowFactor),
-    new Decimal(el[1]),
-  ]);
-};
+import { applyFnToScope, toNormalizedMap } from '../screens/Orderbook/utils';
 
 const getSnapshotFromApi = async (symbol: string) => {
   const url =
     'https://api.binance.com/api/v3/depth?symbol=' + symbol + '&limit=1000';
 
   const request = await fetch(url);
-
   const result = await request.json();
-
   return result;
 };
 
-const Binance: ExchangeModule = {
-  defaultOptions: {
-    uri: 'wss://stream.binance.com:9443/ws/tornbusd@depth', // wss://data-stream.binance.com',
-    defaultProduct: {
-      pairName: 'tornbusd', // 'btcusdt',
-      asset: {
-        symbol: 'TORN',
-        decimals: 8,
-        decimalsToShow: 2,
-      },
-      price: {
-        symbol: 'BUSD',
-        decimals: 2,
-        decimalsToShow: 2,
-      },
-      groupByFactors: [0.01, 0.1, 1, 10, 50, 100],
+const DEFAULT_OPTIONS = {
+  uri: 'wss://stream.binance.com:9443/ws/tornbusd@depth', // wss://data-stream.binance.com',
+  defaultProduct: {
+    pairName: 'tornbusd', // 'btcusdt',
+    optimalIntReprPowFactor: 2,
+    asset: {
+      symbol: 'TORN',
+      decimals: 8,
+      decimalsToShow: 2,
     },
-    groupBy: 0.01,
+    price: {
+      symbol: 'BUSD',
+      decimals: 2,
+      decimalsToShow: 2,
+    },
+    groupByFactors: [0.01, 0.1, 1, 10, 50, 100],
   },
+  groupBy: 0.01,
+};
+
+const Binance: ExchangeModule = {
+  defaultOptions: DEFAULT_OPTIONS,
 
   onMessage: (orderBookReducer) => (decoded) => {
     console.log('GOT MESSAGE FROM WS: ', decoded);
@@ -67,7 +50,10 @@ const Binance: ExchangeModule = {
     }
 
     const updates = applyFnToScope({ bids: decoded.b, asks: decoded.a }, (kv) =>
-      toNormalizedMap(kv),
+      toNormalizedMap(
+        kv,
+        DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+      ),
     );
 
     orderBookDispatch({
@@ -81,7 +67,10 @@ const Binance: ExchangeModule = {
       getSnapshotFromApi(defaultProduct.pairName.toUpperCase())
         .then((snapshotData) => {
           const updates = applyFnToScope(snapshotData, (kv) =>
-            toNormalizedMap(kv),
+            toNormalizedMap(
+              kv,
+              DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+            ),
           );
 
           // @todo: consider lastUpdateId

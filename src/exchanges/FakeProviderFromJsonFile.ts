@@ -1,60 +1,37 @@
-import type { ExchangeModule, OrdersMap } from '../screens/Orderbook/types';
+import type { ExchangeModule } from '../screens/Orderbook/types';
 
-import { applyFnToScope } from '../screens/Orderbook/utils';
-
-import { Decimal } from 'decimal.js';
+import {
+  applyFnToScope,
+  toNormalizedMap,
+  asyncSleep,
+} from '../screens/Orderbook/utils';
 
 // snapshot of around 10 minutes from Binance/TORN_BUSD pair,
 // for solid websocket emulation.
 const fakedJsonData = require('./mockJsonData/binance-tornbusd.json');
 
-const toOptimalInteger = (
-  input: number | string,
-  optimalIntReprPowFactor: number,
-) => {
-  const d = new Decimal(input);
-
-  const ret = d.mul(10 ** optimalIntReprPowFactor).toNumber();
-
-  return ret;
-};
-
-const toNormalizedMap = (
-  input: [string, string][],
-  optimalIntReprPowFactor: number = 2,
-): OrdersMap => {
-  return new Map(
-    input.map((el) => [
-      toOptimalInteger(el[0], optimalIntReprPowFactor),
-      new Decimal(el[1]),
-    ]),
-  );
-};
-
-// https://gist.github.com/irazasyed/5382444
-const asyncSleep = (ms: number): Promise<unknown> => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const DEFAULT_OPTIONS = {
+  uri: '',
+  defaultProduct: {
+    pairName: 'tornbusd', // 'btcusdt',
+    optimalIntReprPowFactor: 2,
+    asset: {
+      symbol: 'TORN',
+      decimals: 8,
+      decimalsToShow: 2,
+    },
+    price: {
+      symbol: 'BUSD',
+      decimals: 2,
+      decimalsToShow: 2,
+    },
+    groupByFactors: [0.01, 0.1, 1, 10, 50, 100],
+  },
+  groupBy: 0.01,
 };
 
 const FakeProviderFromJsonFile: ExchangeModule = {
-  defaultOptions: {
-    uri: '',
-    defaultProduct: {
-      pairName: 'tornbusd', // 'btcusdt',
-      asset: {
-        symbol: 'TORN',
-        decimals: 8,
-        decimalsToShow: 2,
-      },
-      price: {
-        symbol: 'BUSD',
-        decimals: 2,
-        decimalsToShow: 2,
-      },
-      groupByFactors: [0.01, 0.1, 1, 10, 50, 100],
-    },
-    groupBy: 0.01,
-  },
+  defaultOptions: DEFAULT_OPTIONS,
   fakeRemote: async (orderBookDispatch) => {
     for (const ln of fakedJsonData) {
       const isWSupdate = 'E' in ln.data;
@@ -67,7 +44,11 @@ const FakeProviderFromJsonFile: ExchangeModule = {
             bids: ln.data.b,
             asks: ln.data.a,
           },
-          (kv) => toNormalizedMap(kv),
+          (kv) =>
+            toNormalizedMap(
+              kv,
+              DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+            ),
         );
 
         orderBookDispatch({
@@ -78,7 +59,12 @@ const FakeProviderFromJsonFile: ExchangeModule = {
         // {"ln": {"data": {"asks": [Array], "bids": [Array], "lastUpdateId": 113354265}, "timeToSleep": 272}}
 
         // @todo: consider lastUpdateId
-        const updates = applyFnToScope(ln.data, (kv) => toNormalizedMap(kv));
+        const updates = applyFnToScope(ln.data, (kv) =>
+          toNormalizedMap(
+            kv,
+            DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+          ),
+        );
 
         orderBookDispatch({
           type: 'UPDATE_GROUPED',

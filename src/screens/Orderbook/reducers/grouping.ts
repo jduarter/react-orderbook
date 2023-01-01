@@ -1,16 +1,9 @@
-import {
-  getGroupedPrice,
-  applyFnToScope,
-  extractPricesFromMap,
-  scope,
-  sortedObjValueSymDiff,
-  calculateDiff,
-} from '../utils';
+import { getGroupedPrice, scope } from '../utils';
 
-import { reduceUpdatesToScopedState, reduceTwoScopesWithFn } from './common';
+import { reduceUpdatesToScopedState } from './common';
 
 import type { OrderbookGenericScopeDataType, OrdersMap } from '../types';
-import type { GroupsMembersDiffType } from './types';
+
 import Decimal from 'decimal.js';
 
 export const mutateForGrouping = (
@@ -96,7 +89,6 @@ export const reduceUpdatesToScopedStateForGrouped = (
 export const applyMinimumThresholdsToGroups = (
   groups: OrdersMap,
   groupBy: number,
-  minGroupBy: number,
   updates: OrdersMap,
 ): OrdersMap => {
   if (updates.size === 0) {
@@ -106,7 +98,7 @@ export const applyMinimumThresholdsToGroups = (
   const groupMins = new Map(groups);
   for (const [exactPriceInFloat, absoluteSizeInUpdate] of updates) {
     groupMins.set(
-      getGroupedPrice(exactPriceInFloat, groupBy, minGroupBy),
+      getGroupedPrice(exactPriceInFloat, groupBy),
       absoluteSizeInUpdate,
     );
   }
@@ -128,24 +120,4 @@ export const applyMinimumThresholdsToGroups = (
   }
 
   return result;
-};
-
-export const getScopeMembersDiff = (
-  before: OrderbookGenericScopeDataType<OrdersMap>,
-  after: OrderbookGenericScopeDataType<OrdersMap>,
-): GroupsMembersDiffType => {
-  const a = applyFnToScope<OrdersMap, number[]>(before, extractPricesFromMap);
-  const b = applyFnToScope<OrdersMap, number[]>(after, extractPricesFromMap);
-
-  const changedKeys = reduceTwoScopesWithFn<
-    number[],
-    number[],
-    OrderbookGenericScopeDataType<number[]>
-  >(a, b, sortedObjValueSymDiff);
-
-  return reduceTwoScopesWithFn(
-    applyFnToScope(before, extractPricesFromMap),
-    changedKeys,
-    calculateDiff,
-  );
 };

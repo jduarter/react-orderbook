@@ -63,7 +63,7 @@ const decimalFormat = (optimalInt: number, decimals: number = 2) => {
   return splice(optimalInt.toString(), -decimals, '.');
 };
 
-const orderAndLimit = (
+export const orderAndLimit = (
   map: OrdersMap,
   limit = 10,
   orderBy: 'asc' | 'desc' = 'asc',

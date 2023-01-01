@@ -11,8 +11,8 @@ import Orientation from 'react-native-orientation-locker';
 import { Orderbook } from './screens/Orderbook';
 // @ts-ignore
 import { WEBSOCKET_URI } from 'react-native-config';
-import Binance from './exchanges/Binance';
-import CryptoFacilities from './exchanges/CryptoFacilities';
+//import Binance from './exchanges/Binance';
+//import CryptoFacilities from './exchanges/CryptoFacilities';
 import FakeProviderFromJsonFile from './exchanges/FakeProviderFromJsonFile';
 
 const backgroundStyle = {
