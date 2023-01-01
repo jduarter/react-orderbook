@@ -62,7 +62,7 @@ const App: FC = () => {
   return (
     <SafeAreaView
       style={[
-        IN_BROWSER ? { backgroundColor: '#eaeaea' } : backgroundStyle,
+        IN_BROWSER ? { backgroundColor: '#181818' } : backgroundStyle,
         { flex: 1 },
       ]}>
       <StatusBar barStyle={'dark-content'} hidden={true} />
