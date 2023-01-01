@@ -2,6 +2,10 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { useTransition, animated, config } from '@react-spring/native';
 
+import type { NormalizedData } from '../types';
+
+import type { Decimal } from 'decimal.js';
+
 import { default as OrderbookRow } from './OrderbookRow';
 
 const DEFAULT_TRANSITION_OPTIONS = ({
@@ -11,7 +15,7 @@ const DEFAULT_TRANSITION_OPTIONS = ({
   rowHeight: number;
   backgroundColor: string;
 }) => ({
-  keys: (item: any) => item[2],
+  keys: (item: any) => item[0],
   from: {
     backgroundColor: '#fff',
     height: 0,
@@ -23,64 +27,18 @@ const DEFAULT_TRANSITION_OPTIONS = ({
   config: { ...config.wobbly },
 });
 
-type NormalizedRecord = [number, number];
-type NormalizedData = NormalizedRecord[];
-
-type ProcessedNormalizedRecord = [string, number, string, number];
-type ProcessedNormalizedData = ProcessedNormalizedRecord[];
-
-const getTotalForRow = (
-  rows: NormalizedData,
-  index: number,
-  orderBy: 'asc' | 'desc',
-): number =>
-  rows.reduce(
-    (acc: number, current, ridx: number) =>
-      acc +
-      ((orderBy === 'asc' ? ridx >= index : index >= ridx) ? current[1] : 0),
-    0,
-  );
-
-const processNormalizedData = (
-  normalizedData: NormalizedData,
-  keyPrefix: string,
-  totalOrderBy: 'asc' | 'desc',
-  groupBy: number,
-): ProcessedNormalizedData =>
-  normalizedData.map<ProcessedNormalizedRecord>((e, index) => {
-    const p = (
-      (totalOrderBy === 'asc' ? groupBy * Math.pow(10, 2) : 0) + e[0]
-    ).toString();
-    const k = keyPrefix + '_' + e[0];
-    const t = getTotalForRow(normalizedData, index, totalOrderBy);
-
-    const returnValue: ProcessedNormalizedRecord = [p, e[1], k, t];
-    return returnValue;
-  });
-
-const OrderbookSection: React.FC<{
+const AnimatedOrderbookSection: React.FC<{
   backgroundColor: string;
+  backgroundColorForWeights: string;
   normalizedData: NormalizedData;
-  keyPrefix: string;
-  groupBy: number;
-  totalOrderBy: 'asc' | 'desc';
   textColor?: string;
   rowHeight?: number;
 }> = ({
   backgroundColor,
+  backgroundColorForWeights,
   normalizedData,
-  groupBy,
-  keyPrefix,
-  totalOrderBy,
   rowHeight = 42,
 }) => {
-  const data = processNormalizedData(
-    normalizedData,
-    keyPrefix,
-    totalOrderBy,
-    groupBy,
-  );
-
   const transData = React.useMemo(
     () =>
       DEFAULT_TRANSITION_OPTIONS({
@@ -90,23 +48,25 @@ const OrderbookSection: React.FC<{
     [backgroundColor, rowHeight],
   );
 
-  const transitions = useTransition(data, transData);
+  const transitions = useTransition(normalizedData, transData);
 
   const cb = React.useCallback(
     (
       style: { height: any /* @todo: type */ },
-      item: [string, number, string, number],
+      item: [string, Decimal, Decimal, number],
     ) => {
       const shouldStopChildrenAnimation =
         style.height?.get && style.height.get() !== Math.floor(rowHeight);
 
       return (
-        <animated.View key={item[2]} style={style}>
+        <animated.View key={item[0]} style={style}>
           <OrderbookRow
             price={item[0]}
             val={item[1]}
-            total={item[3]}
+            total={item[2]}
+            relSizeWeight={item[3]}
             backgroundColor={backgroundColor}
+            backgroundColorForWeights={backgroundColorForWeights}
             isLeaving={shouldStopChildrenAnimation}
           />
         </animated.View>
@@ -121,6 +81,6 @@ const OrderbookSection: React.FC<{
   );
 };
 
-const MemoizedOrderbookSection = React.memo(OrderbookSection);
+const MemoizedOrderbookSection = React.memo(AnimatedOrderbookSection);
 
 export default MemoizedOrderbookSection;

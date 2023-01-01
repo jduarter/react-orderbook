@@ -1,18 +1,14 @@
 import { applyFnToScope, wipeZeroRecords } from '../utils';
 
-import type {
-  OrderbookGenericScopeDataType,
-  OrdersMap,
-  AllScopePropertyNames,
-} from '../types';
+import type { OrderbookGenericScopeDataType, OrdersMap } from '../types';
 
-export const reduceMapToState = <T extends Map<number, number> = OrdersMap>(
+export const reduceMapToState = <T extends OrdersMap = OrdersMap>(
   data: T,
   initialState: OrdersMap,
 ): OrdersMap => {
   const ret = new Map(initialState);
   for (const [price, oSize] of data) {
-    if (oSize === 0) {
+    if (oSize.isZero()) {
       ret.delete(price);
     } else {
       ret.set(price, oSize);
@@ -26,24 +22,6 @@ export const reduceUpdatesToScopedState = (
   initialState: OrderbookGenericScopeDataType<OrdersMap>,
 ): OrderbookGenericScopeDataType<OrdersMap> =>
   applyFnToScope(initialState, (sc, k) => reduceMapToState(update[k], sc));
-
-export const reduceTwoScopesWithFn = <
-  T,
-  FR,
-  TP extends OrderbookGenericScopeDataType<T> = OrderbookGenericScopeDataType<T>,
->(
-  a: TP,
-  b: TP,
-  fn: (aa: T, bb: T) => FR,
-  scopeProps: AllScopePropertyNames[] = ['bids', 'asks'],
-): OrderbookGenericScopeDataType<FR> =>
-  scopeProps.reduce(
-    (acc, scopeKeyName) => ({
-      ...acc,
-      [scopeKeyName]: fn(a[scopeKeyName], b[scopeKeyName]),
-    }),
-    {},
-  ) as OrderbookGenericScopeDataType<FR>;
 
 export const scopeElementsWithoutZeroRecords = (
   sc: Pick<OrderbookGenericScopeDataType<OrdersMap>, 'bids' | 'asks'>,

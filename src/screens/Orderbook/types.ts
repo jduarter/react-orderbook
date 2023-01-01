@@ -4,14 +4,14 @@ import type {
   WebSocketNativeError,
 } from '../../hooks/useWebSocket';
 
-export type OrderbookGroupedPrice = number;
-export type OrderbookNormalizedPrice = string;
+import type { MutableRefObject } from 'react';
 
+import type { Decimal } from 'decimal.js';
+
+import type { OwnRefType } from '../../hooks/useWebSocket/types';
+
+export type OrderbookGroupedPrice = number;
 export type OrderbookOrderSize = number;
-export type OrderbookOrdersSortedObject = Record<
-  OrderbookNormalizedPrice,
-  OrderbookOrderSize
->;
 
 export interface OrderbookGenericScopeDataType<T> {
   bids: T;
@@ -23,11 +23,10 @@ type OrderbookAsksType = OrdersMap;
 
 export interface UseOrderbookConnectionProperties {
   orderBookDispatch: OrderbookDispatch;
-  webSocketUri: string;
-  subscribeToProductIds: string[];
   reconnectCheckIntervalMs?: number;
   autoReconnect?: boolean;
   onError?: (err: WebSocketNativeError | Error) => void;
+  exchangeModule: ExchangeModule;
 }
 
 type OnProcessCycle = () => void;
@@ -76,12 +75,15 @@ export interface PendingGroupUpdateRecord {
   updates: WSUpdatesType;
 }
 
-export type OrdersMap = Map<number, number>;
+export type OrdersMap = Map<number, Decimal>; // @todo-type: different types for pre-processed and post-processed values
 
 export interface OrderbookStateType
   extends OrderbookGenericScopeDataType<OrdersMap> {
   groupBy: number;
+  minGroupBy: number;
+  rowsPerSection: number;
   grouped: OrderbookGenericScopeDataType<OrdersMap>;
+  viewport: OrderbookGenericScopeDataType<NormalizedData>;
   isLoading: boolean;
 }
 
@@ -110,10 +112,58 @@ export type OrderbookReducerCalculateGroupedPartialState = Pick<
   'bids' | 'asks' | 'grouped'
 >;
 
+export type ProductId = string;
+
+type OrderbookReducingFunction = (
+  state: OrderbookStateType,
+  action: OrderbookReducerAction,
+) => OrderbookStateType;
+
+export type ExchangeModuleMainReducerOverridesHash = {
+  [type in OrderbookReducerActionTypes]: OrderbookReducingFunction;
+};
+
+export interface ExchangeModuleProduct {
+  id: ProductId;
+  pairName: string;
+  optimalIntReprPowFactor: number;
+  asset: {
+    symbol: string;
+    decimals: number;
+    decimalsToShow: number;
+  };
+  price: {
+    symbol: string;
+    decimals: number;
+    decimalsToShow: number;
+  };
+  groupByFactors: number[];
+}
+
+export interface ExchangeModuleOptions {
+  uri: string;
+
+  defaultProduct: ExchangeModuleProduct;
+  groupBy: number;
+}
+
+export interface ExchangeModule {
+  defaultOptions: ExchangeModuleOptions;
+  fakeRemote?:
+    | void
+    | ((orderBookDispatch: OrderbookDispatch) => Promise<unknown>);
+  onMessage: (
+    orderBookDispatch: OrderbookDispatch,
+  ) => (decoded: OrderbookWSMessageType) => void;
+  onOpen: (
+    orderBookDispatch: OrderbookDispatch,
+    subscribeToProduct: ExchangeModuleProduct,
+  ) => (current: MutableRefObject<OwnRefType>) => void;
+  mainReducerOverrides?: ExchangeModuleMainReducerOverridesHash;
+}
+
 export interface OrderbookProps {
-  initialGroupBy?: number;
-  productId: string;
-  webSocketUri: string;
+  exchangeModule: ExchangeModule;
   numberOfRowsPerSection?: number;
   typeID?: string;
 }
@@ -127,14 +177,18 @@ export type OrderbookReducer = (
   action: OrderbookReducerAction,
 ) => OrderbookStateType;
 
+export type UnprocessedRecord = [number, Decimal];
+export type UnprocessedData = UnprocessedRecord[];
+export type NormalizedRecord = [string, Decimal, Decimal, number];
+export type NormalizedData = NormalizedRecord[];
+
 export interface OrderbookControllerHookReturn {
   orderBookDispatch: OrderbookDispatch;
-  bidsData: [number, number][];
-  asksData: [number, number][];
+  bidsData: NormalizedData;
+  asksData: NormalizedData;
   isLoading: boolean;
   groupBy: number;
+  minGroupBy: number;
   rowsPerSection?: number;
   wsState: WebSocketState;
 }
-
-export type AllScopePropertyNames = 'bids' | 'asks';
