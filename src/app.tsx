@@ -13,16 +13,19 @@ import { Orderbook } from './screens/Orderbook';
 import { WEBSOCKET_URI } from 'react-native-config';
 
 import Binance from './exchanges/Binance';
+import JestDummy from './exchanges/JestDummy';
 import CryptoFacilities from './exchanges/CryptoFacilities';
 import FakeProviderFromJsonFile from './exchanges/FakeProviderFromJsonFile';
 import type { ExchangeModule } from './screens/Orderbook/types';
 import { ExchangeSelector } from './components/ExchangeSelector';
 
+const IN_TEST = typeof jest != 'undefined';
+
 const backgroundStyle = {
   backgroundColor: '#000',
 };
 
-initLoggers();
+!IN_TEST && initLoggers();
 
 const EXCHANGES = [
   { module: FakeProviderFromJsonFile, name: 'FakeProviderFromJsonFile' },
@@ -35,15 +38,17 @@ const App: FC = () => {
     Orientation.lockToPortrait();
   }, []);
 
-  const exchangeModule = React.useRef<ExchangeModule | null>(null);
+  const exchangeModuleRef = React.useRef<ExchangeModule | null>(null);
   const [, forceUpdate] = React.useState<number>(0);
 
-  if (exchangeModule.current === null) {
+  const exchangeModule = IN_TEST ? JestDummy : exchangeModuleRef.current;
+
+  if (!exchangeModule) {
     return (
       <ExchangeSelector
         exchanges={EXCHANGES}
         onPress={(module: ExchangeModule) => {
-          exchangeModule.current = module;
+          exchangeModuleRef.current = module;
           forceUpdate(Date.now());
         }}
       />
@@ -56,7 +61,7 @@ const App: FC = () => {
 
       <View style={[backgroundStyle, { flex: 1 }]} testID={'MAIN_VIEW'}>
         <Orderbook
-          exchangeModule={exchangeModule.current}
+          exchangeModule={exchangeModule}
           testID={'MAIN_ORDERBOOK_INSTANCE'}
         />
       </View>
