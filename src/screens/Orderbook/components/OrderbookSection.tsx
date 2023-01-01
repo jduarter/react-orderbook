@@ -81,42 +81,6 @@ const AnimatedOrderbookSection: React.FC<{
   );
 };
 
-const OrderbookSection: React.FC<{
-  backgroundColor: string;
-  backgroundColorForWeights: string;
-  normalizedData: NormalizedData;
-  textColor?: string;
-  rowHeight?: number;
-}> = ({
-  backgroundColor,
-  backgroundColorForWeights,
-  normalizedData,
-  rowHeight = 42,
-}) => {
-  return (
-    <View>
-      {normalizedData.map((dataItem) => (
-        <View
-          key={dataItem[0]}
-          style={{
-            backgroundColor,
-            /*animation*/ rowHeight: Math.floor(rowHeight),
-          }}>
-          <OrderbookRow
-            price={dataItem[0]}
-            val={dataItem[1]}
-            total={dataItem[2]}
-            relSizeWeight={dataItem[3]}
-            backgroundColor={backgroundColor}
-            backgroundColorForWeights={backgroundColorForWeights}
-            isLeaving={false}
-          />
-        </View>
-      ))}
-    </View>
-  );
-};
-
 const MemoizedOrderbookSection = React.memo(AnimatedOrderbookSection);
 
 export default MemoizedOrderbookSection;

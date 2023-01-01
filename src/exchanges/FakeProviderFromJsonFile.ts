@@ -13,7 +13,8 @@ const fakedJsonData = require('./mockJsonData/binance-tornbusd.json');
 const DEFAULT_OPTIONS = {
   uri: '',
   defaultProduct: {
-    pairName: 'tornbusd', // 'btcusdt',
+    id: 'tornbusd',
+    pairName: 'TORNBUSD', // 'btcusdt',
     optimalIntReprPowFactor: 2,
     asset: {
       symbol: 'TORN',
@@ -39,7 +40,7 @@ const FakeProviderFromJsonFile: ExchangeModule = {
 
       if (isWSupdate) {
         //  LOG  {"ln": {"data": {"E": 1672242116715, "U": 113354266, "a": [Array], "b": [Array], "e": "depthUpdate", "s": "TORNBUSD", "u": 113354267}, "timeToSleep": 750}}
-        const updates = applyFnToScope(
+        const updates = applyFnToScope<[string, string][]>(
           {
             bids: ln.data.b,
             asks: ln.data.a,
@@ -59,7 +60,7 @@ const FakeProviderFromJsonFile: ExchangeModule = {
         // {"ln": {"data": {"asks": [Array], "bids": [Array], "lastUpdateId": 113354265}, "timeToSleep": 272}}
 
         // @todo: consider lastUpdateId
-        const updates = applyFnToScope(ln.data, (kv) =>
+        const updates = applyFnToScope<[string, string][]>(ln.data, (kv) =>
           toNormalizedMap(
             kv,
             DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,

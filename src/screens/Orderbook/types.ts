@@ -123,27 +123,32 @@ export type ExchangeModuleMainReducerOverridesHash = {
   [type in OrderbookReducerActionTypes]: OrderbookReducingFunction;
 };
 
-export interface ExchangeModule {
-  defaultOptions: {
-    uri: string;
-
-    defaultProduct: {
-      pairName: ProductId;
-      optimalIntReprPowFactor: number;
-      asset: {
-        symbol: string;
-        decimals: number;
-        decimalsToShow: number;
-      };
-      price: {
-        symbol: string;
-        decimals: number;
-        decimalsToShow: number;
-      };
-      groupByFactors: number[];
-    };
-    groupBy: number;
+export interface ExchangeModuleProduct {
+  id: ProductId;
+  pairName: string;
+  optimalIntReprPowFactor: number;
+  asset: {
+    symbol: string;
+    decimals: number;
+    decimalsToShow: number;
   };
+  price: {
+    symbol: string;
+    decimals: number;
+    decimalsToShow: number;
+  };
+  groupByFactors: number[];
+}
+
+export interface ExchangeModuleOptions {
+  uri: string;
+
+  defaultProduct: ExchangeModuleProduct;
+  groupBy: number;
+}
+
+export interface ExchangeModule {
+  defaultOptions: ExchangeModuleOptions;
   fakeRemote?:
     | void
     | ((orderBookDispatch: OrderbookDispatch) => Promise<unknown>);
@@ -152,7 +157,7 @@ export interface ExchangeModule {
   ) => (decoded: OrderbookWSMessageType) => void;
   onOpen: (
     orderBookDispatch: OrderbookDispatch,
-    subscribeToProductId: ProductId,
+    subscribeToProduct: ExchangeModuleProduct,
   ) => (current: MutableRefObject<OwnRefType>) => void;
   mainReducerOverrides?: ExchangeModuleMainReducerOverridesHash;
 }

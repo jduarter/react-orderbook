@@ -1,8 +1,13 @@
-import type { ExchangeModule } from '../screens/Orderbook/types';
+import type {
+  ExchangeModule,
+  OrderbookGenericScopeDataType,
+} from '../screens/Orderbook/types';
 
 import { applyFnToScope, toNormalizedMap } from '../screens/Orderbook/utils';
 
-const getSnapshotFromApi = async (symbol: string) => {
+const getSnapshotFromApi = async (
+  symbol: string,
+): Promise<OrderbookGenericScopeDataType<[string, string][]>> => {
   const url =
     'https://api.binance.com/api/v3/depth?symbol=' + symbol + '&limit=1000';
 
@@ -12,9 +17,10 @@ const getSnapshotFromApi = async (symbol: string) => {
 };
 
 const DEFAULT_OPTIONS = {
-  uri: 'wss://stream.binance.com:9443/ws/tornbusd@depth', // wss://data-stream.binance.com',
+  uri: 'wss://stream.binance.com:9443/ws/tornbusd@depth',
   defaultProduct: {
-    pairName: 'tornbusd', // 'btcusdt',
+    id: 'tornbusd',
+    pairName: 'TORNBUSD', // 'btcusdt',
     optimalIntReprPowFactor: 2,
     asset: {
       symbol: 'TORN',
@@ -34,7 +40,7 @@ const DEFAULT_OPTIONS = {
 const Binance: ExchangeModule = {
   defaultOptions: DEFAULT_OPTIONS,
 
-  onMessage: (orderBookReducer) => (decoded) => {
+  onMessage: (orderBookDispatch) => (decoded) => {
     console.log('GOT MESSAGE FROM WS: ', decoded);
 
     if (decoded?.result === null) {
@@ -49,11 +55,13 @@ const Binance: ExchangeModule = {
       return;
     }
 
-    const updates = applyFnToScope({ bids: decoded.b, asks: decoded.a }, (kv) =>
-      toNormalizedMap(
-        kv,
-        DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
-      ),
+    const updates = applyFnToScope<[string, string][]>(
+      { bids: decoded.b, asks: decoded.a },
+      (kv) =>
+        toNormalizedMap(
+          kv,
+          DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+        ),
     );
 
     orderBookDispatch({
@@ -61,34 +69,32 @@ const Binance: ExchangeModule = {
       payload: { updates: [{ kind: 'u', updates }] },
     });
   },
-  onOpen:
-    (orderBookDispatch, defaultProduct, dispatchToQ) =>
-    ({ current: { send } }) => {
-      getSnapshotFromApi(defaultProduct.pairName.toUpperCase())
-        .then((snapshotData) => {
-          const updates = applyFnToScope(snapshotData, (kv) =>
-            toNormalizedMap(
-              kv,
-              DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
-            ),
-          );
+  onOpen: (orderBookDispatch, defaultProduct) => () => {
+    getSnapshotFromApi(defaultProduct.pairName.toUpperCase())
+      .then((snapshotData) => {
+        const updates = applyFnToScope<[string, string][]>(snapshotData, (kv) =>
+          toNormalizedMap(
+            kv,
+            DEFAULT_OPTIONS.defaultProduct.optimalIntReprPowFactor,
+          ),
+        );
 
-          // @todo: consider lastUpdateId
+        // @todo: consider lastUpdateId
 
-          orderBookDispatch({
-            type: 'UPDATE_GROUPED',
-            payload: { updates: [{ kind: 's', updates }] },
-          });
-
-          orderBookDispatch({
-            type: 'SET_LOADING',
-            payload: { value: false },
-          });
-        })
-        .catch((err) => {
-          console.log('ERROR getting snapshot data: ', err);
+        orderBookDispatch({
+          type: 'UPDATE_GROUPED',
+          payload: { updates: [{ kind: 's', updates }] },
         });
-    },
+
+        orderBookDispatch({
+          type: 'SET_LOADING',
+          payload: { value: false },
+        });
+      })
+      .catch((err) => {
+        console.log('ERROR getting snapshot data: ', err);
+      });
+  },
 };
 
 export default Binance;

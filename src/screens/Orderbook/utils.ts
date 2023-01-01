@@ -95,13 +95,13 @@ export const wipeZeroRecords = (input: OrdersMap): OrdersMap => {
 };
 
 export const applyFnToScope = <
-  T extends OrdersMap = OrdersMap,
-  FR = OrderbookGenericScopeDataType<T>,
+  T extends unknown = OrdersMap,
+  TR extends Map<unknown, unknown> = OrdersMap,
   I extends OrderbookGenericScopeDataType<T> = OrderbookGenericScopeDataType<T>,
 >(
   input: I,
-  transformer: (input: OrdersMap, k: keyof I) => FR,
-): OrderbookGenericScopeDataType<FR> => ({
+  transformer: (input: T, k: keyof I) => TR,
+): OrderbookGenericScopeDataType<TR> => ({
   bids: transformer(input.bids, 'bids' as keyof I),
   asks: transformer(input.asks, 'asks' as keyof I),
 });
