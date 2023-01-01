@@ -30,7 +30,6 @@ describe('main WebSocket test', () => {
     server = new WS('ws://localhost:42018');
 
     server.on('connection', () => {
-      console.log('CLIENT CONNECTED TO FAKE SERVER');
       controlPromise.resolve();
     });
 
