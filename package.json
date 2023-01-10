@@ -46,7 +46,6 @@
     "react": "18.0.0",
     "react-native": "0.69.6",
     "react-native-config": "^1.4.2",
-    "react-native-flipper": "^0.173.0",
     "react-native-orientation-locker": "https://github.com/megah4x0r/react-native-orientation-locker#17a87ae",
     "throttle-hooks": "^1.0.1",
     "throwable-error": "^0.1.1"
