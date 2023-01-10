@@ -21,7 +21,6 @@ const DEFAULT_TRANSITION_OPTIONS = ({
     height: 0,
   },
   enter: [{ backgroundColor: '#fff' }, { backgroundColor, height: rowHeight }],
-  leave: [{ height: 0, backgroundColor: '#000' }],
   expires: true,
   reset: false,
   config: { ...config.wobbly },

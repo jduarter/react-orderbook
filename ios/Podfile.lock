@@ -288,8 +288,6 @@ PODS:
     - react-native-config/App (= 1.4.6)
   - react-native-config/App (1.4.6):
     - React-Core
-  - react-native-flipper (0.173.0):
-    - React-Core
   - react-native-netinfo (6.2.1):
     - React-Core
   - react-native-orientation-locker (1.5.0):
@@ -410,7 +408,6 @@ DEPENDENCIES:
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector`)
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - react-native-config (from `../node_modules/react-native-config`)
-  - react-native-flipper (from `../node_modules/react-native-flipper`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-orientation-locker (from `../node_modules/react-native-orientation-locker`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -486,8 +483,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/logger"
   react-native-config:
     :path: "../node_modules/react-native-config"
-  react-native-flipper:
-    :path: "../node_modules/react-native-flipper"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-orientation-locker:
@@ -553,7 +548,6 @@ SPEC CHECKSUMS:
   React-jsinspector: eaacb698c5af7a99131bc1933806372c20222dfd
   React-logger: ebb4d31bbbe4f1a8a1a9b658d7429210b8f68160
   react-native-config: 7cd105e71d903104e8919261480858940a6b9c0e
-  react-native-flipper: 64998cd1c415826bf49ef391e5bc0adcb7dcb77a
   react-native-netinfo: 3d3769f0d65de15c83a9bf1346f8be71de5a24bf
   react-native-orientation-locker: 851f6510d8046ea2f14aa169b1e01fcd309a94ba
   React-perflogger: 1fb1ad5333b43a5137afd7608695f7a42c5efd27

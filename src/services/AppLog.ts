@@ -1,11 +1,11 @@
-import { addPlugin as flipperPlugin } from 'react-native-flipper';
+// import { addPlugin as flipperPlugin } from 'react-native-flipper';
 
 import * as React from 'react';
 
 import {
   initMainScopeLogger,
   destroyMainScopeLogger,
-  FlipperConsumer,
+//  FlipperConsumer,
   ConsoleConsumer,
   loggerForScope,
 } from 'interlogger';
@@ -14,16 +14,16 @@ import type { Consumer, ConfigType, LoggerType } from 'interlogger';
 
 const LOG_CONSUMERS: Consumer[] = [
   ConsoleConsumer,
-  FlipperConsumer({
+  /* FlipperConsumer({
     flipperPlugin,
-  }),
+  }),*/
 ];
 
 const LOG_RULES: ConfigType['rules'] = ({ doesNotMatch }) => ({
   any: [
     {
       all: [
-        doesNotMatch('$.consumer.name', 'Flipper'),
+        // doesNotMatch('$.consumer.name', 'Flipper'),
         doesNotMatch('$.scope', 'useGeneratorQueue'),
       ],
     },

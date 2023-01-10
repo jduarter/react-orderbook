@@ -43,6 +43,6 @@ const GroupByButtonGroup: React.FC<GroupByButtonGroupProps> = ({
 export default GroupByButtonGroup;
 
 const styles = StyleSheet.create({
-  flex1: { flex: 1 },
+  flex1: { flex: 1, alignItems: 'center' },
   groupByButtonsWrap: { padding: 4, flex: 1, flexDirection: 'row' },
 });
