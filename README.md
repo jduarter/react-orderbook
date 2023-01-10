@@ -14,12 +14,6 @@ Web preview [master branch] : https://an39sg-orderbook-master.vercel.app
 
 ## Configuration
 
-- [ ] Add a new .env file in the root of the project with the following data:
-
-    ```
-    WEBSOCKET_URI=wss://www.cryptofacilities.com/ws/v1
-    ```
-
 - [ ] Start the project
 
    ``` npx react-native ios```
