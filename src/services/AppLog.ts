@@ -5,7 +5,7 @@ import * as React from 'react';
 import {
   initMainScopeLogger,
   destroyMainScopeLogger,
-  FlipperConsumer,
+//  FlipperConsumer,
   ConsoleConsumer,
   loggerForScope,
 } from 'interlogger';
