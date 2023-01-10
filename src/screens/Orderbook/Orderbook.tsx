@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  groupText: { flex: 1, flexShrink: 0, color: '#fff' },
+  groupText: { flex: 3, flexShrink: 0, color: '#fff' },
   firstColWrap: {
     height: '45%',
     overflow: 'hidden',
