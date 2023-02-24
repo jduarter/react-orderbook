@@ -38,7 +38,7 @@
     "@react-hook/debounce": "^3.0.0",
     "@react-hook/throttle": "^2.2.0",
     "@react-native-community/netinfo": "^6.0.0",
-    "@react-spring/native": "^9.1.2",
+    "@react-spring/native": "^9.7.0",
     "@testing-library/react-native": "^7.2.0",
     "decimal.js": "^10.4.3",
     "interlogger": "0.0.11",
